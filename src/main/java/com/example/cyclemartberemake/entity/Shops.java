@@ -18,7 +18,10 @@ public class Shops {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    private int userId;
+    // ✅ FIX CHỖ NÀY
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private Users user;
 
     private int categoryId;
 

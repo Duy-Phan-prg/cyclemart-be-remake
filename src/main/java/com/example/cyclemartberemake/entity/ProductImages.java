@@ -22,6 +22,7 @@ public class ProductImages {
 
     private String url;
 
+    @Column(name = "display_order")
     private int order;
 
     private boolean isPrimary;

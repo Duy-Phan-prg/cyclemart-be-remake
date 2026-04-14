@@ -28,6 +28,7 @@ public class Products {
 
     private double price;
 
+    @Column(name = "product_condition")
     private String condition;
 
     private String status;

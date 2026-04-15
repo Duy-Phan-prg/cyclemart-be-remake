@@ -11,12 +11,19 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Categories {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
-
-    private Integer parentId;
+    private Integer id;
 
     private String name;
+    private String description;
+    private String icon;
+
+    private Integer displayOrder;
+
+    private Boolean isActive = true;
+
+    @ManyToOne
+    @JoinColumn(name = "parent_id")
+    private Categories parent;
 }

@@ -31,6 +31,7 @@ public class UserServiceImpl implements UserService {
     private final JwtService jwtService;
     private final UserMapper userMapper;
 
+
     @Override
     public Users register(UserRegisterRequestDTO dto) {
 
@@ -56,6 +57,18 @@ public class UserServiceImpl implements UserService {
         if (!passwordEncoder.matches(dto.getPassword(), user.getPasswordHash())) {
             throw new RuntimeException("Sai mật khẩu");
         }
+
+        // Kiểm tra account bị ban
+        if (user.getStatus() == UserStatus.BANNED) {
+            throw new RuntimeException("Tài khoản đã bị ban");
+        }
+
+
+        // Kiểm tra account bị suspend
+        if (user.getStatus() == UserStatus.SUSPENDED) {
+            throw new RuntimeException("Tài khoản đã bị tạm khóa");
+        }
+
 
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);

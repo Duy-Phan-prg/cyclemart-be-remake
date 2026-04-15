@@ -2,11 +2,13 @@ package com.example.cyclemartberemake.service.impl;
 
 import com.example.cyclemartberemake.dto.request.UserLoginRequestDTO;
 import com.example.cyclemartberemake.dto.request.UserRegisterRequestDTO;
+import com.example.cyclemartberemake.dto.response.UserLoginResponseDTO;
 import com.example.cyclemartberemake.entity.Role;
 import com.example.cyclemartberemake.entity.UserStatus;
 import com.example.cyclemartberemake.entity.Users;
 import com.example.cyclemartberemake.mapper.UserMapper;
 import com.example.cyclemartberemake.repository.UserRepository;
+import com.example.cyclemartberemake.security.JwtService;
 import com.example.cyclemartberemake.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,16 +24,14 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    private final JwtService jwtService;
 
     @Override
     public Users register(UserRegisterRequestDTO dto) {
 
+
         if (userRepository.existsByEmail(dto.getEmail())) {
             throw new RuntimeException("Email đã tồn tại");
-        }
-
-        if (dto.getPhone() != null && userRepository.existsByPhone(dto.getPhone())) {
-            throw new RuntimeException("Số điện thoại đã tồn tại");
         }
 
         Users user = UserMapper.toEntity(dto);
@@ -44,7 +44,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Users login(UserLoginRequestDTO dto) {
+    public UserLoginResponseDTO login(UserLoginRequestDTO dto) {
+
         Users user = userRepository.findByEmail(dto.getEmail())
                 .orElseThrow(() -> new RuntimeException("Email không tồn tại"));
 
@@ -63,8 +64,16 @@ public class UserServiceImpl implements UserService {
 
 
         // Login thành công - reset login attempts
-        user.setLastLoginAt(LocalDateTime.now());
+        if (!passwordEncoder.matches(dto.getPassword(), user.getPasswordHash())) {
+            throw new RuntimeException("Sai mật khẩu");
+        }
 
-        return userRepository.save(user);
+        user.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        // 🔥 tạo token
+        String token = jwtService.generateToken(user.getEmail());
+
+        return new UserLoginResponseDTO(token);
     }
 }

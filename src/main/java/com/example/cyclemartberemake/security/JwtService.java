@@ -1,0 +1,48 @@
+package com.example.cyclemartberemake.security;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.stereotype.Service;
+
+import javax.crypto.SecretKey;
+import java.util.Date;
+
+@Service
+public class JwtService {
+
+    private final String SECRET = "my-super-secret-key-which-is-very-long-123456";
+
+    private SecretKey getSignKey() {
+        return Keys.hmacShaKeyFor(SECRET.getBytes());
+    }
+
+    public String generateToken(String email) {
+        return Jwts.builder()
+                .setSubject(email)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
+                .signWith(getSignKey())
+                .compact();
+    }
+
+    public String extractEmail(String token) {
+        return getClaims(token).getSubject();
+    }
+
+    public boolean isValid(String token) {
+        try {
+            return !getClaims(token).getExpiration().before(new Date());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private Claims getClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSignKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+}

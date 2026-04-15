@@ -1,5 +1,6 @@
 package com.example.cyclemartberemake.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -45,9 +46,23 @@ public class Users {
 
     private LocalDateTime lastLoginAt;
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<BankAccounts> bankAccounts;
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Shops> shops;
+
+    // Override toString để tránh LazyInitializationException
+    @Override
+    public String toString() {
+        return "Users{" +
+                "id=" + id +
+                ", email='" + email + '\'' +
+                ", fullName='" + fullName + '\'' +
+                ", role=" + role +
+                ", status=" + status +
+                '}';
+    }
 }

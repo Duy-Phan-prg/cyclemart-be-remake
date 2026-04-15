@@ -41,6 +41,9 @@ public class Users {
 
     private LocalDateTime bannedAt;
 
+    @Column(columnDefinition = "INT DEFAULT 0")
+    private int loginAttempts = 0;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

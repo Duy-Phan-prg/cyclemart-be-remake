@@ -19,7 +19,7 @@ public class UserRegisterRequestDTO {
     private String fullName;
 
     @NotBlank(message = "Số điện thoại không được để trống")
-    @Pattern(regexp = "^(0[3|5|7|8|9])+([0-9]{8})$", message = "SĐT không hợp lệ")
+    @Pattern(regexp = "^0[3578][0-9]{8}$", message = "SĐT phải bắt đầu 0 và có đúng 10 số")
     @UniquePhone
     private String phone;
 

@@ -2,11 +2,13 @@ package com.example.cyclemartberemake.service.impl;
 
 import com.example.cyclemartberemake.dto.request.UserLoginRequestDTO;
 import com.example.cyclemartberemake.dto.request.UserRegisterRequestDTO;
+import com.example.cyclemartberemake.dto.response.UserLoginResponseDTO;
 import com.example.cyclemartberemake.entity.Role;
 import com.example.cyclemartberemake.entity.UserStatus;
 import com.example.cyclemartberemake.entity.Users;
 import com.example.cyclemartberemake.mapper.UserMapper;
 import com.example.cyclemartberemake.repository.UserRepository;
+import com.example.cyclemartberemake.security.JwtService;
 import com.example.cyclemartberemake.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,10 +22,10 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     @Override
     public Users register(UserRegisterRequestDTO dto) {
-
 
         if (userRepository.existsByEmail(dto.getEmail())) {
             throw new RuntimeException("Email đã tồn tại");
@@ -39,7 +41,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Users login(UserLoginRequestDTO dto) {
+    public UserLoginResponseDTO login(UserLoginRequestDTO dto) {
+
         Users user = userRepository.findByEmail(dto.getEmail())
                 .orElseThrow(() -> new RuntimeException("Email không tồn tại"));
 
@@ -48,7 +51,11 @@ public class UserServiceImpl implements UserService {
         }
 
         user.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(user);
 
-        return userRepository.save(user);
+        // 🔥 tạo token
+        String token = jwtService.generateToken(user.getEmail());
+
+        return new UserLoginResponseDTO(token);
     }
 }

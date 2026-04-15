@@ -1,6 +1,7 @@
 package com.example.cyclemartberemake.controller;
 
 
+import com.example.cyclemartberemake.dto.request.UserLoginRequestDTO;
 import com.example.cyclemartberemake.dto.request.UserRegisterRequestDTO;
 import com.example.cyclemartberemake.entity.Users;
 import com.example.cyclemartberemake.service.UserService;
@@ -21,5 +22,10 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<Users> register(@Valid @RequestBody UserRegisterRequestDTO dto) {
         return ResponseEntity.ok(userService.register(dto));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@Valid @RequestBody UserLoginRequestDTO dto) {
+        return ResponseEntity.ok(userService.login(dto));
     }
 }

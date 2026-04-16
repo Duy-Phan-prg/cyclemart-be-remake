@@ -57,24 +57,28 @@ public class AuthController {
         return ResponseEntity.status(401).body("Unauthorized - Please login first");
     }
 
-    // API Cập nhật thông tin cơ bản
-    @PutMapping("/{id}/profile")
-    public ResponseEntity<?> updateProfile(@PathVariable("id") int userId,
-                                           @Valid @RequestBody UpdateProfileRequest request) {
+    @PutMapping("/profile")
+    @Operation(summary = "Update current user profile")
+    public ResponseEntity<?> updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
         try {
-            userService.updateProfile(userId, request);
+            // Lấy user hiện tại đang đăng nhập từ hệ thống Security
+            Users currentUser = (Users) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+            userService.updateProfile(currentUser.getId(), request);
             return ResponseEntity.ok().body("Cập nhật thông tin cá nhân thành công.");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    // API Đổi mật khẩu
-    @PutMapping("/{id}/password")
-    public ResponseEntity<?> changePassword(@PathVariable("id") int userId,
-                                            @Valid @RequestBody ChangePasswordRequest request) {
+    @PutMapping("/password") //
+    @Operation(summary = "Change current user password")
+    public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         try {
-            userService.changePassword(userId, request);
+            // Lấy user hiện tại đang đăng nhập
+            Users currentUser = (Users) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+            userService.changePassword(currentUser.getId(), request);
             return ResponseEntity.ok().body("Đổi mật khẩu thành công.");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

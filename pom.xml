@@ -17,7 +17,7 @@
     <name>cyclemart-be-remake</name>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>17</java.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <lombok.version>1.18.30</lombok.version>
     </properties>
@@ -86,6 +86,12 @@
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
             <version>${mapstruct.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.cloudinary</groupId>
+            <artifactId>cloudinary-http44</artifactId>
+            <version>1.38.0</version>
         </dependency>
 
         <dependency>

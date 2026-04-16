@@ -1,5 +1,6 @@
 package com.example.cyclemartberemake.security;
 
+import com.example.cyclemartberemake.entity.Users; // Bổ sung import này
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -17,9 +18,16 @@ public class JwtService {
         return Keys.hmacShaKeyFor(SECRET.getBytes());
     }
 
-    public String generateToken(String email) {
+    // Nhận vào entity Users thay vì chỉ chuỗi email
+    public String generateToken(Users user) {
         return Jwts.builder()
-                .setSubject(email)
+                .setSubject(user.getEmail())
+                // THÊM CÁC THÔNG TIN NÀY VÀO TOKEN (Claims)
+                .claim("id", user.getId())
+                .claim("fullName", user.getFullName())
+                .claim("phone", user.getPhone())
+                .claim("role", user.getRole().toString())
+                // ----------------------------------------
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
                 .signWith(getSignKey())

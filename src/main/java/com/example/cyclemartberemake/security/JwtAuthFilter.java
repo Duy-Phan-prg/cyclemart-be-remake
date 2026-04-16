@@ -29,14 +29,22 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String path = request.getRequestURI();
-        System.out.println(" JWT Filter - Path: " + path);
+        String method = request.getMethod();
+        System.out.println(" JWT Filter - " + method + " " + path);
 
-        // ĐÃ SỬA Ở ĐÂY: Chỉ skip cho đúng login và register
-        if (path.equals("/api/auth/login") || path.equals("/api/auth/register")) {
-            System.out.println(" Skipping JWT for: " + path);
+        // Kết hợp logic: Chỉ skip JWT cho login, register và các public GET API từ nhánh main
+        if (path.equals("/api/v1/auth/login") ||
+                path.equals("/api/v1/auth/register") ||
+                (path.startsWith("/api/v1/categories/") && method.equals("GET")) ||
+                (path.startsWith("/api/v1/posts/") && method.equals("GET")) ||
+                (path.startsWith("/api/v1/auth/users/") && method.equals("GET"))) {
+
+            System.out.println(" Skipping JWT for: " + method + " " + path);
             filterChain.doFilter(request, response);
             return;
         }
+
+        System.out.println(" JWT required for: " + method + " " + path);
 
         final String authHeader = request.getHeader("Authorization");
         System.out.println(" Auth header: " + (authHeader != null ? authHeader.substring(0, Math.min(30, authHeader.length())) + "..." : "null"));

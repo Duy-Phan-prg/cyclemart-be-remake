@@ -4,6 +4,7 @@ import com.example.cyclemartberemake.dto.request.ChangePasswordRequest;
 import com.example.cyclemartberemake.dto.request.UpdateProfileRequest;
 import com.example.cyclemartberemake.dto.request.UserLoginRequestDTO;
 import com.example.cyclemartberemake.dto.request.UserRegisterRequestDTO;
+import com.example.cyclemartberemake.dto.response.UserInfoResponseDTO;
 import com.example.cyclemartberemake.dto.response.UserLoginResponseDTO;
 import com.example.cyclemartberemake.entity.Role;
 import com.example.cyclemartberemake.entity.UserStatus;
@@ -18,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +29,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final UserMapper userMapper;
 
     @Override
     public Users register(UserRegisterRequestDTO dto) {
@@ -34,7 +38,7 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Email đã tồn tại");
         }
 
-        Users user = UserMapper.toEntity(dto);
+        Users user = userMapper.toEntity(dto);
         user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
 
         user.setRole(Role.BUYER);
@@ -56,7 +60,6 @@ public class UserServiceImpl implements UserService {
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
 
-        // 🔥 tạo token
         String token = jwtService.generateToken(user.getEmail());
 
         return new UserLoginResponseDTO(token);
@@ -111,5 +114,19 @@ public class UserServiceImpl implements UserService {
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
 
         userRepository.save(user);
+    }
+
+    @Override
+    public List<UserInfoResponseDTO> getAllUsers() {
+        List<Users> users = userRepository.findAll();
+        return userMapper.toResponseList(users);
+    }
+
+    @Override
+    public UserInfoResponseDTO getUserById(int id) {
+        Users user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+
+        return userMapper.toResponse(user);
     }
 }

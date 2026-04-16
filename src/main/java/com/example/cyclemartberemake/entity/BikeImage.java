@@ -2,28 +2,25 @@ package com.example.cyclemartberemake.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Entity
-@Table(name = "payment_logs")
+@Table(name = "bike_images")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentLogs {
+@Builder
+public class BikeImage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Long id;
 
-    private int paymentId;
+    private String url;
 
-    private String status;
-
-    @Column(columnDefinition = "json")
-    private String rawResponse;
-
-    private LocalDateTime createdAt;
+    @ManyToOne
+    @JoinColumn(name = "post_id")
+    private BikePost post;
 }

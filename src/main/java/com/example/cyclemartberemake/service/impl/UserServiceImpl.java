@@ -29,18 +29,20 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
 
     @Override
-    public UserInfoResponseDTO register(UserRegisterRequestDTO dto) {
+    public Users register(UserRegisterRequestDTO dto) {
+
+
         if (userRepository.existsByEmail(dto.getEmail())) {
             throw new RuntimeException("Email đã tồn tại");
         }
 
         Users user = userMapper.toEntity(dto);
         user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
+
         user.setRole(Role.BUYER);
         user.setStatus(UserStatus.ACTIVE);
 
-        Users saved = userRepository.save(user);
-        return userMapper.toResponse(saved);
+        return userRepository.save(user);
     }
 
     @Override
@@ -56,7 +58,7 @@ public class UserServiceImpl implements UserService {
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
 
-        String token = jwtService.generateToken(user);
+        String token = jwtService.generateToken(user.getEmail());
 
         return new UserLoginResponseDTO(token);
     }

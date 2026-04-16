@@ -32,30 +32,17 @@ public class BikePost {
     private BikeStatus status;
 
 
-    @Enumerated(EnumType.STRING)
-    private City city;
-    
-    @Enumerated(EnumType.STRING)
-    private HCMDistrict district;
+    private String city;
+    private String district;
 
-    @Enumerated(EnumType.STRING)
-    private BikeBrand brand;
-    
+    private String brand;
     private String model;
     private Integer year;
 
-    @Enumerated(EnumType.STRING)
-    private FrameMaterial frameMaterial;
-    
-    @Enumerated(EnumType.STRING)
-    private FrameSize frameSize;
-    
-    @Enumerated(EnumType.STRING)
-    private BrakeType brakeType;
-    
-    @Enumerated(EnumType.STRING)
-    private Groupset groupset;
-    
+    private String frameMaterial;
+    private String frameSize;
+    private String brakeType;
+    private String groupset;
     private Integer mileage;
 
     private Long userId;

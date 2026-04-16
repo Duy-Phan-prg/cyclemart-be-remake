@@ -19,8 +19,6 @@ public interface UserMapper {
     @Mapping(target = "bannedAt", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "lastLoginAt", ignore = true)
-    @Mapping(target = "bankAccounts", ignore = true)
-    @Mapping(target = "shops", ignore = true)
     Users toEntity(UserRegisterRequestDTO dto);
     
     UserInfoResponseDTO toResponse(Users user);

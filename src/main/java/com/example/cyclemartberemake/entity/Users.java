@@ -46,14 +46,6 @@ public class Users {
 
     private LocalDateTime lastLoginAt;
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    @JsonIgnore
-    private List<BankAccounts> bankAccounts;
-
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    @JsonIgnore
-    private List<Shops> shops;
-
     // Override toString để tránh LazyInitializationException
     @Override
     public String toString() {

@@ -38,8 +38,8 @@ public class BikePost {
     @Enumerated(EnumType.STRING)
     private HCMDistrict district;
 
-    @Enumerated(EnumType.STRING)
-    private BikeBrand brand;
+
+    private String brand;
 
     private String model;
     private Integer year;

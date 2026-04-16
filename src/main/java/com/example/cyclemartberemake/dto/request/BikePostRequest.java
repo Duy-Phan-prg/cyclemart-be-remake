@@ -39,8 +39,8 @@ public class BikePostRequest {
 
     // Basic bike info
     @NotNull(message = "Hãng xe không được để trống")
-    @Schema(description = "Thương hiệu xe", example = "GIANT")
-    private BikeBrand brand;
+    @NotBlank (message = "Hãng xe không được để trống")
+    private String brand;
     
     @Size(max = 100, message = "Model không được quá 100 ký tự")
     @Schema(description = "Model xe", example = "Defy Advanced 2")

@@ -10,7 +10,9 @@ import com.example.cyclemartberemake.service.CategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.List;
 
 @Service
@@ -81,6 +83,43 @@ public class CategoryServiceImpl implements CategoryService {
         validateDeleteCategory(id);
 
         categoryRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CategoryResponseDTO> getCategoryTree() {
+        // 1. Chỉ lấy các danh mục đang hoạt động (isActive = true)
+        List<Categories> activeCategories = categoryRepository.findByIsActive(true);
+
+        // 2. Map sang DTO
+        List<CategoryResponseDTO> allDtos = activeCategories.stream()
+                .map(categoryMapper::toResponse)
+                .collect(Collectors.toList());
+
+        // 3. Đưa vào Map để tra cứu nhanh bằng ID
+        Map<Integer, CategoryResponseDTO> dtoMap = allDtos.stream()
+                .collect(Collectors.toMap(CategoryResponseDTO::getId, dto -> dto));
+
+        List<CategoryResponseDTO> rootCategories = new ArrayList<>();
+
+        // 4. Lắp ráp cây
+        for (CategoryResponseDTO dto : allDtos) {
+            if (dto.getParentId() == null) {
+                // Nếu không có parent -> Nó là danh mục gốc
+                rootCategories.add(dto);
+            } else {
+                // Nếu có parent -> Tìm parent trong Map và nhét nó vào danh sách children của parent
+                CategoryResponseDTO parent = dtoMap.get(dto.getParentId());
+                if (parent != null) {
+                    if (parent.getChildren() == null) {
+                        parent.setChildren(new ArrayList<>());
+                    }
+                    parent.getChildren().add(dto);
+                }
+            }
+        }
+
+        return rootCategories;
     }
 
     private void validateCreateCategory(CategoryRequestDTO request) {

@@ -52,4 +52,11 @@ public class CategoryController {
         categoryService.deleteCategory(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/tree")
+    @Operation(summary = "Get category hierarchy tree (Active only)")
+    public ResponseEntity<List<CategoryResponseDTO>> getCategoryTree() {
+        return ResponseEntity.ok(categoryService.getCategoryTree());
+    }
+
 }

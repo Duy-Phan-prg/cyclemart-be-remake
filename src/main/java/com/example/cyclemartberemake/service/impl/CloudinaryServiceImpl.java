@@ -17,15 +17,26 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     @Override
     public String upload(MultipartFile file) {
         try {
+            // TODO: Replace with real Cloudinary config
+            // For now, return a mock URL for testing
+            if (file.isEmpty()) {
+                throw new RuntimeException("File is empty");
+            }
+            
+            // Mock URL for testing - replace with real Cloudinary upload
+            return "https://res.cloudinary.com/demo/image/upload/v1234567890/cyclemart/" + file.getOriginalFilename();
+            
+            /* Real Cloudinary code - uncomment when config is ready:
             Map uploadResult = cloudinary.uploader().upload(
                     file.getBytes(),
                     Map.of("folder", "cyclemart")
             );
 
             return uploadResult.get("secure_url").toString();
+            */
 
         } catch (Exception e) {
-            throw new RuntimeException("Upload fail");
+            throw new RuntimeException("Upload fail: " + e.getMessage());
         }
     }
 

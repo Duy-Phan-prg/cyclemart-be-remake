@@ -1,6 +1,7 @@
 package com.example.cyclemartberemake.controller;
 
-
+import com.example.cyclemartberemake.dto.request.ChangePasswordRequest;
+import com.example.cyclemartberemake.dto.request.UpdateProfileRequest;
 import com.example.cyclemartberemake.dto.request.UserLoginRequestDTO;
 import com.example.cyclemartberemake.dto.request.UserRegisterRequestDTO;
 import com.example.cyclemartberemake.dto.response.UserInfoResponseDTO;
@@ -23,6 +24,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Authentication & User Management", description = "APIs for authentication and user management")
 public class AuthController {
+
     private final UserService userService;
     private final UserMapper userMapper;
 
@@ -44,22 +46,47 @@ public class AuthController {
     @Operation(summary = "Get current user info")
     public ResponseEntity<?> getMe() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        
+
         if (principal instanceof Users) {
             Users user = (Users) principal;
             UserInfoResponseDTO response = userMapper.toResponse(user);
             return ResponseEntity.ok(response);
         }
 
+        // Nếu không có authentication hoặc là anonymousUser
         return ResponseEntity.status(401).body("Unauthorized - Please login first");
     }
-    
+
+    // API Cập nhật thông tin cơ bản
+    @PutMapping("/{id}/profile")
+    public ResponseEntity<?> updateProfile(@PathVariable("id") int userId,
+                                           @Valid @RequestBody UpdateProfileRequest request) {
+        try {
+            userService.updateProfile(userId, request);
+            return ResponseEntity.ok().body("Cập nhật thông tin cá nhân thành công.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // API Đổi mật khẩu
+    @PutMapping("/{id}/password")
+    public ResponseEntity<?> changePassword(@PathVariable("id") int userId,
+                                            @Valid @RequestBody ChangePasswordRequest request) {
+        try {
+            userService.changePassword(userId, request);
+            return ResponseEntity.ok().body("Đổi mật khẩu thành công.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @GetMapping("/users")
     @Operation(summary = "Get all users")
     public ResponseEntity<List<UserInfoResponseDTO>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
-    
+
     @GetMapping("/users/{id}")
     @Operation(summary = "Get user by ID")
     public ResponseEntity<UserInfoResponseDTO> getUserById(@PathVariable int id) {

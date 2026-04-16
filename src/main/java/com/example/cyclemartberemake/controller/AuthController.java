@@ -8,6 +8,7 @@ import com.example.cyclemartberemake.dto.response.UserLoginResponseDTO;
 import com.example.cyclemartberemake.entity.Users;
 import com.example.cyclemartberemake.mapper.UserMapper;
 import com.example.cyclemartberemake.service.UserService;
+import org.springframework.http.HttpStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -28,8 +29,8 @@ public class AuthController {
 
     @PostMapping("/register")
     @Operation(summary = "Register new user")
-    public ResponseEntity<Users> register(@Valid @RequestBody UserRegisterRequestDTO dto) {
-        return ResponseEntity.ok(userService.register(dto));
+    public ResponseEntity<UserInfoResponseDTO> register(@Valid @RequestBody UserRegisterRequestDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.register(dto));
     }
 
     @PostMapping("/login")

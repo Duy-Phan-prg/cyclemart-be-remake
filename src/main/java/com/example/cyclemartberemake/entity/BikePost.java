@@ -73,6 +73,9 @@ public class BikePost {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
     private List<BikeImage> images;
 
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
+    private List<PostPrioritySubscription> prioritySubscriptions;
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();

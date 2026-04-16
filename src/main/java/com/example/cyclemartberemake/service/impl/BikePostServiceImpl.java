@@ -2,13 +2,16 @@ package com.example.cyclemartberemake.service.impl;
 
 import com.example.cyclemartberemake.dto.request.BikePostRequest;
 import com.example.cyclemartberemake.dto.response.BikePostResponse;
+import com.example.cyclemartberemake.dto.response.PriorityPackageResponse;
 import com.example.cyclemartberemake.entity.BikeImage;
 import com.example.cyclemartberemake.entity.BikePost;
 import com.example.cyclemartberemake.entity.Categories;
+import com.example.cyclemartberemake.entity.PostPrioritySubscription;
 import com.example.cyclemartberemake.exception.CategoryValidationException;
 import com.example.cyclemartberemake.mapper.BikePostMapper;
 import com.example.cyclemartberemake.repository.BikePostRepository;
 import com.example.cyclemartberemake.repository.CategoryRepository;
+import com.example.cyclemartberemake.repository.PostPrioritySubscriptionRepository;
 import com.example.cyclemartberemake.service.BikePostService;
 import com.example.cyclemartberemake.service.CloudinaryService;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +30,7 @@ public class BikePostServiceImpl implements BikePostService {
     private final CategoryRepository categoryRepo;
     private final CloudinaryService cloudinaryService;
     private final BikePostMapper bikePostMapper;
+    private final PostPrioritySubscriptionRepository prioritySubRepo;
 
     @Override
     public BikePostResponse create(BikePostRequest req, List<MultipartFile> files) {
@@ -76,6 +81,9 @@ public class BikePostServiceImpl implements BikePostService {
                 : List.of()
         );
 
+        // Set active priority package info
+        setActivePriorityInfo(response, savedPost.getId());
+
         return response;
     }
 
@@ -94,6 +102,9 @@ public class BikePostServiceImpl implements BikePostService {
                     ? post.getImages().stream().map(BikeImage::getUrl).toList()
                     : List.of()
             );
+
+            // Set active priority package info
+            setActivePriorityInfo(response, post.getId());
         }
         
         return responses;
@@ -113,6 +124,37 @@ public class BikePostServiceImpl implements BikePostService {
                 : List.of()
         );
 
+        // Set active priority package info
+        setActivePriorityInfo(response, post.getId());
+
         return response;
+    }
+
+    private void setActivePriorityInfo(BikePostResponse response, Long postId) {
+        List<PostPrioritySubscription> activeSubs = prioritySubRepo.findActiveSubscriptionsByPostId(postId);
+
+        if (!activeSubs.isEmpty()) {
+            // Lấy gói có mức ưu tiên cao nhất
+            PostPrioritySubscription highestPriority = activeSubs.stream()
+                    .max((a, b) -> a.getPriorityPackage().getPriorityLevel()
+                            .compareTo(b.getPriorityPackage().getPriorityLevel()))
+                    .orElse(null);
+
+            if (highestPriority != null) {
+                response.setActivePriority(
+                    PriorityPackageResponse.builder()
+                            .id(highestPriority.getPriorityPackage().getId())
+                            .name(highestPriority.getPriorityPackage().getName())
+                            .description(highestPriority.getPriorityPackage().getDescription())
+                            .price(highestPriority.getPriorityPackage().getPrice())
+                            .durationDays(highestPriority.getPriorityPackage().getDurationDays())
+                            .priorityLevel(highestPriority.getPriorityPackage().getPriorityLevel())
+                            .isActive(highestPriority.getIsActive())
+                            .createdAt(highestPriority.getPriorityPackage().getCreatedAt())
+                            .updatedAt(highestPriority.getPriorityPackage().getUpdatedAt())
+                            .build()
+                );
+            }
+        }
     }
 }

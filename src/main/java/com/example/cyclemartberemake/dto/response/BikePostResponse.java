@@ -1,5 +1,6 @@
 package com.example.cyclemartberemake.dto.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Data;
 
@@ -36,6 +37,9 @@ public class BikePostResponse {
     private Boolean allowNegotiation;
 
     private List<String> images;
+
+    @Schema(description = "Priority package info (if post has active priority)")
+    private PriorityPackageResponse activePriority;
 
     private LocalDateTime createdAt;
 }

@@ -36,8 +36,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (path.equals("/api/auth/login") ||
                 path.equals("/api/auth/register") ||
                 (path.startsWith("/api/categories/") && method.equals("GET")) ||
-                (path.startsWith("/api/posts/") && method.equals("GET")) ||
-                (path.startsWith("/api/auth/users") && method.equals("GET"))) {
+                (path.startsWith("/api/posts/") && method.equals("GET"))) {
 
             System.out.println(" Skipping JWT for: " + method + " " + path);
             filterChain.doFilter(request, response);

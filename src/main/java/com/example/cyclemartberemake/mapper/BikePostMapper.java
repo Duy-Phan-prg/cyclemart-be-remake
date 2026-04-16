@@ -39,7 +39,7 @@ public interface BikePostMapper {
 
     // Helper method to create BikePostRequest from parameters
     default BikePostRequest createRequest(String title, String description, Double price, BikeStatus status,
-                                          City city, HCMDistrict district, String brand, String model,
+                                          City city, HCMDistrict district, BikeBrand brand, String model,
                                           Integer year, FrameMaterial frameMaterial, FrameSize frameSize,
                                           BrakeType brakeType, Groupset groupset, Integer mileage, Integer categoryId, Boolean allowNegotiation) {
         BikePostRequest req = new BikePostRequest();

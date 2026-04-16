@@ -19,9 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -35,11 +34,6 @@ public class BikePostServiceImpl implements BikePostService {
 
     @Override
     public BikePostResponse create(BikePostRequest req, List<MultipartFile> files) {
-
-        // Validate brand
-        if (req.getBrand() == null || req.getBrand().trim().isEmpty()) {
-            throw new RuntimeException("Thương hiệu không được để trống");
-        }
 
         // 1. Validate category exists
         Categories category = categoryRepo.findById(req.getCategoryId())
@@ -64,14 +58,14 @@ public class BikePostServiceImpl implements BikePostService {
 
         // 5. Handle image uploads (if any)
         if (files != null && !files.isEmpty()) {
-            // ✅ FIX: Thay .toList() → .collect(Collectors.toList())
             List<BikeImage> images = files.stream().map(file -> {
                 String url = cloudinaryService.upload(file);
+
                 return BikeImage.builder()
                         .url(url)
                         .post(savedPost)
                         .build();
-            }).collect(Collectors.toList());  // ✅ CHANGED
+            }).toList();
 
             savedPost.setImages(images);
             postRepo.save(savedPost);
@@ -79,12 +73,12 @@ public class BikePostServiceImpl implements BikePostService {
 
         // 6. Map Entity to Response DTO using MapStruct
         BikePostResponse response = bikePostMapper.toResponse(savedPost);
-
+        
         // Set images manually (since mapper ignores it)
         response.setImages(
-                savedPost.getImages() != null
-                        ? savedPost.getImages().stream().map(BikeImage::getUrl).collect(Collectors.toList())  // ✅ CHANGED
-                        : new ArrayList<>()  // ✅ Thay List.of() → new ArrayList<>()
+            savedPost.getImages() != null
+                ? savedPost.getImages().stream().map(BikeImage::getUrl).toList()
+                : List.of()
         );
 
         // Set active priority package info
@@ -97,22 +91,22 @@ public class BikePostServiceImpl implements BikePostService {
     public List<BikePostResponse> getAll() {
         List<BikePost> posts = postRepo.findAll();
         List<BikePostResponse> responses = bikePostMapper.toResponseList(posts);
-
+        
         // Set images for each response
         for (int i = 0; i < posts.size(); i++) {
             BikePost post = posts.get(i);
             BikePostResponse response = responses.get(i);
-
+            
             response.setImages(
-                    post.getImages() != null
-                            ? post.getImages().stream().map(BikeImage::getUrl).collect(Collectors.toList())  // ✅ CHANGED
-                            : new ArrayList<>()  // ✅ CHANGED
+                post.getImages() != null
+                    ? post.getImages().stream().map(BikeImage::getUrl).toList()
+                    : List.of()
             );
 
             // Set active priority package info
             setActivePriorityInfo(response, post.getId());
         }
-
+        
         return responses;
     }
 
@@ -122,12 +116,12 @@ public class BikePostServiceImpl implements BikePostService {
                 .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
 
         BikePostResponse response = bikePostMapper.toResponse(post);
-
+        
         // Set images
         response.setImages(
-                post.getImages() != null
-                        ? post.getImages().stream().map(BikeImage::getUrl).collect(Collectors.toList())  // ✅ CHANGED
-                        : new ArrayList<>()  // ✅ CHANGED
+            post.getImages() != null
+                ? post.getImages().stream().map(BikeImage::getUrl).toList()
+                : List.of()
         );
 
         // Set active priority package info
@@ -148,17 +142,17 @@ public class BikePostServiceImpl implements BikePostService {
 
             if (highestPriority != null) {
                 response.setActivePriority(
-                        PriorityPackageResponse.builder()
-                                .id(highestPriority.getPriorityPackage().getId())
-                                .name(highestPriority.getPriorityPackage().getName())
-                                .description(highestPriority.getPriorityPackage().getDescription())
-                                .price(highestPriority.getPriorityPackage().getPrice())
-                                .durationDays(highestPriority.getPriorityPackage().getDurationDays())
-                                .priorityLevel(highestPriority.getPriorityPackage().getPriorityLevel())
-                                .isActive(highestPriority.getIsActive())
-                                .createdAt(highestPriority.getPriorityPackage().getCreatedAt())
-                                .updatedAt(highestPriority.getPriorityPackage().getUpdatedAt())
-                                .build()
+                    PriorityPackageResponse.builder()
+                            .id(highestPriority.getPriorityPackage().getId())
+                            .name(highestPriority.getPriorityPackage().getName())
+                            .description(highestPriority.getPriorityPackage().getDescription())
+                            .price(highestPriority.getPriorityPackage().getPrice())
+                            .durationDays(highestPriority.getPriorityPackage().getDurationDays())
+                            .priorityLevel(highestPriority.getPriorityPackage().getPriorityLevel())
+                            .isActive(highestPriority.getIsActive())
+                            .createdAt(highestPriority.getPriorityPackage().getCreatedAt())
+                            .updatedAt(highestPriority.getPriorityPackage().getUpdatedAt())
+                            .build()
                 );
             }
         }

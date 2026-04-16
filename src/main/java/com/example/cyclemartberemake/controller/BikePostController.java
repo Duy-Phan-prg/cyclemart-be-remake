@@ -14,7 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/posts")
+@RequestMapping("/api/v1/posts")
 @RequiredArgsConstructor
 @Tag(name = "Bike Post Management", description = "APIs for bike post management")
 public class BikePostController {
@@ -25,7 +25,6 @@ public class BikePostController {
     @PostMapping(consumes = "multipart/form-data")
     @Operation(summary = "Create new bike post")
     public BikePostResponse create(
-
             @RequestParam("title") String title,
             @RequestParam("description") String description,
             @RequestParam("price") Double price,
@@ -34,7 +33,7 @@ public class BikePostController {
             @RequestParam("city") City city,
             @RequestParam("district") HCMDistrict district,
 
-            @RequestParam("brand") String brand,
+            @RequestParam("brand") BikeBrand brand,
             @RequestParam(value = "model", required = false) String model,
             @RequestParam(value = "year", required = false) Integer year,
 
@@ -45,42 +44,39 @@ public class BikePostController {
             @RequestParam(value = "mileage", required = false) Integer mileage,
 
             @RequestParam("categoryId") Integer categoryId,
+
+            // 🔥 THÊM DÒNG NÀY
             @RequestParam(value = "allowNegotiation", required = false, defaultValue = "false") Boolean allowNegotiation,
 
             @RequestPart(value = "images", required = false) List<MultipartFile> images
     ) {
 
-        // ✅ Validation fix
         if (title == null || title.trim().isEmpty()) {
             throw new RuntimeException("Tiêu đề không được để trống");
         }
         if (description == null || description.trim().isEmpty()) {
             throw new RuntimeException("Mô tả không được để trống");
         }
-        if (price == null || price < 0) {
-            throw new RuntimeException("Giá phải lớn hơn hoặc bằng 0");
-        }
-        if (brand == null || brand.trim().isEmpty()) {
-            throw new RuntimeException("Thương hiệu không được để trống");
+        if (price == null || price <= 0) {
+            throw new RuntimeException("Giá bán phải lớn hơn 0");
         }
 
         BikePostRequest req = mapper.createRequest(
-                title, description, price, status, city, district, brand, model, year,
-                frameMaterial, frameSize, brakeType, groupset,
-                mileage, categoryId, allowNegotiation
+                title, description, price, status, city, district,
+                brand, model, year, frameMaterial, frameSize,
+                brakeType, groupset, mileage, categoryId,
+                allowNegotiation
         );
 
         return service.create(req, images != null ? images : List.of());
     }
 
     @GetMapping
-    @Operation(summary = "Get all bike posts")
     public List<BikePostResponse> getAll() {
         return service.getAll();
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get bike post by ID")
     public BikePostResponse getById(@PathVariable Long id) {
         return service.getById(id);
     }

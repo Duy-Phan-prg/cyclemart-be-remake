@@ -17,7 +17,7 @@ public class PriorityPackageRequest {
     @Schema(description = "Mô tả gói", example = "Ưu tiên đầu tiên trong mục category")
     private String description;
 
-    @DecimalMin(value = "1", inclusive = true, message = "Giá phải lớn hơn hoặc bằng 0")
+    @DecimalMin(value = "0", inclusive = true, message = "Giá phải lớn hơn hoặc bằng 0")
     @Schema(description = "Giá của gói (VND)", example = "100000")
     private Double price;
 

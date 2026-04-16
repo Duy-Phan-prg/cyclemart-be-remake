@@ -73,4 +73,6 @@ public class BikePostRequest {
     @Min(value = 1, message = "Danh mục không hợp lệ")
     @Schema(description = "ID danh mục xe", example = "1")
     private Integer categoryId;
+
+    private Boolean allowNegotiation;
 }

@@ -7,7 +7,6 @@ import com.example.cyclemartberemake.mapper.BikePostMapper;
 import com.example.cyclemartberemake.service.BikePostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -43,11 +42,15 @@ public class BikePostController {
             @RequestParam(value = "brakeType", required = false) BrakeType brakeType,
             @RequestParam(value = "groupset", required = false) Groupset groupset,
             @RequestParam(value = "mileage", required = false) Integer mileage,
-            
+
             @RequestParam("categoryId") Integer categoryId,
+
+            // 🔥 THÊM DÒNG NÀY
+            @RequestParam(value = "allowNegotiation", required = false, defaultValue = "false") Boolean allowNegotiation,
+
             @RequestPart(value = "images", required = false) List<MultipartFile> images
     ) {
-        // Validate required fields
+
         if (title == null || title.trim().isEmpty()) {
             throw new RuntimeException("Tiêu đề không được để trống");
         }
@@ -57,17 +60,24 @@ public class BikePostController {
         if (price == null || price <= 0) {
             throw new RuntimeException("Giá bán phải lớn hơn 0");
         }
-        
-        BikePostRequest req = mapper.createRequest(title, description, price, status, city, district, 
-                                                 brand, model, year, frameMaterial, frameSize, 
-                                                 brakeType, groupset, mileage, categoryId);
-        
+
+        BikePostRequest req = mapper.createRequest(
+                title, description, price, status, city, district,
+                brand, model, year, frameMaterial, frameSize,
+                brakeType, groupset, mileage, categoryId,
+                allowNegotiation
+        );
+
         return service.create(req, images != null ? images : List.of());
     }
 
     @GetMapping
-    @Operation(summary = "Get all bike posts")
     public List<BikePostResponse> getAll() {
         return service.getAll();
+    }
+
+    @GetMapping("/{id}")
+    public BikePostResponse getById(@PathVariable Long id) {
+        return service.getById(id);
     }
 }

@@ -17,6 +17,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class BikePost {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -31,34 +32,36 @@ public class BikePost {
     @Enumerated(EnumType.STRING)
     private BikeStatus status;
 
-
     @Enumerated(EnumType.STRING)
     private City city;
-    
+
     @Enumerated(EnumType.STRING)
     private HCMDistrict district;
 
     @Enumerated(EnumType.STRING)
     private BikeBrand brand;
-    
+
     private String model;
     private Integer year;
 
     @Enumerated(EnumType.STRING)
     private FrameMaterial frameMaterial;
-    
+
     @Enumerated(EnumType.STRING)
     private FrameSize frameSize;
-    
+
     @Enumerated(EnumType.STRING)
     private BrakeType brakeType;
-    
+
     @Enumerated(EnumType.STRING)
     private Groupset groupset;
-    
+
     private Integer mileage;
 
     private Long userId;
+
+    @Column(nullable = false)
+    private Boolean allowNegotiation = false;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -70,14 +73,14 @@ public class BikePost {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
     private List<BikeImage> images;
 
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
-
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
 }

@@ -10,4 +10,6 @@ public interface BikePostService {
     BikePostResponse create(BikePostRequest req, List<MultipartFile> images);
 
     List<BikePostResponse> getAll();
+    
+    BikePostResponse getById(Long id);
 }

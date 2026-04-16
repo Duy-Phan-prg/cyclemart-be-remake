@@ -98,4 +98,21 @@ public class BikePostServiceImpl implements BikePostService {
         
         return responses;
     }
+
+    @Override
+    public BikePostResponse getById(Long id) {
+        BikePost post = postRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
+
+        BikePostResponse response = bikePostMapper.toResponse(post);
+        
+        // Set images
+        response.setImages(
+            post.getImages() != null
+                ? post.getImages().stream().map(BikeImage::getUrl).toList()
+                : List.of()
+        );
+
+        return response;
+    }
 }

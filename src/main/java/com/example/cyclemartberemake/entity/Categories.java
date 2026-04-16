@@ -1,9 +1,12 @@
 package com.example.cyclemartberemake.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Entity
 @Table(name = "categories")
@@ -20,10 +23,16 @@ public class Categories {
     private String icon;
 
     private Integer displayOrder;
-
     private Boolean isActive = true;
 
     @ManyToOne
     @JoinColumn(name = "parent_id")
     private Categories parent;
+
+    @OneToMany(mappedBy = "parent")
+    private List<Categories> children;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "category")
+    private List<BikePost> posts;
 }

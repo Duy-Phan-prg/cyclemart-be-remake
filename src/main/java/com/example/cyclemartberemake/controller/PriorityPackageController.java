@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/priority-packages")
+@RequestMapping("/api/v1/priority-packages")
 @RequiredArgsConstructor
 @Tag(name = "Priority Package Management", description = "APIs for managing priority packages")
 public class PriorityPackageController {

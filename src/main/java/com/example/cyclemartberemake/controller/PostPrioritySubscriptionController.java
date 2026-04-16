@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/post-priority-subscriptions")
+@RequestMapping("/api/v1/post-priority-subscriptions")
 @RequiredArgsConstructor
 @Tag(name = "Post Priority Subscription Management", description = "APIs for managing post priority subscriptions")
 public class PostPrioritySubscriptionController {

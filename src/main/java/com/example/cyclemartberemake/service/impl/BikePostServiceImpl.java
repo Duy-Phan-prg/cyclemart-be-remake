@@ -6,6 +6,7 @@ import com.example.cyclemartberemake.entity.BikeImage;
 import com.example.cyclemartberemake.entity.BikePost;
 import com.example.cyclemartberemake.entity.Categories;
 import com.example.cyclemartberemake.exception.CategoryValidationException;
+import com.example.cyclemartberemake.mapper.BikePostMapper;
 import com.example.cyclemartberemake.repository.BikePostRepository;
 import com.example.cyclemartberemake.repository.CategoryRepository;
 import com.example.cyclemartberemake.service.BikePostService;
@@ -24,6 +25,7 @@ public class BikePostServiceImpl implements BikePostService {
     private final BikePostRepository postRepo;
     private final CategoryRepository categoryRepo;
     private final CloudinaryService cloudinaryService;
+    private final BikePostMapper bikePostMapper;
 
     @Override
     public BikePostResponse create(BikePostRequest req, List<MultipartFile> files) {
@@ -42,21 +44,14 @@ public class BikePostServiceImpl implements BikePostService {
             throw new CategoryValidationException("Chỉ được chọn danh mục con (không có danh mục con bên trong). Vui lòng chọn danh mục cụ thể hơn.");
         }
 
-        BikePost post = BikePost.builder()
-                .title(req.getTitle())
-                .description(req.getDescription())
-                .price(req.getPrice())
-                .status(req.getStatus())
-                .city(req.getCity())
-                .district(req.getDistrict())
-                .brand(req.getBrand())
-                .model(req.getModel())
-                .category(category)
-                .createdAt(LocalDateTime.now())
-                .build();
+        // 4. Map DTO to Entity using MapStruct
+        BikePost post = bikePostMapper.toEntity(req);
+        post.setCategory(category);
+        post.setCreatedAt(LocalDateTime.now());
 
         BikePost savedPost = postRepo.save(post);
 
+        // 5. Handle image uploads
         List<BikeImage> images = files.stream().map(file -> {
             String url = cloudinaryService.upload(file);
 
@@ -69,27 +64,36 @@ public class BikePostServiceImpl implements BikePostService {
         savedPost.setImages(images);
         postRepo.save(savedPost);
 
-        return mapToResponse(post);
+        // 6. Map Entity to Response DTO using MapStruct
+        BikePostResponse response = bikePostMapper.toResponse(savedPost);
+        
+        // Set images manually (since mapper ignores it)
+        response.setImages(
+            savedPost.getImages() != null
+                ? savedPost.getImages().stream().map(BikeImage::getUrl).toList()
+                : List.of()
+        );
+
+        return response;
     }
 
     @Override
     public List<BikePostResponse> getAll() {
-        return postRepo.findAll().stream()
-                .map(this::mapToResponse)
-                .toList();
-    }
-
-    private BikePostResponse mapToResponse(BikePost post) {
-        return BikePostResponse.builder()
-                .id(post.getId())
-                .title(post.getTitle())
-                .price(post.getPrice())
-                .categoryName(post.getCategory().getName())
-                .images(
-                        post.getImages() != null
-                                ? post.getImages().stream().map(BikeImage::getUrl).toList()
-                                : List.of()
-                )
-                .build();
+        List<BikePost> posts = postRepo.findAll();
+        List<BikePostResponse> responses = bikePostMapper.toResponseList(posts);
+        
+        // Set images for each response
+        for (int i = 0; i < posts.size(); i++) {
+            BikePost post = posts.get(i);
+            BikePostResponse response = responses.get(i);
+            
+            response.setImages(
+                post.getImages() != null
+                    ? post.getImages().stream().map(BikeImage::getUrl).toList()
+                    : List.of()
+            );
+        }
+        
+        return responses;
     }
 }

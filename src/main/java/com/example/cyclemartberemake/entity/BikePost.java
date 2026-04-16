@@ -31,15 +31,24 @@ public class BikePost {
     @Enumerated(EnumType.STRING)
     private BikeStatus status;
 
+
     private String city;
     private String district;
 
     private String brand;
     private String model;
+    private Integer year;
+
+    private String frameMaterial;
+    private String frameSize;
+    private String brakeType;
+    private String groupset;
+    private Integer mileage;
 
     private Long userId;
 
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     @ManyToOne
     @JoinColumn(name = "category_id")
@@ -47,4 +56,15 @@ public class BikePost {
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
     private List<BikeImage> images;
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
 }

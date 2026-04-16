@@ -23,6 +23,7 @@ public class BikePostRequest {
     @NotNull(message = "Tình trạng xe không được để trống")
     private BikeStatus status;
 
+    // Location
     @NotBlank(message = "Thành phố không được để trống")
     @Size(min = 2, max = 50, message = "Thành phố phải từ 2-50 ký tự")
     private String city;
@@ -31,14 +32,36 @@ public class BikePostRequest {
     @Size(min = 2, max = 50, message = "Quận/Huyện phải từ 2-50 ký tự")
     private String district;
 
+    // Basic bike info
     @NotBlank(message = "Hãng xe không được để trống")
     @Size(min = 2, max = 50, message = "Hãng xe phải từ 2-50 ký tự")
     private String brand;
     
-    @Size(max = 50, message = "Model không được quá 50 ký tự")
+    @Size(max = 100, message = "Model không được quá 100 ký tự")
     private String model;
+    
+    @Min(value = 1990, message = "Năm sản xuất phải >= 1990")
+    @Max(value = 2030, message = "Năm sản xuất không hợp lệ")
+    private Integer year;
+
+    // Technical specs
+    @Size(max = 50, message = "Chất liệu khung không được quá 50 ký tự")
+    private String frameMaterial; // Carbon, Aluminum, Steel, etc.
+    
+    @Size(max = 20, message = "Size khung không được quá 20 ký tự")
+    private String frameSize; // 56cm, L, XL, etc.
+    
+    @Size(max = 50, message = "Loại phanh không được quá 50 ký tự")
+    private String brakeType; // Disc hydraulic, Rim brake, etc.
+    
+    @Size(max = 50, message = "Groupset không được quá 50 ký tự")
+    private String groupset; // Shimano 105, SRAM, etc.
+    
+    @Min(value = 0, message = "Số km phải >= 0")
+    @Max(value = 999999, message = "Số km không hợp lệ")
+    private Integer mileage; // Số km đã đi
 
     @NotNull(message = "Danh mục không được để trống")
     @Min(value = 1, message = "Danh mục không hợp lệ")
-    private Integer categoryId; // Chỉ cho phép category con (leaf category)
+    private Integer categoryId; // Loại xe: Road bike, MTB, Gravel (chỉ cho phép category con)
 }

@@ -51,18 +51,20 @@ public class BikePostServiceImpl implements BikePostService {
 
         BikePost savedPost = postRepo.save(post);
 
-        // 5. Handle image uploads
-        List<BikeImage> images = files.stream().map(file -> {
-            String url = cloudinaryService.upload(file);
+        // 5. Handle image uploads (if any)
+        if (files != null && !files.isEmpty()) {
+            List<BikeImage> images = files.stream().map(file -> {
+                String url = cloudinaryService.upload(file);
 
-            return BikeImage.builder()
-                    .url(url)
-                    .post(savedPost)
-                    .build();
-        }).toList();
+                return BikeImage.builder()
+                        .url(url)
+                        .post(savedPost)
+                        .build();
+            }).toList();
 
-        savedPost.setImages(images);
-        postRepo.save(savedPost);
+            savedPost.setImages(images);
+            postRepo.save(savedPost);
+        }
 
         // 6. Map Entity to Response DTO using MapStruct
         BikePostResponse response = bikePostMapper.toResponse(savedPost);

@@ -32,10 +32,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String method = request.getMethod();
         System.out.println(" JWT Filter - " + method + " " + path);
 
-        // Skip JWT for public endpoints
-        if ((path.startsWith("/api/auth/") && !path.equals("/api/auth/me")) ||
-            (path.startsWith("/api/categories/") && method.equals("GET")) ||
-            (path.startsWith("/api/auth/users/") && method.equals("GET"))) {
+        // Kết hợp logic: Chỉ skip JWT cho login, register và các public GET API từ nhánh main
+        if (path.equals("/api/auth/login") ||
+                path.equals("/api/auth/register") ||
+                (path.startsWith("/api/categories/") && method.equals("GET")) ||
+                (path.startsWith("/api/posts/") && method.equals("GET")) ||
+                (path.startsWith("/api/auth/users") && method.equals("GET"))) {
+
             System.out.println(" Skipping JWT for: " + method + " " + path);
             filterChain.doFilter(request, response);
             return;

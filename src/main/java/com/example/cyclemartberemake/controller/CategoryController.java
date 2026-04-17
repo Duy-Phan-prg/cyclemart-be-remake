@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/categories")
+@RequestMapping("/api/v1/categories")
 @RequiredArgsConstructor
 @Tag(name = "Category Management", description = "APIs for category management")
 public class CategoryController {
@@ -52,4 +52,11 @@ public class CategoryController {
         categoryService.deleteCategory(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/tree")
+    @Operation(summary = "Get category hierarchy tree (Active only)")
+    public ResponseEntity<List<CategoryResponseDTO>> getCategoryTree() {
+        return ResponseEntity.ok(categoryService.getCategoryTree());
+    }
+
 }

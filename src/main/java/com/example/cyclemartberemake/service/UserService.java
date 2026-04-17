@@ -1,19 +1,26 @@
 package com.example.cyclemartberemake.service;
 
+import com.example.cyclemartberemake.dto.request.ChangePasswordRequest;
+import com.example.cyclemartberemake.dto.request.UpdateProfileRequest;
 import com.example.cyclemartberemake.dto.request.UserLoginRequestDTO;
 import com.example.cyclemartberemake.dto.request.UserRegisterRequestDTO;
 import com.example.cyclemartberemake.dto.response.UserInfoResponseDTO;
 import com.example.cyclemartberemake.dto.response.UserLoginResponseDTO;
+import com.example.cyclemartberemake.entity.Users;
+
 import java.util.List;
 
 public interface UserService {
 
-    UserInfoResponseDTO register(UserRegisterRequestDTO dto);
+    Users register(UserRegisterRequestDTO dto);
 
     UserLoginResponseDTO login(UserLoginRequestDTO dto);
     
     List<UserInfoResponseDTO> getAllUsers();
     
     UserInfoResponseDTO getUserById(int id);
+
+    void updateProfile(int userId, UpdateProfileRequest request);
+    void changePassword(int userId, ChangePasswordRequest request);
 
 }

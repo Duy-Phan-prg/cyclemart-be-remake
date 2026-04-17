@@ -63,6 +63,17 @@ public class BikePost {
     @Column(nullable = false)
     private Boolean allowNegotiation = false;
 
+    // 🔥 MODERATION
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PostStatus postStatus;
+
+    private Long approvedBy;
+    private LocalDateTime approvedAt;
+
+    @Column(columnDefinition = "TEXT")
+    private String rejectionReason;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -80,6 +91,7 @@ public class BikePost {
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        this.postStatus = PostStatus.PENDING; // 🔥 mặc định
     }
 
     @PreUpdate

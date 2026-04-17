@@ -1,5 +1,5 @@
 package com.example.cyclemartberemake.entity;
 
 public enum Role {
-    BUYER, SELLER
+    BUYER, SELLER, ADMIN
 }

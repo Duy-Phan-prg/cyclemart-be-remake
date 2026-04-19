@@ -12,19 +12,15 @@ import java.util.List;
 public class BikePostResponse {
 
     private Long id;
-
-    // ================= BASIC =================
     private String title;
     private String description;
     private Double price;
 
     private String status;
 
-    // ================= LOCATION =================
     private String city;
     private String district;
 
-    // ================= BIKE INFO =================
     private String brand;
     private String model;
     private Integer year;
@@ -36,29 +32,14 @@ public class BikePostResponse {
 
     private Integer mileage;
 
-    // ================= CATEGORY =================
     private String categoryName;
 
-    // ================= BUSINESS =================
     private Boolean allowNegotiation;
 
-    // ================= MEDIA =================
     private List<String> images;
 
-    // ================= PRIORITY =================
     @Schema(description = "Priority package info (if post has active priority)")
     private PriorityPackageResponse activePriority;
 
-    // ================= MODERATION =================
-    @Schema(description = "Trạng thái duyệt bài", example = "PENDING / APPROVED / REJECTED")
-    private String postStatus;
-
-    @Schema(description = "Hiển thị trạng thái duyệt bài", example = "Chờ duyệt / Đã duyệt / Bị từ chối")
-    private String postStatusDisplay;
-
-    @Schema(description = "Lý do từ chối (nếu bị reject)")
-    private String rejectionReason;
-
-    // ================= TIME =================
     private LocalDateTime createdAt;
 }

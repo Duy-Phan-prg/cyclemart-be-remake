@@ -20,13 +20,12 @@ public interface CategoryRepository extends JpaRepository<Categories, Integer> {
     // Kiểm tra có danh mục con không
     boolean existsByParentId(Integer parentId);
     
-    // Đếm số bike posts theo category
-    @Query("SELECT COUNT(bp) FROM BikePost bp WHERE bp.category.id = :categoryId")
-    long countBikePostsByCategory(@Param("categoryId") Integer categoryId);
-    
     // Tìm theo parent
     List<Categories> findByParent(Categories parent);
-
+    
+    // Tìm root categories (không có parent)
+    List<Categories> findByParentIsNull();
+    
     // Tìm theo parent ID
     @Query("SELECT c FROM Categories c WHERE c.parent.id = :parentId")
     List<Categories> findByParentId(@Param("parentId") Integer parentId);

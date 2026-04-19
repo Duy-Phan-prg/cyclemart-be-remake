@@ -1,5 +1,5 @@
 package com.example.cyclemartberemake.entity;
 
 public enum UserStatus {
-    ACTIVE, BANNED, SUSPENDED,INACTIVE
+    ACTIVE, BANNED, SUSPENDED
 }

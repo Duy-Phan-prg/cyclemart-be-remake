@@ -74,18 +74,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(response);
     }
 
-    @ExceptionHandler(org.springframework.data.mapping.PropertyReferenceException.class)
-    public ResponseEntity<Map<String, Object>> handlePropertyReferenceException(
-            org.springframework.data.mapping.PropertyReferenceException ex) {
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("status", "error");
-        response.put("message", "Trường sort không hợp lệ. Các trường hợp lệ: id, title, price, createdAt, updatedAt, postStatus, brand, city, year");
-        response.put("validSortFields", new String[]{"id", "title", "price", "createdAt", "updatedAt", "postStatus", "brand", "city", "year"});
-        
-        return ResponseEntity.badRequest().body(response);
-    }
-
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntimeException(
             RuntimeException ex) {

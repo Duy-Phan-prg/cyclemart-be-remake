@@ -15,24 +15,19 @@ public interface BikePostMapper {
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "userId", ignore = true)
     @Mapping(target = "images", ignore = true)
+    @Mapping(target = "postStatus", ignore = true)
+    @Mapping(target = "approvedBy", ignore = true)
+    @Mapping(target = "approvedAt", ignore = true)
+    @Mapping(target = "rejectionReason", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "prioritySubscriptions", ignore = true)
     BikePost toEntity(BikePostRequest request);
 
     @Mapping(source = "category.name", target = "categoryName")
-
-    @Mapping(source = "status", target = "status")
-    @Mapping(source = "city", target = "city")
-    @Mapping(source = "district", target = "district")
-    @Mapping(source = "brand", target = "brand")
-    @Mapping(source = "frameMaterial", target = "frameMaterial")
-    @Mapping(source = "frameSize", target = "frameSize")
-    @Mapping(source = "brakeType", target = "brakeType")
-    @Mapping(source = "groupset", target = "groupset")
-
-    @Mapping(source = "allowNegotiation", target = "allowNegotiation")
-
-    @Mapping(target = "images", ignore = true)
+    @Mapping(source = "postStatus", target = "postStatusDisplay", qualifiedByName = "mapPostStatus")
+    @Mapping(source = "rejectionReason", target = "rejectionReason")
+    @Mapping(source = "images", target = "images", qualifiedByName = "mapImages")
     BikePostResponse toResponse(BikePost bikePost);
 
     List<BikePostResponse> toResponseList(List<BikePost> bikePosts);
@@ -60,5 +55,27 @@ public interface BikePostMapper {
         req.setCategoryId(categoryId);
         req.setAllowNegotiation(allowNegotiation);
         return req;
+    }
+
+    @org.mapstruct.Named("mapPostStatus")
+    default String mapPostStatus(PostStatus status) {
+        if (status == null) return null;
+        return switch (status) {
+            case PENDING -> "Chờ duyệt";
+            case APPROVED -> "Đã duyệt";
+            case REJECTED -> "Bị từ chối";
+            case SOLD -> "Đã bán";
+            case HIDDEN -> "Ẩn bài";
+        };
+    }
+
+    @org.mapstruct.Named("mapImages")
+    default List<String> mapImages(List<BikeImage> images) {
+        if (images == null || images.isEmpty()) {
+            return List.of();
+        }
+        return images.stream()
+                .map(BikeImage::getUrl)
+                .toList();
     }
 }

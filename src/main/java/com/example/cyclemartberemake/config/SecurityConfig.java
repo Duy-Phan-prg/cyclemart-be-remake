@@ -46,7 +46,11 @@ public class SecurityConfig {
                                 "/api/auth/register",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/api/categories/**" // Cho phép public categories
+                                "/api/v1/categories/**",
+                                "/api/v1/posts/**",
+                                "/api/v1/priority-packages/**",
+                                "/api/v1/post-priority-subscriptions/**",
+                                "/api/v1/admin/**"
                         ).permitAll()
                         .requestMatchers("/api/auth/me", "/api/auth/profile", "/api/auth/password").authenticated()
                         .anyRequest().authenticated()

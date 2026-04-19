@@ -19,8 +19,8 @@ public class CreatePriorityPackageRequest {
     private String description;
 
     @NotNull(message = "Giá không được để trống")
-    @DecimalMin(value = "0", inclusive = false, message = "Giá phải lớn hơn 0")
-    @Schema(description = "Giá của gói (VND)", example = "100000")
+    @DecimalMin(value = "0", inclusive = true, message = "Giá phải lớn hơn hoặc bằng 0")
+    @Schema(description = "Giá của gói (VND)", example = "0")
     private Double price;
 
     @NotNull(message = "Thời hạn không được để trống")

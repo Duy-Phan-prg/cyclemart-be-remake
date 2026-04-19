@@ -1,12 +1,15 @@
 package com.example.cyclemartberemake.controller;
 
 import com.example.cyclemartberemake.dto.response.BikePostResponse;
+import com.example.cyclemartberemake.dto.response.UserInfoResponseDTO;
+import com.example.cyclemartberemake.entity.UserTracking; // Cần import cái này
 import com.example.cyclemartberemake.service.BikePostService;
+import com.example.cyclemartberemake.service.UserService; // Cần import cái này
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Page; // Cần import Page
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -19,32 +22,21 @@ import org.springframework.web.bind.annotation.*;
 public class AdminController {
 
     private final BikePostService bikePostService;
+    private final UserService userService; // Đảm bảo đã khai báo UserService ở đây
+
+    // ================== QUẢN LÝ BÀI ĐĂNG ==================
 
     @GetMapping("/posts")
     @Operation(summary = "Get all posts for admin (all statuses)")
     public Page<BikePostResponse> getAllPosts(
-            @Parameter(description = "Page number (0-based)", example = "0")
             @RequestParam(defaultValue = "0") int page,
-            
-            @Parameter(description = "Page size", example = "20")
             @RequestParam(defaultValue = "20") int size,
-            
-            @Parameter(description = "Sort field", example = "createdAt")
             @RequestParam(defaultValue = "createdAt") String sortBy,
-            
-            @Parameter(description = "Sort direction", example = "desc")
             @RequestParam(defaultValue = "desc") String sortDir
     ) {
-        // Validate sort field to prevent errors
         String validSortBy = validateSortField(sortBy);
-        
-        // Create sort direction
-        Sort.Direction direction = sortDir.equalsIgnoreCase("asc") ? 
-            Sort.Direction.ASC : Sort.Direction.DESC;
-        
-        // Create pageable with validated parameters
+        Sort.Direction direction = sortDir.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validSortBy));
-        
         return bikePostService.getAllForAdmin(pageable);
     }
 
@@ -59,12 +51,46 @@ public class AdminController {
     public void rejectPost(@PathVariable Long id, @RequestParam String reason) {
         bikePostService.reject(id, reason);
     }
-    
-    /**
-     * Validate sort field to prevent "No property found" errors
-     */
+
+    // ================== QUẢN LÝ NGƯỜI DÙNG ==================
+
+    @GetMapping("/users")
+    @Operation(summary = "Get all users for admin")
+    public Page<UserInfoResponseDTO> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir
+    ) {
+        Sort.Direction direction = sortDir.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        return userService.getAllUsersForAdmin(pageable); // Gọi thông qua userService
+    }
+
+    @PutMapping("/users/{id}/ban")
+    @Operation(summary = "Ban a user account")
+    public void banUser(@PathVariable Integer id, @RequestParam String reason) {
+        userService.banUser(id, reason); // Gọi thông qua userService
+    }
+
+    @PutMapping("/users/{id}/unban")
+    @Operation(summary = "Unban a user account")
+    public void unbanUser(@PathVariable Integer id) {
+        userService.unbanUser(id); // Gọi thông qua userService
+    }
+
+    @GetMapping("/users/{id}/tracking")
+    @Operation(summary = "Get tracking logs of a specific user")
+    public Page<UserTracking> getUserTracking(
+            @PathVariable Integer id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return userService.getUserTrackingLogs(id, pageable); //
+    }
+
     private String validateSortField(String sortBy) {
-        // List of valid BikePost fields for sorting
         return switch (sortBy.toLowerCase()) {
             case "id" -> "id";
             case "title" -> "title";
@@ -77,7 +103,7 @@ public class AdminController {
             case "brand" -> "brand";
             case "city" -> "city";
             case "year" -> "year";
-            default -> "createdAt"; // Default fallback
+            default -> "createdAt";
         };
     }
 }

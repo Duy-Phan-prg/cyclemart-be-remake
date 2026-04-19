@@ -41,7 +41,6 @@ public class BikePostServiceImpl implements BikePostService {
         BikePost post = mapper.toEntity(req);
         post.setCategory(category);
 
-        // 🔥 IMPORTANT - Use real JWT user
         post.setUserId(getCurrentUserId());
         post.setPostStatus(PostStatus.PENDING);
         post.setCreatedAt(LocalDateTime.now());
@@ -56,8 +55,8 @@ public class BikePostServiceImpl implements BikePostService {
     // ================= GET ALL =================
     @Override
     public Page<BikePostResponse> getAll(Pageable pageable) {
-        // 🔥 CHỈ LẤY BÀI ĐÃ DUYỆT
-        Page<BikePost> posts = postRepo.findByPostStatus(PostStatus.APPROVED, pageable);
+        // 🔥 Đã SỬ DỤNG QUERY SẮP XẾP THEO ƯU TIÊN (Priority > Date)
+        Page<BikePost> posts = postRepo.findApprovedPostsWithPriority(PostStatus.APPROVED, pageable);
         return posts.map(this::buildResponse);
     }
 
@@ -102,7 +101,6 @@ public class BikePostServiceImpl implements BikePostService {
         post.setCategory(category);
         post.setAllowNegotiation(req.getAllowNegotiation());
 
-        // 🔥 Reset to PENDING when edited
         post.setPostStatus(PostStatus.PENDING);
         post.setApprovedBy(null);
         post.setApprovedAt(null);
@@ -125,7 +123,6 @@ public class BikePostServiceImpl implements BikePostService {
         BikePost post = postRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
 
-        // Check ownership
         Long currentUserId = getCurrentUserId();
         if (!post.getUserId().equals(currentUserId)) {
             throw new RuntimeException("Bạn không có quyền xóa bài đăng này");
@@ -144,9 +141,10 @@ public class BikePostServiceImpl implements BikePostService {
 
     // ================= SEARCH =================
     @Override
-    public Page<BikePostResponse> search(String keyword, Double minPrice, Double maxPrice, 
-                                        String brand, String city, Pageable pageable) {
-        Page<BikePost> posts = postRepo.searchPosts(keyword, minPrice, maxPrice, brand, city, pageable);
+    public Page<BikePostResponse> search(String keyword, Double minPrice, Double maxPrice,
+                                         String brand, String city, Pageable pageable) {
+        // 🔥  SỬ DỤNG QUERY TÌM KIẾM CÓ SẮP XẾP THEO ƯU TIÊN (Priority > Date)
+        Page<BikePost> posts = postRepo.searchPostsWithPriority(keyword, minPrice, maxPrice, brand, city, pageable);
         return posts.map(this::buildResponse);
     }
 
@@ -220,12 +218,11 @@ public class BikePostServiceImpl implements BikePostService {
 
         BikePostResponse response = mapper.toResponse(post);
 
-        // 🔥 SET POST STATUS (both enum and display)
         if (post.getPostStatus() != null) {
             response.setPostStatus(post.getPostStatus().name());
         }
 
-        // 🔥 PRIORITY
+        // Đã tự động gắn PriorityPackageResponse nếu bài post đang sở hữu gói hoạt động
         setActivePriorityInfo(response, post.getId());
 
         return response;

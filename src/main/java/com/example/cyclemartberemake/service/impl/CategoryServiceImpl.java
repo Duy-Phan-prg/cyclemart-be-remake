@@ -175,14 +175,9 @@ public class CategoryServiceImpl implements CategoryService {
         Categories category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new CategoryValidationException("Danh mục không tồn tại"));
 
-        // Kiểm tra có danh mục con không
         if (categoryRepository.existsByParentId(categoryId)) {
             throw new CategoryValidationException("Không thể xóa danh mục có danh mục con. Vui lòng xóa danh mục con trước.");
         }
 
-        // Kiểm tra có bike posts nào đang sử dụng category này không
-        if (categoryRepository.countBikePostsByCategory(categoryId) > 0) {
-            throw new CategoryValidationException("Không thể xóa danh mục đang có bài đăng. Vui lòng di chuyển hoặc xóa các bài đăng trước.");
-        }
     }
 }

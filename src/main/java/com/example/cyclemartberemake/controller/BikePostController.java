@@ -8,10 +8,6 @@ import com.example.cyclemartberemake.service.BikePostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -49,6 +45,7 @@ public class BikePostController {
 
             @RequestParam("categoryId") Integer categoryId,
 
+            // 🔥 THÊM DÒNG NÀY
             @RequestParam(value = "allowNegotiation", required = false, defaultValue = "false") Boolean allowNegotiation,
 
             @RequestPart(value = "images", required = false) List<MultipartFile> images
@@ -75,141 +72,12 @@ public class BikePostController {
     }
 
     @GetMapping
-    @Operation(summary = "Get all approved bike posts with pagination")
-    public Page<BikePostResponse> getAll(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "createdAt") String sort,
-            @RequestParam(defaultValue = "desc") String direction
-    ) {
-        // Validate sort field
-        String validSort = validateSortField(sort);
-        
-        // Create sort direction
-        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? 
-            Sort.Direction.ASC : Sort.Direction.DESC;
-        
-        // Create pageable
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, validSort));
-        
-        return service.getAll(pageable);
+    public List<BikePostResponse> getAll() {
+        return service.getAll();
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get bike post by ID")
     public BikePostResponse getById(@PathVariable Long id) {
         return service.getById(id);
-    }
-
-    @PutMapping(value = "/{id}", consumes = "multipart/form-data")
-    @Operation(summary = "Update bike post")
-    public BikePostResponse update(
-            @PathVariable Long id,
-            @RequestParam("title") String title,
-            @RequestParam("description") String description,
-            @RequestParam("price") Double price,
-            @RequestParam("status") BikeStatus status,
-
-            @RequestParam("city") City city,
-            @RequestParam("district") HCMDistrict district,
-
-            @RequestParam("brand") BikeBrand brand,
-            @RequestParam(value = "model", required = false) String model,
-            @RequestParam(value = "year", required = false) Integer year,
-
-            @RequestParam(value = "frameMaterial", required = false) FrameMaterial frameMaterial,
-            @RequestParam(value = "frameSize", required = false) FrameSize frameSize,
-            @RequestParam(value = "brakeType", required = false) BrakeType brakeType,
-            @RequestParam(value = "groupset", required = false) Groupset groupset,
-            @RequestParam(value = "mileage", required = false) Integer mileage,
-
-            @RequestParam("categoryId") Integer categoryId,
-
-            @RequestParam(value = "allowNegotiation", required = false, defaultValue = "false") Boolean allowNegotiation,
-
-            @RequestPart(value = "images", required = false) List<MultipartFile> images
-    ) {
-
-        BikePostRequest req = mapper.createRequest(
-                title, description, price, status, city, district,
-                brand, model, year, frameMaterial, frameSize,
-                brakeType, groupset, mileage, categoryId,
-                allowNegotiation
-        );
-
-        return service.update(id, req, images);
-    }
-
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Delete bike post")
-    public void delete(@PathVariable Long id) {
-        service.delete(id);
-    }
-
-    @GetMapping("/my-posts")
-    @Operation(summary = "Get current user's bike posts (all statuses)")
-    public Page<BikePostResponse> getMyPosts(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "createdAt") String sort,
-            @RequestParam(defaultValue = "desc") String direction
-    ) {
-        // Validate sort field
-        String validSort = validateSortField(sort);
-        
-        // Create sort direction
-        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? 
-            Sort.Direction.ASC : Sort.Direction.DESC;
-        
-        // Create pageable
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, validSort));
-        
-        return service.getMyPosts(pageable);
-    }
-
-    @GetMapping("/search")
-    @Operation(summary = "Search bike posts")
-    public Page<BikePostResponse> search(
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Double minPrice,
-            @RequestParam(required = false) Double maxPrice,
-            @RequestParam(required = false) String brand,
-            @RequestParam(required = false) String city,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "createdAt") String sort,
-            @RequestParam(defaultValue = "desc") String direction
-    ) {
-        // Validate sort field
-        String validSort = validateSortField(sort);
-        
-        // Create sort direction
-        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? 
-            Sort.Direction.ASC : Sort.Direction.DESC;
-        
-        // Create pageable
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, validSort));
-        
-        return service.search(keyword, minPrice, maxPrice, brand, city, pageable);
-    }
-    
-    /**
-     * Validate sort field to prevent "No property found" errors
-     */
-    private String validateSortField(String sort) {
-        return switch (sort.toLowerCase()) {
-            case "id" -> "id";
-            case "title" -> "title";
-            case "price" -> "price";
-            case "createdat", "created_at" -> "createdAt";
-            case "updatedat", "updated_at" -> "updatedAt";
-            case "poststatus", "post_status" -> "postStatus";
-            case "approvedat", "approved_at" -> "approvedAt";
-            case "userid", "user_id" -> "userId";
-            case "brand" -> "brand";
-            case "city" -> "city";
-            case "year" -> "year";
-            default -> "createdAt"; // Default fallback
-        };
     }
 }

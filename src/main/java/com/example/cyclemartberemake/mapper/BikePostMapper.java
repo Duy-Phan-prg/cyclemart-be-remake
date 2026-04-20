@@ -25,9 +25,18 @@ public interface BikePostMapper {
     BikePost toEntity(BikePostRequest request);
 
     @Mapping(source = "category.name", target = "categoryName")
+    @Mapping(source = "postStatus", target = "postStatus", qualifiedByName = "mapPostStatusEnum")
     @Mapping(source = "postStatus", target = "postStatusDisplay", qualifiedByName = "mapPostStatus")
-    @Mapping(source = "rejectionReason", target = "rejectionReason")
+    @Mapping(source = "status", target = "status", qualifiedByName = "mapBikeStatusEnum")
+    @Mapping(source = "city", target = "city", qualifiedByName = "mapCityEnum")
+    @Mapping(source = "district", target = "district", qualifiedByName = "mapDistrictEnum")
+    @Mapping(source = "brand", target = "brand", qualifiedByName = "mapBrandEnum")
+    @Mapping(source = "frameMaterial", target = "frameMaterial", qualifiedByName = "mapFrameMaterialEnum")
+    @Mapping(source = "frameSize", target = "frameSize", qualifiedByName = "mapFrameSizeEnum")
+    @Mapping(source = "brakeType", target = "brakeType", qualifiedByName = "mapBrakeTypeEnum")
+    @Mapping(source = "groupset", target = "groupset", qualifiedByName = "mapGroupsetEnum")
     @Mapping(source = "images", target = "images", qualifiedByName = "mapImages")
+    @Mapping(target = "activePriority", ignore = true) // Will be set manually in service
     BikePostResponse toResponse(BikePost bikePost);
 
     List<BikePostResponse> toResponseList(List<BikePost> bikePosts);
@@ -67,6 +76,51 @@ public interface BikePostMapper {
             case SOLD -> "Đã bán";
             case HIDDEN -> "Ẩn bài";
         };
+    }
+
+    @org.mapstruct.Named("mapPostStatusEnum")
+    default String mapPostStatusEnum(PostStatus status) {
+        return status != null ? status.name() : null;
+    }
+
+    @org.mapstruct.Named("mapBikeStatusEnum")
+    default String mapBikeStatusEnum(BikeStatus status) {
+        return status != null ? status.name() : null;
+    }
+
+    @org.mapstruct.Named("mapCityEnum")
+    default String mapCityEnum(City city) {
+        return city != null ? city.name() : null;
+    }
+
+    @org.mapstruct.Named("mapDistrictEnum")
+    default String mapDistrictEnum(HCMDistrict district) {
+        return district != null ? district.name() : null;
+    }
+
+    @org.mapstruct.Named("mapBrandEnum")
+    default String mapBrandEnum(BikeBrand brand) {
+        return brand != null ? brand.name() : null;
+    }
+
+    @org.mapstruct.Named("mapFrameMaterialEnum")
+    default String mapFrameMaterialEnum(FrameMaterial material) {
+        return material != null ? material.name() : null;
+    }
+
+    @org.mapstruct.Named("mapFrameSizeEnum")
+    default String mapFrameSizeEnum(FrameSize size) {
+        return size != null ? size.name() : null;
+    }
+
+    @org.mapstruct.Named("mapBrakeTypeEnum")
+    default String mapBrakeTypeEnum(BrakeType type) {
+        return type != null ? type.name() : null;
+    }
+
+    @org.mapstruct.Named("mapGroupsetEnum")
+    default String mapGroupsetEnum(Groupset groupset) {
+        return groupset != null ? groupset.name() : null;
     }
 
     @org.mapstruct.Named("mapImages")

@@ -46,6 +46,10 @@ public class Users {
 
     private LocalDateTime lastLoginAt;
 
+    @Column(nullable = false)
+    private Integer point = 0;
+
+
     // Override toString để tránh LazyInitializationException
     @Override
     public String toString() {

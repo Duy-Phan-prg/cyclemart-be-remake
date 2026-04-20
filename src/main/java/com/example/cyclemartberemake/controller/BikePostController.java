@@ -6,6 +6,7 @@ import com.example.cyclemartberemake.entity.*;
 import com.example.cyclemartberemake.mapper.BikePostMapper;
 import com.example.cyclemartberemake.service.BikePostService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -77,9 +78,17 @@ public class BikePostController {
     @GetMapping
     @Operation(summary = "Get all approved bike posts with pagination")
     public Page<BikePostResponse> getAll(
+            @Parameter(description = "Page number (0-based)", example = "0")
             @RequestParam(defaultValue = "0") int page,
+            
+            @Parameter(description = "Page size", example = "20")
             @RequestParam(defaultValue = "20") int size,
+            
+            @Parameter(description = "Sort field: id, title, price, createdAt, updatedAt, postStatus, approvedAt, userId, brand, city, year", 
+                      example = "createdAt")
             @RequestParam(defaultValue = "createdAt") String sort,
+            
+            @Parameter(description = "Sort direction: asc or desc", example = "desc")
             @RequestParam(defaultValue = "desc") String direction
     ) {
         // Validate sort field
@@ -149,9 +158,17 @@ public class BikePostController {
     @GetMapping("/my-posts")
     @Operation(summary = "Get current user's bike posts (all statuses)")
     public Page<BikePostResponse> getMyPosts(
+            @Parameter(description = "Page number (0-based)", example = "0")
             @RequestParam(defaultValue = "0") int page,
+            
+            @Parameter(description = "Page size", example = "20")
             @RequestParam(defaultValue = "20") int size,
+            
+            @Parameter(description = "Sort field: id, title, price, createdAt, updatedAt, postStatus, approvedAt, userId, brand, city, year", 
+                      example = "createdAt")
             @RequestParam(defaultValue = "createdAt") String sort,
+            
+            @Parameter(description = "Sort direction: asc or desc", example = "desc")
             @RequestParam(defaultValue = "desc") String direction
     ) {
         // Validate sort field
@@ -170,14 +187,32 @@ public class BikePostController {
     @GetMapping("/search")
     @Operation(summary = "Search bike posts")
     public Page<BikePostResponse> search(
+            @Parameter(description = "Search keyword")
             @RequestParam(required = false) String keyword,
+            
+            @Parameter(description = "Minimum price")
             @RequestParam(required = false) Double minPrice,
+            
+            @Parameter(description = "Maximum price")
             @RequestParam(required = false) Double maxPrice,
+            
+            @Parameter(description = "Bike brand")
             @RequestParam(required = false) String brand,
+            
+            @Parameter(description = "City")
             @RequestParam(required = false) String city,
+            
+            @Parameter(description = "Page number (0-based)", example = "0")
             @RequestParam(defaultValue = "0") int page,
+            
+            @Parameter(description = "Page size", example = "20")
             @RequestParam(defaultValue = "20") int size,
+            
+            @Parameter(description = "Sort field: id, title, price, createdAt, updatedAt, postStatus, approvedAt, userId, brand, city, year", 
+                      example = "createdAt")
             @RequestParam(defaultValue = "createdAt") String sort,
+            
+            @Parameter(description = "Sort direction: asc or desc", example = "desc")
             @RequestParam(defaultValue = "desc") String direction
     ) {
         // Validate sort field

@@ -18,5 +18,6 @@ public class UserInfoResponseDTO {
     private String roleDisplay;
     private String status;
     private String statusDisplay;
+    private Integer point;  // 🔥 Thêm điểm tích lũy
     private LocalDateTime createdAt;
 }

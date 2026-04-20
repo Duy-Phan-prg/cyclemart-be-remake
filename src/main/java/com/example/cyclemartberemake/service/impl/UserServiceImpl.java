@@ -130,6 +130,41 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public void addPoint(Long userId, int point) {
+
+        Users user = userRepository.findById(userId.intValue())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setPoint(user.getPoint() + point);
+
+        userRepository.save(user);
+    }
+
+    @Override
+    public Users getCurrentUser() {
+
+        Object principal = org.springframework.security.core.context.SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+
+        if (principal instanceof String) {
+            int id = Integer.parseInt((String) principal);
+            return userRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+        }
+
+        String principalStr = principal.toString();
+        String idStr = principalStr.substring(principalStr.indexOf("id=") + 3, principalStr.indexOf(","));
+
+        int id = Integer.parseInt(idStr);
+
+        return userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+
+    @Override
     public List<UserInfoResponseDTO> getAllUsers() {
         List<Users> users = userRepository.findAll();
         return userMapper.toResponseList(users);
@@ -142,4 +177,6 @@ public class UserServiceImpl implements UserService {
 
         return userMapper.toResponse(user);
     }
+
+
 }

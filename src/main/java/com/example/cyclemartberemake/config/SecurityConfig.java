@@ -45,12 +45,18 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/auth/register",
                                 "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/api/categories/**",
-                                "/api/v1/priority-packages/**",
-                                "/api/v1/post-priority-subscriptions/**"
+                                "/v3/api-docs/**"
                         ).permitAll()
-                        .requestMatchers("/api/auth/me", "/api/auth/profile", "/api/auth/password").authenticated()
+                        // Public GET endpoints
+                        .requestMatchers("GET", "/api/v1/categories/**").permitAll()
+                        .requestMatchers("GET", "/api/v1/posts/**").permitAll()
+                        .requestMatchers("GET", "/api/auth/users/**").permitAll()
+                        .requestMatchers("GET", "/api/v1/priority-packages/active").permitAll()
+                        // Payment IPN endpoint (MoMo callback)
+                        .requestMatchers("POST", "/api/v1/payments/momo/ipn").permitAll()
+                        // Admin endpoints - require authentication
+                        .requestMatchers("/api/v1/admin/**").authenticated()
+                        // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -58,11 +64,9 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // 🔥 Bean cấu hình chi tiết cho CORS
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Cho phép frontend của bạn (Vite mặc định là 5173)
         configuration.setAllowedOrigins(List.of("http://localhost:5173"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept"));

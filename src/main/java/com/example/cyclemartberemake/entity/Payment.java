@@ -37,6 +37,11 @@ public class Payment {
     private String refundReason;       // Lý do hoàn tiền
     private LocalDateTime refundedAt;  // Thời gian hoàn tiền
     private Long refundedBy;           // Admin ID thực hiện refund
+    
+    // 🔥 Location information
+    private String city;               // Thành phố thanh toán
+    private String district;           // Quận/Huyện thanh toán
+    private String ipAddress;          // IP address for fraud detection
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

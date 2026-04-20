@@ -15,12 +15,17 @@ public interface UserService {
     Users register(UserRegisterRequestDTO dto);
 
     UserLoginResponseDTO login(UserLoginRequestDTO dto);
-    
+
     List<UserInfoResponseDTO> getAllUsers();
-    
+
     UserInfoResponseDTO getUserById(int id);
 
     void updateProfile(int userId, UpdateProfileRequest request);
+
     void changePassword(int userId, ChangePasswordRequest request);
+
+    void addPoint(Long userId, int point);
+
+    Users getCurrentUser();
 
 }

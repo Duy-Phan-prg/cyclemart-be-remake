@@ -98,4 +98,8 @@ public class BikePost {
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    @Column(nullable = false)
+    private Boolean isVerified = false;
+
 }

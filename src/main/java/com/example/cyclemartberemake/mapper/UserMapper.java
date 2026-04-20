@@ -11,8 +11,6 @@ import org.mapstruct.Named;
 
 import java.util.List;
 
-import static com.cloudinary.provisioning.Account.Role.ADMIN;
-
 @Mapper(componentModel = "spring")
 public interface UserMapper {
     

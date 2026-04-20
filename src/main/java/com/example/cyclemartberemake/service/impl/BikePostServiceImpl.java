@@ -4,6 +4,7 @@ import com.example.cyclemartberemake.dto.request.BikePostRequest;
 import com.example.cyclemartberemake.dto.response.BikePostResponse;
 import com.example.cyclemartberemake.dto.response.PriorityPackageResponse;
 import com.example.cyclemartberemake.entity.*;
+import com.example.cyclemartberemake.entity.PostStatus;
 import com.example.cyclemartberemake.exception.CategoryValidationException;
 import com.example.cyclemartberemake.mapper.BikePostMapper;
 import com.example.cyclemartberemake.repository.BikePostRepository;

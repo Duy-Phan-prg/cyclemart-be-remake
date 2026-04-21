@@ -223,6 +223,9 @@ public class BikePostServiceImpl implements BikePostService {
             response.setPostStatus(post.getPostStatus().name());
         }
 
+        // 🔥 THÊM DÒNG NÀY: Gán isVerified vào Response
+        response.setIsVerified(post.getIsVerified()); // Hoặc post.isVerified() tùy tên hàm Lombok tạo ra
+
         // Đã tự động gắn PriorityPackageResponse nếu bài post đang sở hữu gói hoạt động
         setActivePriorityInfo(response, post.getId());
 
@@ -265,4 +268,5 @@ public class BikePostServiceImpl implements BikePostService {
         }
         throw new RuntimeException("Người dùng chưa đăng nhập");
     }
+
 }

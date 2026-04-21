@@ -59,4 +59,10 @@ public class CategoryController {
         return ResponseEntity.ok(categoryService.getCategoryTree());
     }
 
+    @GetMapping("/all-children")
+    @Operation(summary = "Get all child categories (no parent ID required)")
+    public ResponseEntity<List<CategoryResponseDTO>> getAllChildCategories() {
+        return ResponseEntity.ok(categoryService.getAllChildCategories());
+    }
+
 }

@@ -12,4 +12,5 @@ public interface CategoryService {
     CategoryResponseDTO updateCategory(Integer id, CategoryRequestDTO request);
     void deleteCategory(Integer id);
     List<CategoryResponseDTO> getCategoryTree();
+    List<CategoryResponseDTO> getAllChildCategories();
 }

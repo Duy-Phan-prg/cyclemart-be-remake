@@ -222,6 +222,16 @@ public class BikePostServiceImpl implements BikePostService {
             response.setPostStatus(post.getPostStatus().name());
         }
 
+        // Set user info (userId, sellerName, sellerEmail)
+        if (post.getUser() != null) {
+            response.setUserId(Long.valueOf(post.getUser().getId()));
+            response.setSellerName(post.getUser().getFullName());
+            response.setSellerEmail(post.getUser().getEmail());
+        } else if (post.getUserId() != null) {
+            // Fallback nếu không có user object
+            response.setUserId(post.getUserId());
+        }
+
         // Đã tự động gắn PriorityPackageResponse nếu bài post đang sở hữu gói hoạt động
         setActivePriorityInfo(response, post.getId());
 

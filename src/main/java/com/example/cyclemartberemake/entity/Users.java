@@ -46,6 +46,10 @@ public class Users {
 
     private LocalDateTime lastLoginAt;
 
+    // Seller rating information
+    private Double sellerRating = 0.0; // Điểm trung bình đánh giá
+    private Long sellerReviewCount = 0L; // Số lượng người đã đánh giá
+
     // Override toString để tránh LazyInitializationException
     @Override
     public String toString() {

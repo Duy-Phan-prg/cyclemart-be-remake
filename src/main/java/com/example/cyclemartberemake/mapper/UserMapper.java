@@ -24,6 +24,8 @@ public interface UserMapper {
     @Mapping(target = "bannedAt", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "lastLoginAt", ignore = true)
+    @Mapping(target = "sellerRating", ignore = true)
+    @Mapping(target = "sellerReviewCount", ignore = true)
     Users toEntity(UserRegisterRequestDTO dto);
     
     @Mapping(source = "role", target = "roleDisplay", qualifiedByName = "roleToDisplay")

@@ -122,6 +122,25 @@ public class CategoryServiceImpl implements CategoryService {
         return rootCategories;
     }
 
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CategoryResponseDTO> getAllChildCategories() {
+        // Get all categories that have a parent (parentId IS NOT NULL)
+        List<Categories> childCategories = categoryRepository.findAllChildCategories();
+
+        // Map to DTO and set parent name
+        return childCategories.stream()
+                .map(category -> {
+                    CategoryResponseDTO dto = categoryMapper.toResponse(category);
+                    if (category.getParent() != null) {
+                        dto.setParentName(category.getParent().getName());
+                    }
+                    return dto;
+                })
+                .toList();
+    }
+
     private void validateCreateCategory(CategoryRequestDTO request) {
         if (categoryRepository.existsByName(request.getName())) {
             throw new CategoryValidationException("Tên danh mục '" + request.getName() + "' đã tồn tại");

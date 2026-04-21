@@ -37,4 +37,8 @@ public interface CategoryRepository extends JpaRepository<Categories, Integer> {
     // Tìm active categories theo parent
     @Query("SELECT c FROM Categories c WHERE c.parent.id = :parentId AND c.isActive = true")
     List<Categories> findActiveByParentId(@Param("parentId") Integer parentId);
+
+    // Lấy tất cả category con (parent khác null)
+    @Query("SELECT c FROM Categories c WHERE c.parent IS NOT NULL")
+    List<Categories> findAllChildCategories();
 }

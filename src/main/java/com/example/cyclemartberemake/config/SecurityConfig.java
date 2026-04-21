@@ -33,7 +33,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-                .cors(Customizer.withDefaults())
+                .cors(Customizer.withDefaults()) // 🔥 Bật cấu hình CORS
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -50,11 +50,8 @@ public class SecurityConfig {
                                 "/api/v1/posts/**",
                                 "/api/v1/priority-packages/**",
                                 "/api/v1/post-priority-subscriptions/**",
-                                "/api/v1/admin/**",
-                                // 🔥 THÊM DÒNG NÀY: Mở khóa toàn bộ API kiểm định cho mọi đối tượng
-                                "/api/v1/inspections/**"
+                                "/api/v1/admin/**"
                         ).permitAll()
-                        // Các API cá nhân vẫn yêu cầu login để lấy thông tin user
                         .requestMatchers("/api/auth/me", "/api/auth/profile", "/api/auth/password").authenticated()
                         .anyRequest().authenticated()
                 )
@@ -63,13 +60,19 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // 🔥 Bean cấu hình chi tiết cho CORS
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        // Cho phép frontend của bạn (Vite mặc định là 5173)
+        configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:5173",
+                "http://localhost:5174",
+                "http://localhost:5175" // Cho thêm 5175 phòng hờ team có 3 người chạy cùng lúc
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(true); // Cho phép gửi kèm Cookie hoặc Auth Header
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

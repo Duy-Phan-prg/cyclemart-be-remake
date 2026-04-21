@@ -4,6 +4,7 @@ import com.example.cyclemartberemake.dto.request.BikePostRequest;
 import com.example.cyclemartberemake.dto.response.BikePostResponse;
 import com.example.cyclemartberemake.dto.response.PriorityPackageResponse;
 import com.example.cyclemartberemake.entity.*;
+import com.example.cyclemartberemake.entity.PostStatus;
 import com.example.cyclemartberemake.exception.CategoryValidationException;
 import com.example.cyclemartberemake.mapper.BikePostMapper;
 import com.example.cyclemartberemake.repository.BikePostRepository;
@@ -214,12 +215,26 @@ public class BikePostServiceImpl implements BikePostService {
         postRepo.save(post);
     }
 
+    // 🔥 ĐOẠN ĐÃ GỠ LỖI CONFLICT Ở ĐÂY
     private BikePostResponse buildResponse(BikePost post) {
 
         BikePostResponse response = mapper.toResponse(post);
 
         if (post.getPostStatus() != null) {
             response.setPostStatus(post.getPostStatus().name());
+        }
+
+        // 1. CHÚ THÍCH: Giữ lại code lấy trạng thái Kiểm định để Front-end hiển thị tem Verified
+        response.setIsVerified(post.getIsVerified());
+
+        // 2. CHÚ THÍCH: Giữ lại code lấy thông tin người bán (Seller Info)
+        if (post.getUser() != null) {
+            response.setUserId(Long.valueOf(post.getUser().getId()));
+            response.setSellerName(post.getUser().getFullName());
+            response.setSellerEmail(post.getUser().getEmail());
+        } else if (post.getUserId() != null) {
+            // Fallback nếu bài đăng không được gán User Object mà chỉ có userId
+            response.setUserId(post.getUserId());
         }
 
         // Đã tự động gắn PriorityPackageResponse nếu bài post đang sở hữu gói hoạt động
@@ -264,4 +279,5 @@ public class BikePostServiceImpl implements BikePostService {
         }
         throw new RuntimeException("Người dùng chưa đăng nhập");
     }
+
 }

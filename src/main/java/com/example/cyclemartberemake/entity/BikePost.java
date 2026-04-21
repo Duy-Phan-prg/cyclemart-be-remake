@@ -58,7 +58,12 @@ public class BikePost {
 
     private Integer mileage;
 
+    @Column(name = "user_id")
     private Long userId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    private Users user;
 
     @Column(nullable = false)
     private Boolean allowNegotiation = false;
@@ -98,4 +103,8 @@ public class BikePost {
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    @Column(nullable = false)
+    private Boolean isVerified = false;
+
 }

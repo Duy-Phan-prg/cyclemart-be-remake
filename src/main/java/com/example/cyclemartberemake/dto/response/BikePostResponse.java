@@ -45,6 +45,11 @@ public class BikePostResponse {
     // ================= MEDIA =================
     private List<String> images;
 
+    // ================= SELLER =================
+    private Long userId;
+    private String sellerName;
+    private String sellerEmail;
+
     // ================= PRIORITY =================
     @Schema(description = "Priority package info (if post has active priority)")
     private PriorityPackageResponse activePriority;
@@ -61,4 +66,5 @@ public class BikePostResponse {
 
     // ================= TIME =================
     private LocalDateTime createdAt;
+    private Boolean isVerified;
 }

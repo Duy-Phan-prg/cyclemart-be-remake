@@ -215,6 +215,7 @@ public class BikePostServiceImpl implements BikePostService {
         postRepo.save(post);
     }
 
+    // 🔥 ĐOẠN ĐÃ GỠ LỖI CONFLICT Ở ĐÂY
     private BikePostResponse buildResponse(BikePost post) {
 
         BikePostResponse response = mapper.toResponse(post);
@@ -223,8 +224,18 @@ public class BikePostServiceImpl implements BikePostService {
             response.setPostStatus(post.getPostStatus().name());
         }
 
-        // 🔥 THÊM DÒNG NÀY: Gán isVerified vào Response
-        response.setIsVerified(post.getIsVerified()); // Hoặc post.isVerified() tùy tên hàm Lombok tạo ra
+        // 1. CHÚ THÍCH: Giữ lại code lấy trạng thái Kiểm định để Front-end hiển thị tem Verified
+        response.setIsVerified(post.getIsVerified());
+
+        // 2. CHÚ THÍCH: Giữ lại code lấy thông tin người bán (Seller Info)
+        if (post.getUser() != null) {
+            response.setUserId(Long.valueOf(post.getUser().getId()));
+            response.setSellerName(post.getUser().getFullName());
+            response.setSellerEmail(post.getUser().getEmail());
+        } else if (post.getUserId() != null) {
+            // Fallback nếu bài đăng không được gán User Object mà chỉ có userId
+            response.setUserId(post.getUserId());
+        }
 
         // Đã tự động gắn PriorityPackageResponse nếu bài post đang sở hữu gói hoạt động
         setActivePriorityInfo(response, post.getId());

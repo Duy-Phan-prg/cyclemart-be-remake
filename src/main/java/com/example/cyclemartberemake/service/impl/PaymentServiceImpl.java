@@ -16,6 +16,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -61,11 +65,9 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public CreatePaymentResponse createPayment(CreatePaymentRequest request) throws Exception {
-        
-        // 🔥 Lấy user từ JWT
+
         Long userId = getCurrentUserId();
-        
-        // 🔥 Validate amount
+
         if (request.getAmount() < 10000 || request.getAmount() > 50000000) {
             throw new RuntimeException("Số tiền không hợp lệ. Phải từ 10,000 - 50,000,000 VND");
         }
@@ -73,9 +75,25 @@ public class PaymentServiceImpl implements PaymentService {
         String orderId = "ORDER_" + System.currentTimeMillis();
         String requestId = orderId;
         String description = request.getDescription() != null ? 
-            request.getDescription() : "Nạp điểm CycleMart";
+            request.getDescription().replaceAll("[^a-zA-Z0-9\\s]", "") : "Nap diem CycleMart";
+        
+        // Ensure description is safe for MoMo (no Vietnamese characters or special chars)
+        description = description.replaceAll("[àáạảãâầấậẩẫăằắặẳẵ]", "a")
+                                .replaceAll("[èéẹẻẽêềếệểễ]", "e")
+                                .replaceAll("[ìíịỉĩ]", "i")
+                                .replaceAll("[òóọỏõôồốộổỗơờớợởỡ]", "o")
+                                .replaceAll("[ùúụủũưừứựửữ]", "u")
+                                .replaceAll("[ỳýỵỷỹ]", "y")
+                                .replaceAll("[đ]", "d")
+                                .replaceAll("[ÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ]", "A")
+                                .replaceAll("[ÈÉẸẺẼÊỀẾỆỂỄ]", "E")
+                                .replaceAll("[ÌÍỊỈĨ]", "I")
+                                .replaceAll("[ÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ]", "O")
+                                .replaceAll("[ÙÚỤỦŨƯỪỨỰỬỮ]", "U")
+                                .replaceAll("[ỲÝỴỶỸ]", "Y")
+                                .replaceAll("[Đ]", "D");
 
-        // 🔥 Lưu payment record
+
         Payment payment = Payment.builder()
                 .userId(userId)
                 .orderId(orderId)
@@ -91,10 +109,11 @@ public class PaymentServiceImpl implements PaymentService {
         log.info("Created payment record: orderId={}, userId={}, amount={}", orderId, userId, request.getAmount());
 
         try {
-            // 🔥 Tạo signature với đầy đủ validation
-            String extraData = ""; // 🔥 MoMo yêu cầu extraData không được null
+            // 🔥 GỌI MOMO API với credentials mới
+            String extraData = "";
+            String amountStr = request.getAmount().toString();
             String rawHash = "accessKey=" + accessKey +
-                    "&amount=" + request.getAmount() +
+                    "&amount=" + amountStr +
                     "&extraData=" + extraData +
                     "&ipnUrl=" + ipnUrl +
                     "&orderId=" + orderId +
@@ -104,25 +123,37 @@ public class PaymentServiceImpl implements PaymentService {
                     "&requestId=" + requestId +
                     "&requestType=captureWallet";
 
+            log.info("MoMo signature raw hash: {}", rawHash);
             String signature = hmacSHA256(rawHash, secretKey);
+            log.info("MoMo signature generated: {}", signature);
+            
             payment.setSignature(signature);
             paymentRepo.save(payment);
 
-            // 🔥 Gọi MoMo API
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            
             Map<String, Object> body = new HashMap<>();
             body.put("partnerCode", partnerCode);
+            body.put("accessKey", accessKey);
             body.put("requestId", requestId);
-            body.put("amount", request.getAmount());
+            body.put("amount", amountStr);
             body.put("orderId", orderId);
             body.put("orderInfo", description);
             body.put("redirectUrl", returnUrl);
             body.put("ipnUrl", ipnUrl);
-            body.put("extraData", extraData); // 🔥 Thêm extraData
+            body.put("extraData", extraData);
             body.put("requestType", "captureWallet");
             body.put("signature", signature);
             body.put("lang", "vi");
 
-            Map<String, Object> response = restTemplate.postForObject(endpoint, body, Map.class);
+            log.info("MoMo request body: {}", body);
+            
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+            ResponseEntity<Map> responseEntity = restTemplate.postForEntity(endpoint, entity, Map.class);
+            Map<String, Object> response = responseEntity.getBody();
+            
+            log.info("MoMo response: {}", response);
             
             if (response != null && "0".equals(response.get("resultCode").toString())) {
                 log.info("MoMo payment created successfully: orderId={}", orderId);
@@ -130,21 +161,23 @@ public class PaymentServiceImpl implements PaymentService {
                 return CreatePaymentResponse.builder()
                         .orderId(orderId)
                         .amount(request.getAmount())
-                        .payUrl(response.get("payUrl").toString())
+                        .payUrl(response.get("payUrl") != null ? response.get("payUrl").toString() : null)
                         .qrCodeUrl(response.get("qrCodeUrl") != null ? response.get("qrCodeUrl").toString() : null)
                         .deeplink(response.get("deeplink") != null ? response.get("deeplink").toString() : null)
                         .message("Tạo thanh toán thành công")
                         .success(true)
                         .build();
             } else {
-                // 🔥 MoMo API error
+                // 🔥 MoMo API error - Log detailed error info
+                String resultCode = response != null ? response.get("resultCode").toString() : "unknown";
                 String errorMsg = response != null ? response.get("message").toString() : "Lỗi không xác định";
+                
                 payment.setStatus(PaymentStatus.FAILED);
                 payment.setMessage(errorMsg);
                 paymentRepo.save(payment);
                 
-                log.error("MoMo API error: orderId={}, error={}", orderId, errorMsg);
-                throw new RuntimeException("Không thể tạo thanh toán: " + errorMsg);
+                log.error("MoMo API error: orderId={}, resultCode={}, error={}", orderId, resultCode, errorMsg);
+                throw new RuntimeException("Không thể tạo thanh toán MoMo (Code: " + resultCode + "): " + errorMsg);
             }
 
         } catch (Exception e) {
@@ -168,21 +201,19 @@ public class PaymentServiceImpl implements PaymentService {
         
         log.info("Received IPN: orderId={}, resultCode={}", orderId, resultCode);
 
-        // 🔥 Tìm payment record
         Payment payment = paymentRepo.findByOrderId(orderId).orElse(null);
         if (payment == null) {
             log.error("Payment not found for orderId: {}", orderId);
             return;
         }
 
-        // 🔥 Kiểm tra đã xử lý chưa
         if (payment.getStatus() == PaymentStatus.SUCCESS) {
             log.warn("Payment already processed: orderId={}", orderId);
             return;
         }
 
-        // 🔥 Verify signature để đảm bảo request từ MoMo
         try {
+            // 🔥 Validate signature với credentials mới
             String rawHash = "accessKey=" + accessKey +
                     "&amount=" + data.get("amount") +
                     "&extraData=" + data.getOrDefault("extraData", "") +
@@ -209,40 +240,33 @@ public class PaymentServiceImpl implements PaymentService {
             return;
         }
 
-        // 🔥 Cập nhật payment status
         payment.setMomoTransId(data.get("transId").toString());
         payment.setResponseCode(resultCode);
         payment.setMessage(data.get("message").toString());
         payment.setCompletedAt(LocalDateTime.now());
 
         if ("0".equals(resultCode)) {
-            // 🔥 Thanh toán thành công
             payment.setStatus(PaymentStatus.SUCCESS);
-            
-            // 🔥 Tính điểm: 1000 VND = 1 điểm
+
             int points = (int) (payment.getAmount() / 1000);
             payment.setPointsEarned(points);
             
             paymentRepo.save(payment);
-            
-            // 🔥 Cộng điểm cho user
+
             userService.addPoint(payment.getUserId(), points);
             
             log.info("Payment successful: orderId={}, points={}", orderId, points);
-            
-            // 🔥 Send success notification
+
             notificationService.sendPaymentSuccessEmail(payment);
             notificationService.sendRealTimeNotification(payment.getUserId(), 
                 "Thanh toán thành công! Bạn đã được cộng " + points + " điểm.", "PAYMENT_SUCCESS");
             
         } else {
-            // 🔥 Thanh toán thất bại
             payment.setStatus(PaymentStatus.FAILED);
             paymentRepo.save(payment);
             
             log.warn("Payment failed: orderId={}, resultCode={}", orderId, resultCode);
-            
-            // 🔥 Send failure notification
+
             notificationService.sendPaymentFailedEmail(payment);
             notificationService.sendRealTimeNotification(payment.getUserId(), 
                 "Thanh toán thất bại. Vui lòng thử lại.", "PAYMENT_FAILED");
@@ -270,14 +294,13 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = paymentRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch"));
         
-        // 🔥 Kiểm tra ownership
+
         if (!payment.getUserId().equals(userId)) {
             throw new RuntimeException("Bạn không có quyền xem giao dịch này");
         }
         
         return paymentMapper.toResponse(payment);
     }
-
     @Override
     public Page<PaymentResponse> getAllPayments(Pageable pageable) {
         Page<Payment> payments = paymentRepo.findAll(pageable);
@@ -301,7 +324,6 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public void cleanupExpiredPayments() {
-        // 🔥 Tìm payment pending quá 30 phút
         LocalDateTime expiredTime = LocalDateTime.now().minusMinutes(30);
         List<Payment> expiredPayments = paymentRepo.findExpiredPendingPayments(expiredTime);
         
@@ -317,11 +339,9 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public PaymentResponse refundPayment(Long paymentId, String reason, Long adminId) {
-        // 🔥 Tìm payment
         Payment payment = paymentRepo.findById(paymentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch"));
 
-        // 🔥 Validate payment có thể refund không
         if (payment.getStatus() != PaymentStatus.SUCCESS) {
             throw new RuntimeException("Chỉ có thể hoàn tiền cho giao dịch thành công");
         }
@@ -330,7 +350,6 @@ public class PaymentServiceImpl implements PaymentService {
             throw new RuntimeException("Giao dịch này đã được hoàn tiền");
         }
 
-        // 🔥 Cập nhật payment status
         payment.setStatus(PaymentStatus.REFUNDED);
         payment.setRefundReason(reason);
         payment.setRefundedAt(LocalDateTime.now());
@@ -338,7 +357,6 @@ public class PaymentServiceImpl implements PaymentService {
 
         paymentRepo.save(payment);
 
-        // 🔥 Trừ điểm đã cộng (nếu có)
         if (payment.getPointsEarned() != null && payment.getPointsEarned() > 0) {
             try {
                 userService.addPoint(payment.getUserId(), -payment.getPointsEarned());
@@ -348,7 +366,6 @@ public class PaymentServiceImpl implements PaymentService {
             }
         }
 
-        // 🔥 Send refund notification
         notificationService.sendRefundNotificationEmail(payment);
         notificationService.sendRealTimeNotification(payment.getUserId(), 
             "Giao dịch " + payment.getOrderId() + " đã được hoàn tiền.", "PAYMENT_REFUNDED");
@@ -362,29 +379,24 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public PaymentResponse cancelPayment(Long paymentId, String reason) {
-        // 🔥 Tìm payment
         Payment payment = paymentRepo.findById(paymentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch"));
 
-        // 🔥 Validate payment có thể cancel không
         if (payment.getStatus() != PaymentStatus.PENDING) {
             throw new RuntimeException("Chỉ có thể hủy giao dịch đang chờ xử lý");
         }
 
-        // 🔥 Kiểm tra ownership (user chỉ có thể cancel payment của mình)
         Long currentUserId = getCurrentUserId();
         if (!payment.getUserId().equals(currentUserId)) {
             throw new RuntimeException("Bạn không có quyền hủy giao dịch này");
         }
 
-        // 🔥 Cập nhật payment status
         payment.setStatus(PaymentStatus.CANCELLED);
         payment.setMessage(reason);
         payment.setCompletedAt(LocalDateTime.now());
 
         paymentRepo.save(payment);
 
-        // 🔥 Send cancellation notification
         notificationService.sendRealTimeNotification(payment.getUserId(), 
             "Giao dịch " + payment.getOrderId() + " đã được hủy.", "PAYMENT_CANCELLED");
 
@@ -394,7 +406,7 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentMapper.toResponse(payment);
     }
 
-    // 🔥 Helper methods
+
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof Users user) {
@@ -404,17 +416,27 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private String hmacSHA256(String data, String key) throws Exception {
-        Mac mac = Mac.getInstance("HmacSHA256");
-        SecretKeySpec secretKeySpec = new SecretKeySpec(key.getBytes(), "HmacSHA256");
-        mac.init(secretKeySpec);
+        try {
+            // 🔥 Ensure UTF-8 encoding
+            Mac mac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec secretKeySpec = new SecretKeySpec(key.getBytes("UTF-8"), "HmacSHA256");
+            mac.init(secretKeySpec);
 
-        byte[] rawHmac = mac.doFinal(data.getBytes());
+            byte[] rawHmac = mac.doFinal(data.getBytes("UTF-8"));
 
-        StringBuilder hex = new StringBuilder();
-        for (byte b : rawHmac) {
-            hex.append(String.format("%02x", b));
+            // 🔥 Convert to lowercase hex (MoMo requirement)
+            StringBuilder hex = new StringBuilder();
+            for (byte b : rawHmac) {
+                hex.append(String.format("%02x", b));
+            }
+
+            String signature = hex.toString();
+            log.info("Generated signature: {}", signature);
+            return signature;
+            
+        } catch (Exception e) {
+            log.error("Error generating HMAC signature: {}", e.getMessage(), e);
+            throw e;
         }
-
-        return hex.toString();
     }
 }

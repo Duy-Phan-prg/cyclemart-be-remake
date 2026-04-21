@@ -19,13 +19,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor
 @Tag(name = "Payment Management", description = "APIs for payment processing and history")
-public class PaymentController {
+public class PaymentController extends BaseController {
 
     private final PaymentService paymentService;
 
@@ -54,8 +55,7 @@ public class PaymentController {
             request.setDescription(description);
             request.setCity(city);
             request.setDistrict(district);
-            
-            // 🔥 Get IP address for fraud detection
+
             String ipAddress = getClientIpAddress(httpRequest);
             request.setIpAddress(ipAddress);
             
@@ -125,7 +125,6 @@ public class PaymentController {
         }
     }
 
-    // 🔥 NEW: Refund endpoints
     @PostMapping("/{id}/refund")
     @Operation(summary = "Refund a payment (admin only)")
     public ResponseEntity<?> refundPayment(
@@ -133,7 +132,6 @@ public class PaymentController {
             @RequestParam String reason
     ) {
         try {
-            // 🔥 TODO: Add admin authentication check
             Long adminId = getCurrentUserId(); // For now, use current user as admin
             
             PaymentResponse response = paymentService.refundPayment(id, reason, adminId);
@@ -163,16 +161,7 @@ public class PaymentController {
         }
     }
 
-    // 🔥 Helper method
-    private Long getCurrentUserId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof Users user) {
-            return (long) user.getId();
-        }
-        throw new RuntimeException("Người dùng chưa đăng nhập");
-    }
-    
-    // 🔥 Get client IP address for fraud detection
+
     private String getClientIpAddress(HttpServletRequest request) {
         String xForwardedFor = request.getHeader("X-Forwarded-For");
         if (xForwardedFor != null && !xForwardedFor.isEmpty()) {

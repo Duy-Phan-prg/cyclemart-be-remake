@@ -117,7 +117,6 @@ public class AdminController {
      * Validate sort field to prevent "No property found" errors
      */
     private String validateSortField(String sortBy) {
-        // List of valid BikePost fields for sorting
         return switch (sortBy.toLowerCase()) {
             case "id" -> "id";
             case "title" -> "title";

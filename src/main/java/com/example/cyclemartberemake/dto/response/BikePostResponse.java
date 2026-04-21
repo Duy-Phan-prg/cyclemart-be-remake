@@ -66,4 +66,5 @@ public class BikePostResponse {
 
     // ================= TIME =================
     private LocalDateTime createdAt;
+    private Boolean isVerified;
 }

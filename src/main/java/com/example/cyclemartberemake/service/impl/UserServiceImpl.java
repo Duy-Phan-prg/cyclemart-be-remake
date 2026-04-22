@@ -42,6 +42,7 @@ public class UserServiceImpl implements UserService {
         Users user = userMapper.toEntity(dto);
         user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
 
+        // New users get BUYER role by default (can also act as SELLER)
         user.setRole(Role.BUYER);
         user.setStatus(UserStatus.ACTIVE);
 

@@ -10,6 +10,10 @@ import com.example.cyclemartberemake.entity.Users;
 import com.example.cyclemartberemake.mapper.UserMapper;
 import com.example.cyclemartberemake.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +34,23 @@ public class AuthController {
 
     @PostMapping("/register")
     @Operation(summary = "Register new user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User registered successfully",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserInfoResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Validation failed",
+                    content = @Content(mediaType = "application/json", schema = @Schema(example = """
+                            {
+                              "status": "error",
+                              "message": "Validation failed",
+                              "errors": {
+                                "email": "Email không hợp lệ",
+                                "fullName": "Tên phải từ 2-100 ký tự",
+                                "phone": "SĐT phải bắt đầu 0 và có đúng 10 số",
+                                "password": "Password phải có ít nhất 1 chữ hoa và 1 ký tự đặc biệt"
+                              }
+                            }
+                            """)))
+    })
     public ResponseEntity<UserInfoResponseDTO> register(@Valid @RequestBody UserRegisterRequestDTO dto) {
         Users user = userService.register(dto);
         UserInfoResponseDTO response = userMapper.toResponse(user);
@@ -38,6 +59,11 @@ public class AuthController {
 
     @PostMapping("/login")
     @Operation(summary = "User login")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Login successful",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserLoginResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid credentials")
+    })
     public ResponseEntity<UserLoginResponseDTO> login(
             @RequestBody @Valid UserLoginRequestDTO dto) {
 
@@ -46,6 +72,11 @@ public class AuthController {
 
     @GetMapping("/me")
     @Operation(summary = "Get current user info")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User info retrieved",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserInfoResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     public ResponseEntity<?> getMe() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
@@ -89,12 +120,19 @@ public class AuthController {
 
     @GetMapping("/users")
     @Operation(summary = "Get all users")
+    @ApiResponse(responseCode = "200", description = "List of all users",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserInfoResponseDTO.class)))
     public ResponseEntity<List<UserInfoResponseDTO>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
     @GetMapping("/users/{id}")
     @Operation(summary = "Get user by ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User found",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserInfoResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
     public ResponseEntity<UserInfoResponseDTO> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }

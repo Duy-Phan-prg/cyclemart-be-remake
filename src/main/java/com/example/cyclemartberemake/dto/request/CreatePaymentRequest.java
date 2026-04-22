@@ -1,7 +1,5 @@
 package com.example.cyclemartberemake.dto.request;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -9,15 +7,18 @@ import lombok.Data;
 @Data
 public class CreatePaymentRequest {
 
-    @NotNull(message = "Số tiền không được để trống")
-    @Min(value = 10000, message = "Số tiền tối thiểu là 10,000 VND")
-    @Max(value = 50000000, message = "Số tiền tối đa là 50,000,000 VND")
-    private Long amount;
+    @NotNull(message = "ID bài đăng không được để trống")
+    private Long bikePostId;
+
+    @NotBlank(message = "Tên người nhận không được để trống")
+    private String name;
+
+    @NotBlank(message = "Số điện thoại không được để trống")
+    private String phone;
+
+    @NotBlank(message = "Địa chỉ không được để trống")
+    private String address;
 
     @NotBlank(message = "Mô tả không được để trống")
     private String description;
-    
-    private String city;
-    private String district;
-    private String ipAddress;
 }

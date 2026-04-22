@@ -3,10 +3,12 @@ package com.example.cyclemartberemake.service.impl;
 import com.example.cyclemartberemake.dto.request.CreatePaymentRequest;
 import com.example.cyclemartberemake.dto.response.CreatePaymentResponse;
 import com.example.cyclemartberemake.dto.response.PaymentResponse;
+import com.example.cyclemartberemake.entity.BikePost;
 import com.example.cyclemartberemake.entity.Payment;
 import com.example.cyclemartberemake.entity.PaymentStatus;
 import com.example.cyclemartberemake.entity.Users;
 import com.example.cyclemartberemake.mapper.PaymentMapper;
+import com.example.cyclemartberemake.repository.BikePostRepository;
 import com.example.cyclemartberemake.repository.PaymentRepository;
 import com.example.cyclemartberemake.repository.UserRepository;
 import com.example.cyclemartberemake.service.PaymentNotificationService;
@@ -41,6 +43,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepo;
     private final UserRepository userRepository;
+    private final BikePostRepository bikePostRepository;
     private final UserService userService;
     private final PaymentMapper paymentMapper;
     private final PaymentNotificationService notificationService;
@@ -70,7 +73,13 @@ public class PaymentServiceImpl implements PaymentService {
 
         Long userId = getCurrentUserId();
 
-        if (request.getAmount() < 10000 || request.getAmount() > 50000000) {
+        // Lấy BikePost để get price
+        BikePost bikePost = bikePostRepository.findById(request.getBikePostId())
+            .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
+        
+        Long amount = bikePost.getPrice().longValue();
+
+        if (amount < 10000 || amount > 50000000) {
             throw new RuntimeException("Số tiền không hợp lệ. Phải từ 10,000 - 50,000,000 VND");
         }
 
@@ -99,21 +108,18 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = Payment.builder()
                 .user(userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found")))
                 .orderId(orderId)
-                .amount(request.getAmount())
+                .amount(amount)
                 .description(description)
                 .status(PaymentStatus.PENDING)
-                .city(request.getCity())
-                .district(request.getDistrict())
-                .ipAddress(request.getIpAddress())
                 .build();
 
         paymentRepo.save(payment);
-        log.info("Created payment record: orderId={}, userId={}, amount={}", orderId, userId, request.getAmount());
+        log.info("Created payment record: orderId={}, userId={}, amount={}", orderId, userId, amount);
 
         try {
             // 🔥 GỌI MOMO API với credentials mới
             String extraData = "";
-            String amountStr = request.getAmount().toString();
+            String amountStr = amount.toString();
             String rawHash = "accessKey=" + accessKey +
                     "&amount=" + amountStr +
                     "&extraData=" + extraData +
@@ -162,7 +168,8 @@ public class PaymentServiceImpl implements PaymentService {
                 
                 return CreatePaymentResponse.builder()
                         .orderId(orderId)
-                        .amount(request.getAmount())
+                        .amount(amount)
+                        .description(description)
                         .payUrl(response.get("payUrl") != null ? response.get("payUrl").toString() : null)
                         .qrCodeUrl(response.get("qrCodeUrl") != null ? response.get("qrCodeUrl").toString() : null)
                         .deeplink(response.get("deeplink") != null ? response.get("deeplink").toString() : null)

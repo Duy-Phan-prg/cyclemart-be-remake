@@ -37,9 +37,6 @@ public class PaymentController extends BaseController {
             HttpServletRequest httpRequest
     ) {
         try {
-            String ipAddress = getClientIpAddress(httpRequest);
-            request.setIpAddress(ipAddress);
-            
             CreatePaymentResponse response = paymentService.createPayment(request);
             return ResponseEntity.ok(response);
         } catch (Exception e) {

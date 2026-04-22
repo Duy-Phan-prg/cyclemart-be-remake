@@ -5,6 +5,8 @@ import com.example.cyclemartberemake.dto.request.UpdateProfileRequest;
 import com.example.cyclemartberemake.dto.request.UserLoginRequestDTO;
 import com.example.cyclemartberemake.dto.request.UserRegisterRequestDTO;
 import com.example.cyclemartberemake.dto.request.VerifyOtpRequest;
+import com.example.cyclemartberemake.dto.request.ForgotPasswordRequest;
+import com.example.cyclemartberemake.dto.request.ResetPasswordRequest;
 import com.example.cyclemartberemake.dto.response.UserInfoResponseDTO;
 import com.example.cyclemartberemake.dto.response.UserLoginResponseDTO;
 import com.example.cyclemartberemake.dto.response.OtpResponse;
@@ -187,6 +189,32 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/resend-otp")
+    @Operation(summary = "Resend OTP for register or forgot-password flow with 1 minute cooldown")
+    public ResponseEntity<OtpResponse> resendOtp(
+            @RequestParam String email,
+            @RequestParam(defaultValue = "register") String flow) {
+        try {
+            if ("forgot-password".equalsIgnoreCase(flow) || "forgotpassword".equalsIgnoreCase(flow)) {
+                userService.getUserByEmail(email);
+            }
+            otpService.resendOtp(email, flow);
+
+            String message = switch (flow.toLowerCase()) {
+                case "forgot-password", "forgotpassword" -> "Mã OTP đặt lại mật khẩu đã được gửi lại";
+                default -> "Mã OTP xác thực đăng ký đã được gửi lại";
+            };
+
+            return ResponseEntity.ok(new OtpResponse(message, email, 10));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new OtpResponse(
+                    e.getMessage(),
+                    email,
+                    null
+            ));
+        }
+    }
+
     @PostMapping("/verify-otp")
     @Operation(summary = "Verify OTP and activate account")
     @ApiResponses(value = {
@@ -215,6 +243,62 @@ public class AuthController {
 
             UserInfoResponseDTO response = userMapper.toResponse(user);
             return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new OtpResponse(
+                    "Lỗi: " + e.getMessage(),
+                    request.getEmail(),
+                    null
+            ));
+        }
+    }
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Send OTP for forgot password")
+    public ResponseEntity<OtpResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        try {
+            userService.getUserByEmail(request.getEmail());
+            otpService.generateAndSendOtp(request.getEmail());
+            return ResponseEntity.ok(new OtpResponse(
+                    "Mã OTP đặt lại mật khẩu đã được gửi đến email của bạn",
+                    request.getEmail(),
+                    10
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new OtpResponse(
+                    "Lỗi: " + e.getMessage(),
+                    request.getEmail(),
+                    null
+            ));
+        }
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(summary = "Verify OTP and reset password")
+    public ResponseEntity<OtpResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        try {
+            if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+                return ResponseEntity.badRequest().body(new OtpResponse(
+                        "Xác nhận mật khẩu mới không khớp",
+                        request.getEmail(),
+                        null
+                ));
+            }
+
+            boolean isValid = otpService.verifyOtp(request.getEmail(), request.getOtpCode());
+            if (!isValid) {
+                return ResponseEntity.badRequest().body(new OtpResponse(
+                        "Mã OTP không hợp lệ hoặc đã hết hạn",
+                        request.getEmail(),
+                        null
+                ));
+            }
+
+            userService.resetPasswordByEmail(request.getEmail(), request.getNewPassword());
+            return ResponseEntity.ok(new OtpResponse(
+                    "Đặt lại mật khẩu thành công",
+                    request.getEmail(),
+                    null
+            ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new OtpResponse(
                     "Lỗi: " + e.getMessage(),

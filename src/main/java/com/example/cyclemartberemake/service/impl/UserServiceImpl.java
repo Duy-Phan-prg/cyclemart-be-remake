@@ -136,6 +136,16 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
+    public void resetPasswordByEmail(String email, String newPassword) {
+        Users user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
+    @Override
     public void addPoint(Long userId, int point) {
 
         Users user = userRepository.findById(userId)

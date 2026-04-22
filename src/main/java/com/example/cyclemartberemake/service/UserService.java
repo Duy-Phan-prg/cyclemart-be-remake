@@ -26,6 +26,8 @@ public interface UserService {
 
     void changePassword(Long userId, ChangePasswordRequest request);
 
+    void resetPasswordByEmail(String email, String newPassword);
+
     void addPoint(Long userId, int point);
 
     Users getCurrentUser();

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.Random;
 
@@ -20,6 +21,7 @@ public class OtpServiceImpl implements OtpService {
     private final EmailService emailService;
     private static final int OTP_LENGTH = 6;
     private static final int OTP_EXPIRY_MINUTES = 10;
+    private static final int RESEND_COOLDOWN_SECONDS = 60;
 
     @Override
     @Transactional
@@ -59,6 +61,13 @@ public class OtpServiceImpl implements OtpService {
 
     @Override
     @Transactional
+    public String resendOtp(String email, String flow) {
+        enforceCooldown(email, normalizeFlow(flow));
+        return generateAndSendOtp(email);
+    }
+
+    @Override
+    @Transactional
     public boolean verifyOtp(String email, String otpCode) {
         Optional<OtpVerification> otpOptional = otpRepository.findByEmailAndOtpCode(email, otpCode);
 
@@ -88,6 +97,34 @@ public class OtpServiceImpl implements OtpService {
         otpRepository.deleteAll(otpRepository.findAll().stream()
                 .filter(otp -> LocalDateTime.now().isAfter(otp.getExpiresAt().plusHours(1)))
                 .toList());
+    }
+
+    private void enforceCooldown(String email, String flowName) {
+        Optional<OtpVerification> existingOtp = otpRepository.findByEmail(email);
+        if (existingOtp.isEmpty()) {
+            return;
+        }
+
+        OtpVerification otp = existingOtp.get();
+        LocalDateTime createdAt = otp.getCreatedAt();
+        if (createdAt == null) {
+            return;
+        }
+
+        long secondsSinceCreated = ChronoUnit.SECONDS.between(createdAt, LocalDateTime.now());
+        if (secondsSinceCreated < RESEND_COOLDOWN_SECONDS) {
+            long remaining = RESEND_COOLDOWN_SECONDS - secondsSinceCreated;
+            throw new RuntimeException(flowName + ": Vui lòng chờ thêm " + remaining + " giây trước khi gửi lại OTP");
+        }
+    }
+
+    private String normalizeFlow(String flow) {
+        if (flow == null) return "OTP";
+        return switch (flow.trim().toLowerCase()) {
+            case "register" -> "Đăng ký";
+            case "forgot-password", "forgotpassword" -> "Quên mật khẩu";
+            default -> "OTP";
+        };
     }
 
     private String generateOtpCode() {

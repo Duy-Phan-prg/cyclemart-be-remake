@@ -16,6 +16,7 @@ import com.example.cyclemartberemake.service.BikePostService;
 import com.example.cyclemartberemake.service.CloudinaryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -157,6 +158,16 @@ public class BikePostServiceImpl implements BikePostService {
         Long currentUserId = getCurrentUserId();
         Page<BikePost> posts = postRepo.findByUserId(currentUserId, pageable);
         return posts.map(this::buildResponse);
+    }
+
+    @Override
+    public Page<BikePostResponse> getPostsByUserId(Long userId, Pageable pageable) {
+        Page<BikePost> posts = postRepo.findByUserId(userId, pageable);
+        List<BikePostResponse> responses = posts.getContent().stream()
+                .filter(post -> post.getPostStatus() == PostStatus.APPROVED)
+                .map(this::buildResponse)
+                .toList();
+        return new PageImpl<>(responses, pageable, responses.size());
     }
 
     // ================= SEARCH =================
@@ -316,3 +327,4 @@ public class BikePostServiceImpl implements BikePostService {
         throw new RuntimeException("Người dùng chưa đăng nhập");
     }
 }
+

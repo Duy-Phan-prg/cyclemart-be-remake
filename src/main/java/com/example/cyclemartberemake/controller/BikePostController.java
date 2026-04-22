@@ -190,6 +190,25 @@ public class BikePostController {
         return service.getMyPosts(pageable);
     }
 
+    @GetMapping("/user/{userId}")
+    @Operation(summary = "Get approved bike posts of another user")
+    public Page<BikePostResponse> getPostsByUserId(
+            @PathVariable Long userId,
+            @Parameter(description = "Page number (0-based)", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", example = "20")
+            @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Sort field", example = "createdAt")
+            @RequestParam(defaultValue = "createdAt") String sort,
+            @Parameter(description = "Sort direction: asc or desc", example = "desc")
+            @RequestParam(defaultValue = "desc") String direction
+    ) {
+        String validSort = validateSortField(sort);
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, validSort));
+        return service.getPostsByUserId(userId, pageable);
+    }
+
     @GetMapping("/search")
     @Operation(summary = "Search bike posts")
     public Page<BikePostResponse> search(
@@ -226,3 +245,4 @@ public class BikePostController {
         };
     }
 }
+

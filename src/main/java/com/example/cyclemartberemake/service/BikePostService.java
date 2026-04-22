@@ -20,7 +20,9 @@ public interface BikePostService {
     void delete(Long id);
     
     Page<BikePostResponse> getMyPosts(Pageable pageable);
-    
+
+    Page<BikePostResponse> getPostsByUserId(Long userId, Pageable pageable);
+
     Page<BikePostResponse> search(String keyword, Double minPrice, Double maxPrice, 
                                  String brand, String city, Pageable pageable);
     

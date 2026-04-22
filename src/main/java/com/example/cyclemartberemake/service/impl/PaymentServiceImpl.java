@@ -49,23 +49,29 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentNotificationService notificationService;
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${momo.partnerCode}")
-    private String partnerCode;
+    @Value("${sepay.merchantId}")
+    private String merchantId;
 
-    @Value("${momo.accessKey}")
-    private String accessKey;
-
-    @Value("${momo.secretKey}")
+    @Value("${sepay.secretKey}")
     private String secretKey;
 
-    @Value("${momo.endpoint}")
-    private String endpoint;
+    @Value("${sepay.apiUrl}")
+    private String apiUrl;
 
-    @Value("${momo.returnUrl}")
+    @Value("${sepay.returnUrl}")
     private String returnUrl;
 
-    @Value("${momo.ipnUrl}")
+    @Value("${sepay.cancelUrl}")
+    private String cancelUrl;
+
+    @Value("${sepay.ipnUrl}")
     private String ipnUrl;
+
+    @Value("${sepay.bankAccount}")
+    private String bankAccount;
+
+    @Value("${sepay.bankCode}")
+    private String bankCode;
 
     @Override
     @Transactional
@@ -84,26 +90,8 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         String orderId = "ORDER_" + System.currentTimeMillis();
-        String requestId = orderId;
         String description = request.getDescription() != null ? 
             request.getDescription().replaceAll("[^a-zA-Z0-9\\s]", "") : "Nap diem CycleMart";
-        
-        // Ensure description is safe for MoMo (no Vietnamese characters or special chars)
-        description = description.replaceAll("[àáạảãâầấậẩẫăằắặẳẵ]", "a")
-                                .replaceAll("[èéẹẻẽêềếệểễ]", "e")
-                                .replaceAll("[ìíịỉĩ]", "i")
-                                .replaceAll("[òóọỏõôồốộổỗơờớợởỡ]", "o")
-                                .replaceAll("[ùúụủũưừứựửữ]", "u")
-                                .replaceAll("[ỳýỵỷỹ]", "y")
-                                .replaceAll("[đ]", "d")
-                                .replaceAll("[ÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ]", "A")
-                                .replaceAll("[ÈÉẸẺẼÊỀẾỆỂỄ]", "E")
-                                .replaceAll("[ÌÍỊỈĨ]", "I")
-                                .replaceAll("[ÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ]", "O")
-                                .replaceAll("[ÙÚỤỦŨƯỪỨỰỬỮ]", "U")
-                                .replaceAll("[ỲÝỴỶỸ]", "Y")
-                                .replaceAll("[Đ]", "D");
-
 
         Payment payment = Payment.builder()
                 .user(userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found")))
@@ -117,80 +105,29 @@ public class PaymentServiceImpl implements PaymentService {
         log.info("Created payment record: orderId={}, userId={}, amount={}", orderId, userId, amount);
 
         try {
-            // 🔥 GỌI MOMO API với credentials mới
-            String extraData = "";
-            String amountStr = amount.toString();
-            String rawHash = "accessKey=" + accessKey +
-                    "&amount=" + amountStr +
-                    "&extraData=" + extraData +
-                    "&ipnUrl=" + ipnUrl +
-                    "&orderId=" + orderId +
-                    "&orderInfo=" + description +
-                    "&partnerCode=" + partnerCode +
-                    "&redirectUrl=" + returnUrl +
-                    "&requestId=" + requestId +
-                    "&requestType=captureWallet";
-
-            log.info("MoMo signature raw hash: {}", rawHash);
-            String signature = hmacSHA256(rawHash, secretKey);
-            log.info("MoMo signature generated: {}", signature);
+            // 🔥 TẠO QR CODE CHO CHUYỂN KHOẢN
+            // Format: https://qr.sepay.vn/img?acc=ACCOUNT&bank=BANK_CODE&amount=AMOUNT&des=DESCRIPTION
             
-            payment.setSignature(signature);
-            paymentRepo.save(payment);
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
+            String qrUrl = String.format(
+                "https://qr.sepay.vn/img?acc=%s&bank=%s&amount=%d&des=%s",
+                bankAccount,
+                bankCode,
+                amount,
+                orderId
+            );
             
-            Map<String, Object> body = new HashMap<>();
-            body.put("partnerCode", partnerCode);
-            body.put("accessKey", accessKey);
-            body.put("requestId", requestId);
-            body.put("amount", amountStr);
-            body.put("orderId", orderId);
-            body.put("orderInfo", description);
-            body.put("redirectUrl", returnUrl);
-            body.put("ipnUrl", ipnUrl);
-            body.put("extraData", extraData);
-            body.put("requestType", "captureWallet");
-            body.put("signature", signature);
-            body.put("lang", "vi");
-
-            log.info("MoMo request body: {}", body);
+            log.info("Generated QR URL: {}", qrUrl);
             
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
-            ResponseEntity<Map> responseEntity = restTemplate.postForEntity(endpoint, entity, Map.class);
-            Map<String, Object> response = responseEntity.getBody();
-            
-            log.info("MoMo response: {}", response);
-            
-            if (response != null && "0".equals(response.get("resultCode").toString())) {
-                log.info("MoMo payment created successfully: orderId={}", orderId);
-                
-                return CreatePaymentResponse.builder()
-                        .orderId(orderId)
-                        .amount(amount)
-                        .description(description)
-                        .payUrl(response.get("payUrl") != null ? response.get("payUrl").toString() : null)
-                        .qrCodeUrl(response.get("qrCodeUrl") != null ? response.get("qrCodeUrl").toString() : null)
-                        .deeplink(response.get("deeplink") != null ? response.get("deeplink").toString() : null)
-                        .message("Tạo thanh toán thành công")
-                        .success(true)
-                        .build();
-            } else {
-                // 🔥 MoMo API error - Log detailed error info
-                String resultCode = response != null ? response.get("resultCode").toString() : "unknown";
-                String errorMsg = response != null ? response.get("message").toString() : "Lỗi không xác định";
-                
-                payment.setStatus(PaymentStatus.FAILED);
-                payment.setMessage(errorMsg);
-                paymentRepo.save(payment);
-                
-                log.error("MoMo API error: orderId={}, resultCode={}, error={}", orderId, resultCode, errorMsg);
-                throw new RuntimeException("Không thể tạo thanh toán MoMo (Code: " + resultCode + "): " + errorMsg);
-            }
+            return CreatePaymentResponse.builder()
+                    .orderId(orderId)
+                    .amount(amount)
+                    .description(description)
+                    .qrUrl(qrUrl)
+                    .message("Tạo mã QR thành công. Vui lòng quét QR để chuyển khoản")
+                    .success(true)
+                    .build();
 
         } catch (Exception e) {
-            // 🔥 Error handling
             payment.setStatus(PaymentStatus.FAILED);
             payment.setMessage("Lỗi hệ thống: " + e.getMessage());
             paymentRepo.save(payment);
@@ -204,11 +141,11 @@ public class PaymentServiceImpl implements PaymentService {
     @Transactional
     public void handleIPN(Map<String, Object> data) {
         
-        String orderId = data.get("orderId").toString();
-        String resultCode = data.get("resultCode").toString();
+        String orderId = data.get("orderCode").toString();
+        String status = data.get("status").toString();
         String signature = data.get("signature").toString();
         
-        log.info("Received IPN: orderId={}, resultCode={}", orderId, resultCode);
+        log.info("Received Sepay IPN: orderId={}, status={}", orderId, status);
 
         Payment payment = paymentRepo.findByOrderId(orderId).orElse(null);
         if (payment == null) {
@@ -222,39 +159,21 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         try {
-            // 🔥 Validate signature với credentials mới
-            String rawHash = "accessKey=" + accessKey +
-                    "&amount=" + data.get("amount") +
-                    "&extraData=" + data.getOrDefault("extraData", "") +
-                    "&message=" + data.get("message") +
-                    "&orderId=" + orderId +
-                    "&orderInfo=" + data.get("orderInfo") +
-                    "&orderType=" + data.get("orderType") +
-                    "&partnerCode=" + partnerCode +
-                    "&payType=" + data.get("payType") +
-                    "&requestId=" + data.get("requestId") +
-                    "&responseTime=" + data.get("responseTime") +
-                    "&resultCode=" + resultCode +
-                    "&transId=" + data.get("transId");
-
-            String expectedSignature = hmacSHA256(rawHash, secretKey);
-            
+            // Validate signature
+            String expectedSignature = generateSepaySignature(data);
             if (!expectedSignature.equals(signature)) {
                 log.error("Invalid signature for orderId: {}", orderId);
                 return;
             }
-
         } catch (Exception e) {
             log.error("Error verifying signature for orderId: {}", orderId, e);
             return;
         }
 
-        payment.setMomoTransId(data.get("transId").toString());
-        payment.setResponseCode(resultCode);
-        payment.setMessage(data.get("message").toString());
+        payment.setResponseCode(status);
         payment.setCompletedAt(LocalDateTime.now());
 
-        if ("0".equals(resultCode)) {
+        if ("COMPLETED".equals(status)) {
             payment.setStatus(PaymentStatus.SUCCESS);
 
             int points = (int) (payment.getAmount() / 1000);
@@ -274,7 +193,7 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setStatus(PaymentStatus.FAILED);
             paymentRepo.save(payment);
             
-            log.warn("Payment failed: orderId={}, resultCode={}", orderId, resultCode);
+            log.warn("Payment failed: orderId={}, status={}", orderId, status);
 
             notificationService.sendPaymentFailedEmail(payment);
             notificationService.sendRealTimeNotification(payment.getUser().getId(), 
@@ -427,16 +346,35 @@ public class PaymentServiceImpl implements PaymentService {
         throw new RuntimeException("Người dùng chưa đăng nhập");
     }
 
+    private String generateSepaySignature(Map<String, Object> data) throws Exception {
+        // Sepay signature: HMAC-SHA256 của sorted data
+        StringBuilder sb = new StringBuilder();
+        data.keySet().stream()
+            .filter(key -> !"signature".equals(key))
+            .sorted()
+            .forEach(key -> {
+                Object value = data.get(key);
+                if (value != null) {
+                    sb.append(key).append("=").append(value).append("&");
+                }
+            });
+        
+        String dataToSign = sb.toString();
+        if (dataToSign.endsWith("&")) {
+            dataToSign = dataToSign.substring(0, dataToSign.length() - 1);
+        }
+        
+        return hmacSHA256(dataToSign, secretKey);
+    }
+
     private String hmacSHA256(String data, String key) throws Exception {
         try {
-            // 🔥 Ensure UTF-8 encoding
             Mac mac = Mac.getInstance("HmacSHA256");
             SecretKeySpec secretKeySpec = new SecretKeySpec(key.getBytes("UTF-8"), "HmacSHA256");
             mac.init(secretKeySpec);
 
             byte[] rawHmac = mac.doFinal(data.getBytes("UTF-8"));
 
-            // 🔥 Convert to lowercase hex (MoMo requirement)
             StringBuilder hex = new StringBuilder();
             for (byte b : rawHmac) {
                 hex.append(String.format("%02x", b));

@@ -27,6 +27,9 @@ public interface BikePostMapper {
     BikePost toEntity(BikePostRequest request);
 
     @Mapping(source = "category.name", target = "categoryName")
+    @Mapping(source = "userId", target = "userId")
+    @Mapping(source = "user.fullName", target = "sellerName")
+    @Mapping(source = "user.email", target = "sellerEmail")
 
     // ENUM -> STRING
     @Mapping(source = "postStatus", target = "postStatus", qualifiedByName = "mapPostStatusEnum")
@@ -44,11 +47,6 @@ public interface BikePostMapper {
 
     // IMAGES
     @Mapping(source = "images", target = "images", qualifiedByName = "mapImages")
-
-    // SELLER (🔥 FIX CHÍNH Ở ĐÂY)
-    @Mapping(source = "user.id", target = "userId")
-    @Mapping(source = "user.fullName", target = "sellerName")
-    @Mapping(source = "user.email", target = "sellerEmail")
 
     @Mapping(target = "activePriority", ignore = true)
 

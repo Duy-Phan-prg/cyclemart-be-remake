@@ -48,6 +48,7 @@ public class BikePostServiceImpl implements BikePostService {
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         post.setUser(user);
+        post.setUserId(user.getId());
         post.setPostStatus(PostStatus.PENDING);
         post.setCreatedAt(LocalDateTime.now());
 
@@ -72,9 +73,8 @@ public class BikePostServiceImpl implements BikePostService {
         BikePost post = postRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
 
-        // 🔥 Tăng lượt xem khi user click vào bài
-        increaseViewCount(post);
-
+        post.setViewCount((post.getViewCount() == null ? 0 : post.getViewCount()) + 1);
+        post = postRepo.save(post);
         return buildResponse(post);
     }
 
@@ -192,14 +192,6 @@ public class BikePostServiceImpl implements BikePostService {
 
     // ================= HELPER =================
 
-    private void increaseViewCount(BikePost post) {
-        if (post.getViewCount() == null) {
-            post.setViewCount(0);
-        }
-        post.setViewCount(post.getViewCount() + 1);
-        postRepo.save(post);
-    }
-
     private Categories validateCategory(Integer id) {
         Categories category = categoryRepo.findById(id)
                 .orElseThrow(() -> new CategoryValidationException("Danh mục không tồn tại"));
@@ -231,7 +223,6 @@ public class BikePostServiceImpl implements BikePostService {
         postRepo.save(post);
     }
 
-    // 🔥 ĐOẠN ĐÃ GỠ LỖI CONFLICT Ở ĐÂY
     private BikePostResponse buildResponse(BikePost post) {
 
         BikePostResponse response = mapper.toResponse(post);
@@ -240,17 +231,23 @@ public class BikePostServiceImpl implements BikePostService {
             response.setPostStatus(post.getPostStatus().name());
         }
 
-        // 1. CHÚ THÍCH: Giữ lại code lấy trạng thái Kiểm định để Front-end hiển thị tem Verified
         response.setIsVerified(post.getIsVerified());
 
-        // 2. CHÚ THÍCH: Giữ lại code lấy thông tin người bán (Seller Info)
-        if (post.getUser() != null) {
-            response.setUserId(Long.valueOf(post.getUser().getId()));
-            response.setSellerName(post.getUser().getFullName());
-            response.setSellerEmail(post.getUser().getEmail());
+        if (response.getUserId() == null && post.getUserId() != null) {
+            response.setUserId(post.getUserId());
         }
 
-        // Đã tự động gắn PriorityPackageResponse nếu bài post đang sở hữu gói hoạt động
+        Users seller = post.getUser();
+        if (seller == null && post.getUserId() != null) {
+            seller = userRepository.findById(post.getUserId()).orElse(null);
+        }
+
+        if (seller != null) {
+            response.setUserId(seller.getId());
+            response.setSellerName(seller.getFullName());
+            response.setSellerEmail(seller.getEmail());
+        }
+
         setActivePriorityInfo(response, post.getId());
 
         return response;

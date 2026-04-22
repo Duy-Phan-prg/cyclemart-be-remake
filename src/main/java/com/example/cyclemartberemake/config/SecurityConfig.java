@@ -53,8 +53,9 @@ public class SecurityConfig {
                         .requestMatchers("GET", "/api/v1/posts/**").permitAll()
                         .requestMatchers("GET", "/api/auth/users/**").permitAll()
                         .requestMatchers("GET", "/api/v1/priority-packages/active").permitAll()
-                        // Payment IPN endpoint (MoMo callback)
-                        .requestMatchers("POST", "/api/v1/payments/momo/ipn").permitAll()
+                        // Payment endpoints - require authentication
+                        .requestMatchers("POST", "/api/v1/payments/sepay/create").authenticated()
+                        .requestMatchers("POST", "/api/v1/payments/sepay/ipn").permitAll()
                         // Admin endpoints - require authentication
                         .requestMatchers("/api/v1/admin/**").authenticated()
                         // All other endpoints require authentication

@@ -30,8 +30,8 @@ public class PaymentController extends BaseController {
 
     private final PaymentService paymentService;
 
-    @PostMapping("/momo/create")
-    @Operation(summary = "Create MoMo payment")
+    @PostMapping("/sepay/create")
+    @Operation(summary = "Create Sepay payment")
     public ResponseEntity<CreatePaymentResponse> createPayment(
             @Valid @RequestBody CreatePaymentRequest request,
             HttpServletRequest httpRequest
@@ -49,8 +49,8 @@ public class PaymentController extends BaseController {
         }
     }
 
-    @PostMapping("/momo/ipn")
-    @Operation(summary = "MoMo IPN callback (internal use)")
+    @PostMapping("/sepay/ipn")
+    @Operation(summary = "Sepay IPN callback (internal use)")
     public ResponseEntity<String> handleIPN(@RequestBody Map<String, Object> data) {
         try {
             paymentService.handleIPN(data);

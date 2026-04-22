@@ -7,8 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface UserTrackingRepository extends JpaRepository<UserTracking, Integer> {
+public interface UserTrackingRepository extends JpaRepository<UserTracking, Long> {
 
     // Lấy danh sách log theo ID người dùng
-    Page<UserTracking> findByUserId(int userId, Pageable pageable);
+    Page<UserTracking> findByUserId(Long userId, Pageable pageable);
 }

@@ -1,11 +1,7 @@
 package com.example.cyclemartberemake.entity;
 
-
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -58,17 +54,14 @@ public class BikePost {
 
     private Integer mileage;
 
-    @Column(name = "user_id")
-    private Long userId;
-
+    // 🔥 FIX CHUẨN FK
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private Users user;
 
     @Column(nullable = false)
     private Boolean allowNegotiation = false;
 
-    // 🔥 MODERATION
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PostStatus postStatus;
@@ -92,19 +85,21 @@ public class BikePost {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
     private List<PostPrioritySubscription> prioritySubscriptions;
 
+    @Column(nullable = false)
+    private Boolean isVerified = false;
+
     @PrePersist
     public void prePersist() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-        this.postStatus = PostStatus.PENDING; // 🔥 mặc định
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+
+        if (postStatus == null) postStatus = PostStatus.PENDING;
+        if (allowNegotiation == null) allowNegotiation = false;
+        if (isVerified == null) isVerified = false;
     }
 
     @PreUpdate
     public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
-
-    @Column(nullable = false)
-    private Boolean isVerified = false;
-
 }

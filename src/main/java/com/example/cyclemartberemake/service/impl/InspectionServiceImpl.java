@@ -36,7 +36,7 @@ public class InspectionServiceImpl implements InspectionService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bài đăng"));
 
         // Chỉ chủ xe mới được yêu cầu kiểm định
-        if (!post.getUserId().equals((long) currentUser.getId())) {
+        if (!post.getUser().getId().equals(currentUser.getId())) {
             throw new RuntimeException("Bạn không có quyền yêu cầu kiểm định cho xe này");
         }
 
@@ -80,7 +80,7 @@ public class InspectionServiceImpl implements InspectionService {
 
     @Override
     @Transactional
-    public void assignInspector(Long inspectionId, Integer inspectorId) {
+    public void assignInspector(Long inspectionId, Long inspectorId) {
         // 1. Tìm yêu cầu kiểm định
         Inspection inspection = inspectionRepository.findById(inspectionId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu"));

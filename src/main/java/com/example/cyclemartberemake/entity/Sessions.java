@@ -17,7 +17,9 @@ public class Sessions {
     @Id
     private String id;
 
-    private int userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private Users user;
 
     private String guestSessionId;
 

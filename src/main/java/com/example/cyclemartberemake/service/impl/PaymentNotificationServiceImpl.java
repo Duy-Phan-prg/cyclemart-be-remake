@@ -35,9 +35,9 @@ public class PaymentNotificationServiceImpl implements PaymentNotificationServic
     @Override
     public void sendPaymentSuccessEmail(Payment payment) {
         try {
-            Users user = getUserById(payment.getUserId());
+            Users user = payment.getUser();
             if (user == null || user.getEmail() == null) {
-                log.warn("Cannot send email - user not found or no email: userId={}", payment.getUserId());
+                log.warn("Cannot send email - user not found or no email: userId={}", payment.getUser().getId());
                 return;
             }
 
@@ -60,9 +60,9 @@ public class PaymentNotificationServiceImpl implements PaymentNotificationServic
     @Override
     public void sendPaymentFailedEmail(Payment payment) {
         try {
-            Users user = getUserById(payment.getUserId());
+            Users user = payment.getUser();
             if (user == null || user.getEmail() == null) {
-                log.warn("Cannot send email - user not found or no email: userId={}", payment.getUserId());
+                log.warn("Cannot send email - user not found or no email: userId={}", payment.getUser().getId());
                 return;
             }
 
@@ -85,9 +85,9 @@ public class PaymentNotificationServiceImpl implements PaymentNotificationServic
     @Override
     public void sendRefundNotificationEmail(Payment payment) {
         try {
-            Users user = getUserById(payment.getUserId());
+            Users user = payment.getUser();
             if (user == null || user.getEmail() == null) {
-                log.warn("Cannot send email - user not found or no email: userId={}", payment.getUserId());
+                log.warn("Cannot send email - user not found or no email: userId={}", payment.getUser().getId());
                 return;
             }
 
@@ -132,9 +132,6 @@ public class PaymentNotificationServiceImpl implements PaymentNotificationServic
     }
 
     // 🔥 Helper methods
-    private Users getUserById(Long userId) {
-        return userRepository.findById(userId.intValue()).orElse(null);
-    }
 
     private String buildSuccessEmailBody(Payment payment, Users user) {
         return String.format("""

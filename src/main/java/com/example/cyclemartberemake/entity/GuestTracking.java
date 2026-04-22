@@ -16,7 +16,7 @@ public class GuestTracking {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Long id;
 
     private String sessionId;
 
@@ -24,9 +24,11 @@ public class GuestTracking {
 
     private String location;
 
-    private Integer productId;
+    private Long productId;
 
-    private Integer sellerId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seller_id")
+    private Users seller;
 
     private Integer categoryId;
 

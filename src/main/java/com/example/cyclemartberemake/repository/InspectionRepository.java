@@ -11,10 +11,10 @@ import java.util.List;
 
 @Repository
 public interface InspectionRepository extends JpaRepository<Inspection, Long> {
-    Page<Inspection> findBySellerId(int sellerId, Pageable pageable);
-    Page<Inspection> findByInspectorId(int inspectorId, Pageable pageable);
+    Page<Inspection> findBySellerId(Long sellerId, Pageable pageable);
+    Page<Inspection> findByInspectorId(Long inspectorId, Pageable pageable);
     Page<Inspection> findByStatus(InspectionStatus status, Pageable pageable);
     boolean existsByBikePostIdAndStatusIn(Long postId, java.util.List<InspectionStatus> statuses);
     // Lấy tất cả lịch đã gán cho Inspector (trừ những cái đã hủy)
-    List<Inspection> findByInspectorIdAndStatusIn(Integer inspectorId, List<InspectionStatus> statuses);
+    List<Inspection> findByInspectorIdAndStatusIn(Long inspectorId, List<InspectionStatus> statuses);
 }

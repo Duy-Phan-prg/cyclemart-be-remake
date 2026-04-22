@@ -56,10 +56,11 @@ public class UserTrackingAspect {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth == null || "anonymousUser".equals(auth.getPrincipal())) return;
 
-            int userId = ((Users) auth.getPrincipal()).getId();
+            Long userId = ((Users) auth.getPrincipal()).getId();
 
             UserTracking tracking = new UserTracking();
-            tracking.setUserId(userId);
+            Users user = (Users) auth.getPrincipal();
+            tracking.setUser(user);
 
             // 🔥 Lấy tên thân thiện từ Map, nếu không có thì mới dùng tên kỹ thuật
             String friendlyName = FUNCTION_NAMES.getOrDefault(methodName, "Thực hiện " + methodName);

@@ -15,10 +15,10 @@ import java.time.LocalDateTime;
 public class SellerRatingResponse {
 
     private Long id;
-    private Integer sellerId;
+    private Long sellerId;
     private String sellerName;
     private String sellerEmail;
-    private Integer buyerId;
+    private Long buyerId;
     private String buyerName;
     private String buyerEmail;
     private Integer score;

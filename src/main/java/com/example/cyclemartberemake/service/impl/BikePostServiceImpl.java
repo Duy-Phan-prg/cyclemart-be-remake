@@ -10,6 +10,7 @@ import com.example.cyclemartberemake.mapper.BikePostMapper;
 import com.example.cyclemartberemake.repository.BikePostRepository;
 import com.example.cyclemartberemake.repository.CategoryRepository;
 import com.example.cyclemartberemake.repository.PostPrioritySubscriptionRepository;
+import com.example.cyclemartberemake.repository.UserRepository;
 import com.example.cyclemartberemake.service.BikePostService;
 import com.example.cyclemartberemake.service.CloudinaryService;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class BikePostServiceImpl implements BikePostService {
     private final CloudinaryService cloudinaryService;
     private final BikePostMapper mapper;
     private final PostPrioritySubscriptionRepository priorityRepo;
+    private final UserRepository userRepository;
 
     // ================= CREATE =================
     @Override
@@ -42,7 +44,10 @@ public class BikePostServiceImpl implements BikePostService {
         BikePost post = mapper.toEntity(req);
         post.setCategory(category);
 
-        post.setUserId(getCurrentUserId());
+        Long userId = getCurrentUserId();
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        post.setUser(user);
         post.setPostStatus(PostStatus.PENDING);
         post.setCreatedAt(LocalDateTime.now());
 
@@ -78,7 +83,7 @@ public class BikePostServiceImpl implements BikePostService {
 
         // Check ownership
         Long currentUserId = getCurrentUserId();
-        if (!post.getUserId().equals(currentUserId)) {
+        if (!post.getUser().getId().equals(currentUserId)) {
             throw new RuntimeException("Bạn không có quyền chỉnh sửa bài đăng này");
         }
 
@@ -125,7 +130,7 @@ public class BikePostServiceImpl implements BikePostService {
                 .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
 
         Long currentUserId = getCurrentUserId();
-        if (!post.getUserId().equals(currentUserId)) {
+        if (!post.getUser().getId().equals(currentUserId)) {
             throw new RuntimeException("Bạn không có quyền xóa bài đăng này");
         }
 
@@ -232,9 +237,6 @@ public class BikePostServiceImpl implements BikePostService {
             response.setUserId(Long.valueOf(post.getUser().getId()));
             response.setSellerName(post.getUser().getFullName());
             response.setSellerEmail(post.getUser().getEmail());
-        } else if (post.getUserId() != null) {
-            // Fallback nếu bài đăng không được gán User Object mà chỉ có userId
-            response.setUserId(post.getUserId());
         }
 
         // Đã tự động gắn PriorityPackageResponse nếu bài post đang sở hữu gói hoạt động

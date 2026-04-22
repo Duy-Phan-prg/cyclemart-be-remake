@@ -11,30 +11,30 @@ public interface SellerRatingService {
     /**
      * Tạo hoặc cập nhật đánh giá cho một seller
      */
-    SellerRatingResponse createOrUpdateSellerRating(Integer buyerId, SellerRatingRequest request);
+    SellerRatingResponse createOrUpdateSellerRating(Long buyerId, SellerRatingRequest request);
 
     /**
      * Lấy tất cả đánh giá của một seller
      */
-    Page<SellerRatingResponse> getSellerRatings(Integer sellerId, Pageable pageable);
+    Page<SellerRatingResponse> getSellerRatings(Long sellerId, Pageable pageable);
 
     /**
      * Lấy đánh giá của buyer cho một seller
      */
-    SellerRatingResponse getSellerRatingByBuyer(Integer sellerId, Integer buyerId);
+    SellerRatingResponse getSellerRatingByBuyer(Long sellerId, Long buyerId);
 
     /**
      * Xóa đánh giá
      */
-    void deleteSellerRating(Long ratingId, Integer buyerId);
+    void deleteSellerRating(Long ratingId, Long buyerId);
 
     /**
      * Lấy tất cả đánh giá do buyer tạo
      */
-    Page<SellerRatingResponse> getMySellerRatings(Integer buyerId, Pageable pageable);
+    Page<SellerRatingResponse> getMySellerRatings(Long buyerId, Pageable pageable);
 
     /**
      * Lấy thông tin seller (bao gồm điểm trung bình và số lượng đánh giá)
      */
-    SellerInfoResponse getSellerInfo(Integer sellerId);
+    SellerInfoResponse getSellerInfo(Long sellerId);
 }

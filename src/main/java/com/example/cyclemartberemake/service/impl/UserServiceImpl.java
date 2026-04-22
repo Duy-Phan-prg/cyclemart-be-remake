@@ -80,7 +80,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void updateProfile(int userId, UpdateProfileRequest request) {
+    public void updateProfile(Long userId, UpdateProfileRequest request) {
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + userId));
 
@@ -109,7 +109,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void changePassword(int userId, ChangePasswordRequest request) {
+    public void changePassword(Long userId, ChangePasswordRequest request) {
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + userId));
 
@@ -132,7 +132,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void addPoint(Long userId, int point) {
 
-        Users user = userRepository.findById(userId.intValue())
+        Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         user.setPoint(user.getPoint() + point);
@@ -149,7 +149,7 @@ public class UserServiceImpl implements UserService {
                 .getPrincipal();
 
         if (principal instanceof String) {
-            int id = Integer.parseInt((String) principal);
+            Long id = Long.parseLong((String) principal);
             return userRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("User not found"));
         }
@@ -157,7 +157,7 @@ public class UserServiceImpl implements UserService {
         String principalStr = principal.toString();
         String idStr = principalStr.substring(principalStr.indexOf("id=") + 3, principalStr.indexOf(","));
 
-        int id = Integer.parseInt(idStr);
+        Long id = Long.parseLong(idStr);
 
         return userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -171,7 +171,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserInfoResponseDTO getUserById(int id) {
+    public UserInfoResponseDTO getUserById(Long id) {
         Users user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User không tồn tại"));
 

@@ -19,7 +19,9 @@ public class Negotiation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long buyerId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "buyer_id", nullable = false)
+    private Users buyer;
 
     @ManyToOne
     @JoinColumn(name = "bike_post_id")

@@ -47,7 +47,7 @@ public class InspectionController {
     // 4. Admin phân công
     @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
     @PutMapping("/admin/{id}/assign")
-    public void assignInspector(@PathVariable Long id, @RequestParam Integer inspectorId) {
+    public void assignInspector(@PathVariable Long id, @RequestParam Long inspectorId) {
         inspectionService.assignInspector(id, inspectorId);
     }
 

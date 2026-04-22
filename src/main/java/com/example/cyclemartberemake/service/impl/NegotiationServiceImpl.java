@@ -5,9 +5,11 @@ import com.example.cyclemartberemake.dto.response.NegotiationResponseDTO;
 import com.example.cyclemartberemake.entity.BikePost;
 import com.example.cyclemartberemake.entity.Negotiation;
 import com.example.cyclemartberemake.entity.NegotiationStatus;
+import com.example.cyclemartberemake.entity.Users;
 import com.example.cyclemartberemake.mapper.NegotiationMapper;
 import com.example.cyclemartberemake.repository.BikePostRepository;
 import com.example.cyclemartberemake.repository.NegotiationRepository;
+import com.example.cyclemartberemake.repository.UserRepository;
 import com.example.cyclemartberemake.service.NegotiationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,7 @@ public class NegotiationServiceImpl implements NegotiationService {
 
     private final NegotiationRepository negotiationRepository;
     private final BikePostRepository bikePostRepository;
+    private final UserRepository userRepository;
     private final NegotiationMapper negotiationMapper;
 
     @Override
@@ -25,8 +28,11 @@ public class NegotiationServiceImpl implements NegotiationService {
         BikePost post = bikePostRepository.findById(request.getBikePostId())
                 .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
 
+        Users buyer = userRepository.findById(buyerId)
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+
         Negotiation negotiation = Negotiation.builder()
-                .buyerId(buyerId)
+                .buyer(buyer)
                 .bikePost(post)
                 .offeredPrice(request.getOfferedPrice())
                 .status(NegotiationStatus.PENDING)

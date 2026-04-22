@@ -18,11 +18,11 @@ public interface UserService {
 
     List<UserInfoResponseDTO> getAllUsers();
 
-    UserInfoResponseDTO getUserById(int id);
+    UserInfoResponseDTO getUserById(Long id);
 
-    void updateProfile(int userId, UpdateProfileRequest request);
+    void updateProfile(Long userId, UpdateProfileRequest request);
 
-    void changePassword(int userId, ChangePasswordRequest request);
+    void changePassword(Long userId, ChangePasswordRequest request);
 
     void addPoint(Long userId, int point);
 

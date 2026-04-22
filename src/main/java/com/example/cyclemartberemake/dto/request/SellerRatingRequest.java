@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 public class SellerRatingRequest {
 
     @NotNull(message = "Seller ID không được rỗng")
-    private Integer sellerId;
+    private Long sellerId;
 
     @NotNull(message = "Điểm đánh giá không được rỗng")
     @Min(value = 1, message = "Điểm phải từ 1 đến 5 sao")

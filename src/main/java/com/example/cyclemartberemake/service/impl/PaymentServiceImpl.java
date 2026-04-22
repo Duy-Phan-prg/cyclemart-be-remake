@@ -8,6 +8,7 @@ import com.example.cyclemartberemake.entity.PaymentStatus;
 import com.example.cyclemartberemake.entity.Users;
 import com.example.cyclemartberemake.mapper.PaymentMapper;
 import com.example.cyclemartberemake.repository.PaymentRepository;
+import com.example.cyclemartberemake.repository.UserRepository;
 import com.example.cyclemartberemake.service.PaymentNotificationService;
 import com.example.cyclemartberemake.service.PaymentService;
 import com.example.cyclemartberemake.service.UserService;
@@ -39,6 +40,7 @@ import java.util.Map;
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepo;
+    private final UserRepository userRepository;
     private final UserService userService;
     private final PaymentMapper paymentMapper;
     private final PaymentNotificationService notificationService;
@@ -95,7 +97,7 @@ public class PaymentServiceImpl implements PaymentService {
 
 
         Payment payment = Payment.builder()
-                .userId(userId)
+                .user(userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found")))
                 .orderId(orderId)
                 .amount(request.getAmount())
                 .description(description)
@@ -253,12 +255,12 @@ public class PaymentServiceImpl implements PaymentService {
             
             paymentRepo.save(payment);
 
-            userService.addPoint(payment.getUserId(), points);
+            userService.addPoint(payment.getUser().getId(), points);
             
             log.info("Payment successful: orderId={}, points={}", orderId, points);
 
             notificationService.sendPaymentSuccessEmail(payment);
-            notificationService.sendRealTimeNotification(payment.getUserId(), 
+            notificationService.sendRealTimeNotification(payment.getUser().getId(), 
                 "Thanh toán thành công! Bạn đã được cộng " + points + " điểm.", "PAYMENT_SUCCESS");
             
         } else {
@@ -268,7 +270,7 @@ public class PaymentServiceImpl implements PaymentService {
             log.warn("Payment failed: orderId={}, resultCode={}", orderId, resultCode);
 
             notificationService.sendPaymentFailedEmail(payment);
-            notificationService.sendRealTimeNotification(payment.getUserId(), 
+            notificationService.sendRealTimeNotification(payment.getUser().getId(), 
                 "Thanh toán thất bại. Vui lòng thử lại.", "PAYMENT_FAILED");
         }
     }
@@ -295,7 +297,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch"));
         
 
-        if (!payment.getUserId().equals(userId)) {
+        if (!payment.getUser().getId().equals(userId)) {
             throw new RuntimeException("Bạn không có quyền xem giao dịch này");
         }
         
@@ -353,21 +355,24 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setStatus(PaymentStatus.REFUNDED);
         payment.setRefundReason(reason);
         payment.setRefundedAt(LocalDateTime.now());
-        payment.setRefundedBy(adminId);
+        
+        Users admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new RuntimeException("Admin không tồn tại"));
+        payment.setRefundedBy(admin);
 
         paymentRepo.save(payment);
 
         if (payment.getPointsEarned() != null && payment.getPointsEarned() > 0) {
             try {
-                userService.addPoint(payment.getUserId(), -payment.getPointsEarned());
-                log.info("Deducted {} points from user {} for refund", payment.getPointsEarned(), payment.getUserId());
+                userService.addPoint(payment.getUser().getId(), -payment.getPointsEarned());
+                log.info("Deducted {} points from user {} for refund", payment.getPointsEarned(), payment.getUser().getId());
             } catch (Exception e) {
                 log.error("Failed to deduct points for refund: paymentId={}", paymentId, e);
             }
         }
 
         notificationService.sendRefundNotificationEmail(payment);
-        notificationService.sendRealTimeNotification(payment.getUserId(), 
+        notificationService.sendRealTimeNotification(payment.getUser().getId(), 
             "Giao dịch " + payment.getOrderId() + " đã được hoàn tiền.", "PAYMENT_REFUNDED");
 
         log.info("Payment refunded successfully: paymentId={}, orderId={}, reason={}", 
@@ -387,7 +392,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         Long currentUserId = getCurrentUserId();
-        if (!payment.getUserId().equals(currentUserId)) {
+        if (!payment.getUser().getId().equals(currentUserId)) {
             throw new RuntimeException("Bạn không có quyền hủy giao dịch này");
         }
 
@@ -397,7 +402,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         paymentRepo.save(payment);
 
-        notificationService.sendRealTimeNotification(payment.getUserId(), 
+        notificationService.sendRealTimeNotification(payment.getUser().getId(), 
             "Giao dịch " + payment.getOrderId() + " đã được hủy.", "PAYMENT_CANCELLED");
 
         log.info("Payment cancelled: paymentId={}, orderId={}, reason={}", 

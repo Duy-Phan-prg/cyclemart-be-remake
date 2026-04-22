@@ -35,7 +35,7 @@ public class SellerRatingController {
     @Operation(summary = "Create or update seller rating")
     public ResponseEntity<?> createOrUpdateSellerRating(@Valid @RequestBody SellerRatingRequest request) {
         try {
-            Integer buyerId = getCurrentUserId();
+            Long buyerId = getCurrentUserId();
             SellerRatingResponse response = sellerRatingService.createOrUpdateSellerRating(buyerId, request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception e) {
@@ -50,7 +50,7 @@ public class SellerRatingController {
     @GetMapping("/seller/{sellerId}")
     @Operation(summary = "Get seller ratings and info")
     public ResponseEntity<?> getSellerRatings(
-            @PathVariable Integer sellerId,
+            @PathVariable Long sellerId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
@@ -75,7 +75,7 @@ public class SellerRatingController {
      */
     @GetMapping("/seller/{sellerId}/info")
     @Operation(summary = "Get seller rating info only")
-    public ResponseEntity<?> getSellerInfo(@PathVariable Integer sellerId) {
+    public ResponseEntity<?> getSellerInfo(@PathVariable Long sellerId) {
         try {
             SellerInfoResponse response = sellerRatingService.getSellerInfo(sellerId);
             return ResponseEntity.ok(response);
@@ -90,9 +90,9 @@ public class SellerRatingController {
      */
     @GetMapping("/seller/{sellerId}/my-rating")
     @Operation(summary = "Get my rating for a specific seller")
-    public ResponseEntity<?> getMyRatingForSeller(@PathVariable Integer sellerId) {
+    public ResponseEntity<?> getMyRatingForSeller(@PathVariable Long sellerId) {
         try {
-            Integer buyerId = getCurrentUserId();
+            Long buyerId = getCurrentUserId();
             SellerRatingResponse response = sellerRatingService.getSellerRatingByBuyer(sellerId, buyerId);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -111,7 +111,7 @@ public class SellerRatingController {
             @RequestParam(defaultValue = "10") int size
     ) {
         try {
-            Integer buyerId = getCurrentUserId();
+            Long buyerId = getCurrentUserId();
             Pageable pageable = PageRequest.of(page, size);
             Page<SellerRatingResponse> ratings = sellerRatingService.getMySellerRatings(buyerId, pageable);
             return ResponseEntity.ok(ratings);
@@ -128,7 +128,7 @@ public class SellerRatingController {
     @Operation(summary = "Delete a seller rating")
     public ResponseEntity<?> deleteSellerRating(@PathVariable Long ratingId) {
         try {
-            Integer buyerId = getCurrentUserId();
+            Long buyerId = getCurrentUserId();
             sellerRatingService.deleteSellerRating(ratingId, buyerId);
             return ResponseEntity.ok(createSuccessResponse("Xóa đánh giá thành công"));
         } catch (Exception e) {
@@ -140,16 +140,16 @@ public class SellerRatingController {
     /**
      * Lấy user ID từ JWT token
      */
-    private Integer getCurrentUserId() {
+    private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Object principal = authentication.getPrincipal();
 
         if (principal instanceof String) {
-            return Integer.parseInt((String) principal);
+            return Long.parseLong((String) principal);
         } else {
             String principalStr = principal.toString();
             String idStr = principalStr.substring(principalStr.indexOf("id=") + 3, principalStr.indexOf(","));
-            return Integer.parseInt(idStr);
+            return Long.parseLong(idStr);
         }
     }
 

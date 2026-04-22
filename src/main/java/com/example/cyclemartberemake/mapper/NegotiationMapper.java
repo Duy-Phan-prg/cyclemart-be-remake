@@ -11,6 +11,7 @@ import java.util.List;
 public interface NegotiationMapper {
 
     @Mapping(source = "bikePost.id", target = "bikePostId")
+    @Mapping(source = "buyer.id", target = "buyerId")
     NegotiationResponseDTO toResponse(Negotiation negotiation);
 
     List<NegotiationResponseDTO> toResponseList(List<Negotiation> negotiations);

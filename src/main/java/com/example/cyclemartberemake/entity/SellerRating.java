@@ -29,14 +29,14 @@ public class SellerRating {
     private Users seller;
 
     @Column(name = "seller_id", insertable = false, updatable = false)
-    private Integer sellerId;
+    private Long sellerId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id", nullable = false)
     private Users buyer;
 
     @Column(name = "buyer_id", insertable = false, updatable = false)
-    private Integer buyerId;
+    private Long buyerId;
 
     @Column(nullable = false)
     private Integer score; // 1-5 stars

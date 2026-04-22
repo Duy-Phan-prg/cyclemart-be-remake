@@ -93,7 +93,7 @@ public class AuthController {
 
     @GetMapping("/users/{id}")
     @Operation(summary = "Get user by ID")
-    public ResponseEntity<UserInfoResponseDTO> getUserById(@PathVariable int id) {
+    public ResponseEntity<UserInfoResponseDTO> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 }

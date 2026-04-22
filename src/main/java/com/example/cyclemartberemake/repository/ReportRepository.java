@@ -13,9 +13,9 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     
     List<Report> findByStatus(ReportStatus status);
     
-    List<Report> findByReporterId(Integer reporterId);
+    List<Report> findByReporterId(Long reporterId);
     
-    List<Report> findByReportedUserId(Integer reportedUserId);
+    List<Report> findByReportedUserId(Long reportedUserId);
     
     // Thống kê
     long countByStatus(ReportStatus status);

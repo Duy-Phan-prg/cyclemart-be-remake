@@ -11,6 +11,6 @@ public interface InspectionService {
     Page<InspectionResponseDTO> getAllRequests(Pageable pageable); // Cho Admin
     Page<InspectionResponseDTO> getRequestsForInspector(Pageable pageable); // Cho Inspector
 
-    void assignInspector(Long inspectionId, Integer inspectorId);
+    void assignInspector(Long inspectionId, Long inspectorId);
     void updateResult(Long inspectionId, String status, String resultNote);
 }

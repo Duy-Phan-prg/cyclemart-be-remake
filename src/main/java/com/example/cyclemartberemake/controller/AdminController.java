@@ -37,7 +37,7 @@ public class AdminController {
             @Parameter(description = "Page size", example = "20")
             @RequestParam(defaultValue = "20") int size,
             
-            @Parameter(description = "Sort field: id, title, price, createdAt, updatedAt, postStatus, approvedAt, userId, brand, city, year", 
+            @Parameter(description = "Sort field: id, title, price, createdAt, updatedAt, postStatus, approvedAt, brand, city, year", 
                       example = "createdAt")
             @RequestParam(defaultValue = "createdAt") String sortBy,
             
@@ -125,7 +125,6 @@ public class AdminController {
             case "updatedat", "updated_at" -> "updatedAt";
             case "poststatus", "post_status" -> "postStatus";
             case "approvedat", "approved_at" -> "approvedAt";
-            case "userid", "user_id" -> "userId";
             case "brand" -> "brand";
             case "city" -> "city";
             case "year" -> "year";

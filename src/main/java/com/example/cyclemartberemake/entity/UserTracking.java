@@ -16,9 +16,11 @@ public class UserTracking {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Long id;
 
-    private int userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private Users user;
 
     private String sessionId;
 
@@ -26,9 +28,11 @@ public class UserTracking {
 
     private String location;
 
-    private Integer productId;
+    private Long productId;
 
-    private Integer sellerId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seller_id")
+    private Users seller;
 
     private Integer categoryId;
 

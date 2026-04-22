@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class SellerInfoResponse {
 
-    private Integer sellerId;
+    private Long sellerId;
     private String sellerName;
     private String sellerEmail;
     private Double averageScore;

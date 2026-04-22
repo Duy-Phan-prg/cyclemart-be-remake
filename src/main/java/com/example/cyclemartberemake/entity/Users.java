@@ -1,13 +1,11 @@
 package com.example.cyclemartberemake.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -19,8 +17,7 @@ public class Users {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
-
+    private Long id;
     @Column(nullable = false, unique = true)
     private String email;
 
@@ -49,11 +46,19 @@ public class Users {
     @Column(nullable = false)
     private Integer point = 0;
 
-    // Seller rating information
-    private Double sellerRating = 0.0; // Điểm trung bình đánh giá
-    private Long sellerReviewCount = 0L; // Số lượng người đã đánh giá
+    @PrePersist
+    public void prePersist() {
+        if (this.point == null) {
+            this.point = 0;
+        }
+    }
 
-    // Override toString để tránh LazyInitializationException
+    private Double sellerRating = 0.0;
+    private Long sellerReviewCount = 0L;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<BikePost> posts;
+
     @Override
     public String toString() {
         return "Users{" +

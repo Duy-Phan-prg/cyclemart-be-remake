@@ -28,7 +28,7 @@ public class SellerRatingServiceImpl implements SellerRatingService {
 
     @Override
     @Transactional
-    public SellerRatingResponse createOrUpdateSellerRating(Integer buyerId, SellerRatingRequest request) {
+    public SellerRatingResponse createOrUpdateSellerRating(Long buyerId, SellerRatingRequest request) {
         // Kiểm tra xem seller có tồn tại không
         Users seller = userRepository.findById(request.getSellerId())
                 .orElseThrow(() -> new RuntimeException("Người bán không tồn tại"));
@@ -71,7 +71,7 @@ public class SellerRatingServiceImpl implements SellerRatingService {
     }
 
     @Override
-    public Page<SellerRatingResponse> getSellerRatings(Integer sellerId, Pageable pageable) {
+    public Page<SellerRatingResponse> getSellerRatings(Long sellerId, Pageable pageable) {
         // Kiểm tra xem seller có tồn tại không
         if (!userRepository.existsById(sellerId)) {
             throw new RuntimeException("Người bán không tồn tại");
@@ -83,7 +83,7 @@ public class SellerRatingServiceImpl implements SellerRatingService {
     }
 
     @Override
-    public SellerRatingResponse getSellerRatingByBuyer(Integer sellerId, Integer buyerId) {
+    public SellerRatingResponse getSellerRatingByBuyer(Long sellerId, Long buyerId) {
         SellerRating rating = sellerRatingRepository.findBySellerIdAndBuyerId(sellerId, buyerId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đánh giá"));
         return sellerRatingMapper.toResponse(rating);
@@ -91,7 +91,7 @@ public class SellerRatingServiceImpl implements SellerRatingService {
 
     @Override
     @Transactional
-    public void deleteSellerRating(Long ratingId, Integer buyerId) {
+    public void deleteSellerRating(Long ratingId, Long buyerId) {
         SellerRating rating = sellerRatingRepository.findById(ratingId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đánh giá"));
 
@@ -109,14 +109,14 @@ public class SellerRatingServiceImpl implements SellerRatingService {
     }
 
     @Override
-    public Page<SellerRatingResponse> getMySellerRatings(Integer buyerId, Pageable pageable) {
+    public Page<SellerRatingResponse> getMySellerRatings(Long buyerId, Pageable pageable) {
         Page<SellerRating> ratings = sellerRatingRepository.findByBuyerId(buyerId, pageable);
         List<SellerRatingResponse> responses = sellerRatingMapper.toResponseList(ratings.getContent());
         return new PageImpl<>(responses, pageable, ratings.getTotalElements());
     }
 
     @Override
-    public SellerInfoResponse getSellerInfo(Integer sellerId) {
+    public SellerInfoResponse getSellerInfo(Long sellerId) {
         // Kiểm tra xem seller có tồn tại không
         Users seller = userRepository.findById(sellerId)
                 .orElseThrow(() -> new RuntimeException("Người bán không tồn tại"));
@@ -125,7 +125,7 @@ public class SellerRatingServiceImpl implements SellerRatingService {
         long totalRatings = sellerRatingRepository.countBySellerId(sellerId);
 
         return SellerInfoResponse.builder()
-                .sellerId((int) (long) sellerId)
+                .sellerId(sellerId)
                 .sellerName(seller.getFullName())
                 .sellerEmail(seller.getEmail())
                 .averageScore(averageScore != null ? Math.round(averageScore * 100.0) / 100.0 : 0.0)

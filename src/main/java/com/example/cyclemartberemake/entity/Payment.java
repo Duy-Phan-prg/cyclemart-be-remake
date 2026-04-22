@@ -19,7 +19,10 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private Users user;
+
     private String orderId;
     private Long amount;
 
@@ -27,25 +30,26 @@ public class Payment {
     private PaymentStatus status;
 
     private String description;
-    private String momoTransId;        // Transaction ID từ MoMo
-    private String responseCode;       // Response code từ MoMo
-    private String message;            // Message từ MoMo
-    private String signature;          // Signature để verify
-    private Integer pointsEarned;      // Điểm được cộng
+    private String momoTransId;
+    private String responseCode;
+    private String message;
+    private String signature;
+    private Integer pointsEarned;
     
-    // 🔥 Refund information
-    private String refundReason;       // Lý do hoàn tiền
-    private LocalDateTime refundedAt;  // Thời gian hoàn tiền
-    private Long refundedBy;           // Admin ID thực hiện refund
+    private String refundReason;
+    private LocalDateTime refundedAt;
     
-    // 🔥 Location information
-    private String city;               // Thành phố thanh toán
-    private String district;           // Quận/Huyện thanh toán
-    private String ipAddress;          // IP address for fraud detection
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "refunded_by")
+    private Users refundedBy;
+    
+    private String city;
+    private String district;
+    private String ipAddress;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private LocalDateTime completedAt; // Thời gian hoàn thành
+    private LocalDateTime completedAt;
 
     @PrePersist
     public void prePersist() {

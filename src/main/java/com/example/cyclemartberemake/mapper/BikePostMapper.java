@@ -49,7 +49,7 @@ public interface BikePostMapper {
     @Mapping(source = "images", target = "images", qualifiedByName = "mapImages")
 
     @Mapping(target = "activePriority", ignore = true)
-
+    @Mapping(source = "isRequestedInspection", target = "isRequestedInspection")
     BikePostResponse toResponse(BikePost bikePost);
 
     List<BikePostResponse> toResponseList(List<BikePost> bikePosts);

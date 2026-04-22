@@ -71,4 +71,6 @@ public class BikePostResponse {
     // ================= TIME =================
     private LocalDateTime createdAt;
     private Boolean isVerified;
+    @Schema(description = "Có yêu cầu kiểm định ngay lúc đăng bài không")
+    private Boolean isRequestedInspection;
 }

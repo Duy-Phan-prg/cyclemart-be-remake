@@ -7,6 +7,8 @@ import com.example.cyclemartberemake.dto.request.UserRegisterRequestDTO;
 import com.example.cyclemartberemake.dto.response.UserInfoResponseDTO;
 import com.example.cyclemartberemake.dto.response.UserLoginResponseDTO;
 import com.example.cyclemartberemake.entity.Users;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -16,7 +18,7 @@ public interface UserService {
 
     UserLoginResponseDTO login(UserLoginRequestDTO dto);
 
-    List<UserInfoResponseDTO> getAllUsers();
+    Page<UserInfoResponseDTO> getAllUsers(Pageable pageable);
 
     UserInfoResponseDTO getUserById(Long id);
 

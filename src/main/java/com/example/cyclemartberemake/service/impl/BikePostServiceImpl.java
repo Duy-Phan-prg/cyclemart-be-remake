@@ -9,6 +9,7 @@ import com.example.cyclemartberemake.exception.CategoryValidationException;
 import com.example.cyclemartberemake.mapper.BikePostMapper;
 import com.example.cyclemartberemake.repository.BikePostRepository;
 import com.example.cyclemartberemake.repository.CategoryRepository;
+import com.example.cyclemartberemake.repository.InspectionRepository;
 import com.example.cyclemartberemake.repository.PostPrioritySubscriptionRepository;
 import com.example.cyclemartberemake.repository.UserRepository;
 import com.example.cyclemartberemake.service.BikePostService;
@@ -19,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
@@ -34,9 +36,11 @@ public class BikePostServiceImpl implements BikePostService {
     private final BikePostMapper mapper;
     private final PostPrioritySubscriptionRepository priorityRepo;
     private final UserRepository userRepository;
+    private final InspectionRepository inspectionRepo; // 🔥 Đã thêm repo kiểm định
 
     // ================= CREATE =================
     @Override
+    @Transactional
     public BikePostResponse create(BikePostRequest req, List<MultipartFile> files) {
 
         Categories category = validateCategory(req.getCategoryId());
@@ -52,6 +56,16 @@ public class BikePostServiceImpl implements BikePostService {
         post.setPostStatus(PostStatus.PENDING);
         post.setCreatedAt(LocalDateTime.now());
 
+        // 🔥 XỬ LÝ LƯU THÔNG TIN KIỂM ĐỊNH (Nguyên nhân gây lỗi 400 của bạn)
+        if (Boolean.TRUE.equals(req.getRequestInspection())) {
+            post.setIsRequestedInspection(true);
+            post.setInspectionAddress(req.getInspectionAddress());
+            post.setInspectionScheduledDate(req.getInspectionScheduledDate());
+            post.setInspectionNote(req.getInspectionNote());
+        } else {
+            post.setIsRequestedInspection(false);
+        }
+
         BikePost savedPost = postRepo.save(post);
 
         handleImages(savedPost, files);
@@ -62,7 +76,6 @@ public class BikePostServiceImpl implements BikePostService {
     // ================= GET ALL =================
     @Override
     public Page<BikePostResponse> getAll(Pageable pageable) {
-        // 🔥 Đã SỬ DỤNG QUERY SẮP XẾP THEO ƯU TIÊN (Priority > Date)
         Page<BikePost> posts = postRepo.findApprovedPostsWithPriority(PostStatus.APPROVED, pageable);
         return posts.map(this::buildResponse);
     }
@@ -80,11 +93,11 @@ public class BikePostServiceImpl implements BikePostService {
 
     // ================= UPDATE =================
     @Override
+    @Transactional
     public BikePostResponse update(Long id, BikePostRequest req, List<MultipartFile> files) {
         BikePost post = postRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
 
-        // Check ownership
         Long currentUserId = getCurrentUserId();
         if (!post.getUser().getId().equals(currentUserId)) {
             throw new RuntimeException("Bạn không có quyền chỉnh sửa bài đăng này");
@@ -92,7 +105,6 @@ public class BikePostServiceImpl implements BikePostService {
 
         Categories category = validateCategory(req.getCategoryId());
 
-        // Update fields
         post.setTitle(req.getTitle());
         post.setDescription(req.getDescription());
         post.setPrice(req.getPrice());
@@ -118,7 +130,6 @@ public class BikePostServiceImpl implements BikePostService {
 
         BikePost savedPost = postRepo.save(post);
 
-        // Handle new images if provided
         if (files != null && !files.isEmpty()) {
             handleImages(savedPost, files);
         }
@@ -152,13 +163,13 @@ public class BikePostServiceImpl implements BikePostService {
     @Override
     public Page<BikePostResponse> search(String keyword, Double minPrice, Double maxPrice,
                                          String brand, String city, Pageable pageable) {
-        // 🔥  SỬ DỤNG QUERY TÌM KIẾM CÓ SẮP XẾP THEO ƯU TIÊN (Priority > Date)
         Page<BikePost> posts = postRepo.searchPostsWithPriority(keyword, minPrice, maxPrice, brand, city, pageable);
         return posts.map(this::buildResponse);
     }
 
     // ================= ADMIN =================
     @Override
+    @Transactional
     public void approve(Long id) {
         BikePost post = postRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bài"));
@@ -167,6 +178,21 @@ public class BikePostServiceImpl implements BikePostService {
         post.setApprovedAt(LocalDateTime.now());
         post.setApprovedBy(getCurrentUserId());
         post.setRejectionReason(null);
+
+        // 🔥 TỰ ĐỘNG TẠO INSPECTION KHI ADMIN DUYỆT BÀI
+        if (Boolean.TRUE.equals(post.getIsRequestedInspection())) {
+            Inspection inspection = Inspection.builder()
+                    .bikePost(post)
+                    .seller(post.getUser())
+                    .address(post.getInspectionAddress())
+                    .scheduledDateTime(post.getInspectionScheduledDate())
+                    .note(post.getInspectionNote())
+                    .status(InspectionStatus.PENDING)
+                    .build();
+            inspectionRepo.save(inspection);
+
+            post.setIsRequestedInspection(false); // Reset để tránh tạo trùng
+        }
 
         postRepo.save(post);
     }
@@ -289,5 +315,4 @@ public class BikePostServiceImpl implements BikePostService {
         }
         throw new RuntimeException("Người dùng chưa đăng nhập");
     }
-
 }

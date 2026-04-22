@@ -107,7 +107,7 @@ public class BikePost {
         }
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-
+        if (isRequestedInspection == null) isRequestedInspection = false;
         if (postStatus == null) postStatus = PostStatus.PENDING;
         if (allowNegotiation == null) allowNegotiation = false;
         if (isVerified == null) isVerified = false;
@@ -117,4 +117,14 @@ public class BikePost {
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+    @Column(nullable = false)
+    private Boolean isRequestedInspection = false;
+
+    @Column(columnDefinition = "TEXT")
+    private String inspectionAddress;
+
+    private LocalDateTime inspectionScheduledDate;
+
+    @Column(columnDefinition = "TEXT")
+    private String inspectionNote;
 }

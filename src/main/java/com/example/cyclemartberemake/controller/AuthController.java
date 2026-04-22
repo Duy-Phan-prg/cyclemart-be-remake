@@ -21,11 +21,15 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+
 
 @RestController
 @RequestMapping("/api/auth")
@@ -130,11 +134,22 @@ public class AuthController {
     }
 
     @GetMapping("/users")
-    @Operation(summary = "Get all users")
-    @ApiResponse(responseCode = "200", description = "List of all users",
-            content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserInfoResponseDTO.class)))
-    public ResponseEntity<List<UserInfoResponseDTO>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
+    @Operation(summary = "Get all users with pagination")
+    @ApiResponse(responseCode = "200", description = "Page of users")
+    public ResponseEntity<Page<UserInfoResponseDTO>> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "100") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir
+    ) {
+        // 1. Tạo điều kiện sắp xếp
+        Sort.Direction direction = sortDir.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+
+        // 2. Tạo đối tượng Pageable (chính là cái mà hàm đang đòi)
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+
+        // 3. Truyền pageable vào hàm getAllUsers
+        return ResponseEntity.ok(userService.getAllUsers(pageable));
     }
 
     @GetMapping("/users/{id}")

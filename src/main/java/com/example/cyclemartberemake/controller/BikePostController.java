@@ -13,9 +13,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -52,6 +54,12 @@ public class BikePostController {
 
             @RequestParam(value = "allowNegotiation", required = false, defaultValue = "false") Boolean allowNegotiation,
 
+            // 🔥 THÊM CÁC THAM SỐ KIỂM ĐỊNH TỪ FRONTEND GỬI LÊN
+            @RequestParam(value = "requestInspection", required = false, defaultValue = "false") Boolean requestInspection,
+            @RequestParam(value = "inspectionAddress", required = false) String inspectionAddress,
+            @RequestParam(value = "inspectionScheduledDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inspectionScheduledDate,
+            @RequestParam(value = "inspectionNote", required = false) String inspectionNote,
+
             @RequestPart(value = "images", required = false) List<MultipartFile> images
     ) {
 
@@ -72,6 +80,12 @@ public class BikePostController {
                 allowNegotiation
         );
 
+        // 🔥 GẮN DỮ LIỆU KIỂM ĐỊNH VÀO REQUEST
+        req.setRequestInspection(requestInspection);
+        req.setInspectionAddress(inspectionAddress);
+        req.setInspectionScheduledDate(inspectionScheduledDate);
+        req.setInspectionNote(inspectionNote);
+
         return service.create(req, images != null ? images : List.of());
     }
 
@@ -80,27 +94,19 @@ public class BikePostController {
     public Page<BikePostResponse> getAll(
             @Parameter(description = "Page number (0-based)", example = "0")
             @RequestParam(defaultValue = "0") int page,
-            
+
             @Parameter(description = "Page size", example = "20")
             @RequestParam(defaultValue = "20") int size,
-            
-            @Parameter(description = "Sort field: id, title, price, createdAt, updatedAt, postStatus, approvedAt, userId, brand, city, year", 
-                      example = "createdAt")
+
+            @Parameter(description = "Sort field", example = "createdAt")
             @RequestParam(defaultValue = "createdAt") String sort,
-            
+
             @Parameter(description = "Sort direction: asc or desc", example = "desc")
             @RequestParam(defaultValue = "desc") String direction
     ) {
-        // Validate sort field
         String validSort = validateSortField(sort);
-        
-        // Create sort direction
-        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? 
-            Sort.Direction.ASC : Sort.Direction.DESC;
-        
-        // Create pageable
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, validSort));
-        
         return service.getAll(pageable);
     }
 
@@ -136,6 +142,12 @@ public class BikePostController {
 
             @RequestParam(value = "allowNegotiation", required = false, defaultValue = "false") Boolean allowNegotiation,
 
+            // 🔥 THÊM CÁC THAM SỐ KIỂM ĐỊNH (PHÒNG TRƯỜNG HỢP UPDATE CÓ ĐÍNH KÈM)
+            @RequestParam(value = "requestInspection", required = false, defaultValue = "false") Boolean requestInspection,
+            @RequestParam(value = "inspectionAddress", required = false) String inspectionAddress,
+            @RequestParam(value = "inspectionScheduledDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inspectionScheduledDate,
+            @RequestParam(value = "inspectionNote", required = false) String inspectionNote,
+
             @RequestPart(value = "images", required = false) List<MultipartFile> images
     ) {
 
@@ -145,6 +157,11 @@ public class BikePostController {
                 brakeType, groupset, mileage, categoryId,
                 allowNegotiation
         );
+
+        req.setRequestInspection(requestInspection);
+        req.setInspectionAddress(inspectionAddress);
+        req.setInspectionScheduledDate(inspectionScheduledDate);
+        req.setInspectionNote(inspectionNote);
 
         return service.update(id, req, images);
     }
@@ -160,77 +177,38 @@ public class BikePostController {
     public Page<BikePostResponse> getMyPosts(
             @Parameter(description = "Page number (0-based)", example = "0")
             @RequestParam(defaultValue = "0") int page,
-            
             @Parameter(description = "Page size", example = "20")
             @RequestParam(defaultValue = "20") int size,
-            
-            @Parameter(description = "Sort field: id, title, price, createdAt, updatedAt, postStatus, approvedAt, userId, brand, city, year", 
-                      example = "createdAt")
+            @Parameter(description = "Sort field", example = "createdAt")
             @RequestParam(defaultValue = "createdAt") String sort,
-            
             @Parameter(description = "Sort direction: asc or desc", example = "desc")
             @RequestParam(defaultValue = "desc") String direction
     ) {
-        // Validate sort field
         String validSort = validateSortField(sort);
-        
-        // Create sort direction
-        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? 
-            Sort.Direction.ASC : Sort.Direction.DESC;
-        
-        // Create pageable
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, validSort));
-        
         return service.getMyPosts(pageable);
     }
 
     @GetMapping("/search")
     @Operation(summary = "Search bike posts")
     public Page<BikePostResponse> search(
-            @Parameter(description = "Search keyword")
             @RequestParam(required = false) String keyword,
-            
-            @Parameter(description = "Minimum price")
             @RequestParam(required = false) Double minPrice,
-            
-            @Parameter(description = "Maximum price")
             @RequestParam(required = false) Double maxPrice,
-            
-            @Parameter(description = "Bike brand")
             @RequestParam(required = false) String brand,
-            
-            @Parameter(description = "City")
             @RequestParam(required = false) String city,
-            
-            @Parameter(description = "Page number (0-based)", example = "0")
             @RequestParam(defaultValue = "0") int page,
-            
-            @Parameter(description = "Page size", example = "20")
             @RequestParam(defaultValue = "20") int size,
-            
-            @Parameter(description = "Sort field: id, title, price, createdAt, updatedAt, postStatus, approvedAt, userId, brand, city, year", 
-                      example = "createdAt")
             @RequestParam(defaultValue = "createdAt") String sort,
-            
-            @Parameter(description = "Sort direction: asc or desc", example = "desc")
             @RequestParam(defaultValue = "desc") String direction
     ) {
-        // Validate sort field
         String validSort = validateSortField(sort);
-        
-        // Create sort direction
-        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? 
-            Sort.Direction.ASC : Sort.Direction.DESC;
-        
-        // Create pageable
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, validSort));
-        
         return service.search(keyword, minPrice, maxPrice, brand, city, pageable);
     }
-    
-    /**
-     * Validate sort field to prevent "No property found" errors
-     */
+
     private String validateSortField(String sort) {
         return switch (sort.toLowerCase()) {
             case "id" -> "id";

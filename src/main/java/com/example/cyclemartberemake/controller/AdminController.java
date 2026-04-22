@@ -2,6 +2,9 @@ package com.example.cyclemartberemake.controller;
 
 import com.example.cyclemartberemake.dto.response.BikePostResponse;
 import com.example.cyclemartberemake.dto.response.PaymentResponse;
+import com.example.cyclemartberemake.dto.response.UserInfoResponseDTO;
+import com.example.cyclemartberemake.entity.UserTracking;
+import com.example.cyclemartberemake.repository.UserTrackingRepository;
 import com.example.cyclemartberemake.service.BikePostService;
 import com.example.cyclemartberemake.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,7 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import com.example.cyclemartberemake.service.UserService;
 import java.util.Map;
 
 @RestController
@@ -25,6 +28,24 @@ public class AdminController {
 
     private final BikePostService bikePostService;
     private final PaymentService paymentService;
+    private final UserService userService;
+    private final UserTrackingRepository userTrackingRepository;
+
+    // ================= USER MANAGEMENT =================
+
+    @GetMapping("/users")
+    @Operation(summary = "Get all users for admin")
+    public ResponseEntity<Page<UserInfoResponseDTO>> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "100") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir
+    ) {
+        Sort.Direction direction = sortDir.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+
+        return ResponseEntity.ok(userService.getAllUsers(pageable));
+    }
 
     // ================= BIKE POST MANAGEMENT =================
     
@@ -131,4 +152,30 @@ public class AdminController {
             default -> "createdAt"; // Default fallback
         };
     }
+
+    @GetMapping("/users/{id}/tracking")
+    @Operation(summary = "Get user activity logs")
+    public ResponseEntity<Page<Map<String, Object>>> getUserLogs(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        // Bóc tách dữ liệu an toàn ra Map để tránh lỗi vòng lặp JSON của Hibernate
+        Page<Map<String, Object>> safeLogs = userTrackingRepository.findByUserId(id, pageable).map(log -> {
+            Map<String, Object> map = new java.util.HashMap<>();
+            map.put("id", log.getId());
+            map.put("eventType", log.getEventType());
+            map.put("location", log.getLocation());
+            map.put("productId", log.getProductId());
+            map.put("sellerId", log.getSeller() != null ? log.getSeller().getId() : null);
+            map.put("createdAt", log.getCreatedAt());
+            return map;
+        });
+
+        return ResponseEntity.ok(safeLogs);
+    }
+
+
 }

@@ -4,11 +4,15 @@ import com.example.cyclemartberemake.dto.request.ChangePasswordRequest;
 import com.example.cyclemartberemake.dto.request.UpdateProfileRequest;
 import com.example.cyclemartberemake.dto.request.UserLoginRequestDTO;
 import com.example.cyclemartberemake.dto.request.UserRegisterRequestDTO;
+import com.example.cyclemartberemake.dto.request.VerifyOtpRequest;
 import com.example.cyclemartberemake.dto.response.UserInfoResponseDTO;
 import com.example.cyclemartberemake.dto.response.UserLoginResponseDTO;
+import com.example.cyclemartberemake.dto.response.OtpResponse;
 import com.example.cyclemartberemake.entity.Users;
 import com.example.cyclemartberemake.mapper.UserMapper;
 import com.example.cyclemartberemake.service.UserService;
+import com.example.cyclemartberemake.service.OtpService;
+import com.example.cyclemartberemake.service.EmailService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -31,12 +35,14 @@ public class AuthController {
 
     private final UserService userService;
     private final UserMapper userMapper;
+    private final OtpService otpService;
+    private final EmailService emailService;
 
     @PostMapping("/register")
     @Operation(summary = "Register new user")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User registered successfully",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserInfoResponseDTO.class))),
+            @ApiResponse(responseCode = "200", description = "User registered successfully, OTP sent to email",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = OtpResponse.class))),
             @ApiResponse(responseCode = "400", description = "Validation failed",
                     content = @Content(mediaType = "application/json", schema = @Schema(example = """
                             {
@@ -51,10 +57,15 @@ public class AuthController {
                             }
                             """)))
     })
-    public ResponseEntity<UserInfoResponseDTO> register(@Valid @RequestBody UserRegisterRequestDTO dto) {
+    public ResponseEntity<OtpResponse> register(@Valid @RequestBody UserRegisterRequestDTO dto) {
         Users user = userService.register(dto);
-        UserInfoResponseDTO response = userMapper.toResponse(user);
-        return ResponseEntity.ok(response);
+        otpService.generateAndSendOtp(dto.getEmail());
+        
+        return ResponseEntity.ok(new OtpResponse(
+                "Đăng ký thành công! Mã OTP đã được gửi đến email của bạn",
+                dto.getEmail(),
+                10
+        ));
     }
 
     @PostMapping("/login")
@@ -135,5 +146,66 @@ public class AuthController {
     })
     public ResponseEntity<UserInfoResponseDTO> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
+    }
+
+    @PostMapping("/send-otp")
+    @Operation(summary = "Send OTP to email")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "OTP sent successfully",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = OtpResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid email")
+    })
+    public ResponseEntity<OtpResponse> sendOtp(@RequestParam String email) {
+        try {
+            otpService.generateAndSendOtp(email);
+            return ResponseEntity.ok(new OtpResponse(
+                    "Mã OTP đã được gửi đến email của bạn",
+                    email,
+                    10
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new OtpResponse(
+                    "Lỗi: " + e.getMessage(),
+                    email,
+                    null
+            ));
+        }
+    }
+
+    @PostMapping("/verify-otp")
+    @Operation(summary = "Verify OTP and activate account")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "OTP verified successfully",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserInfoResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid or expired OTP")
+    })
+    public ResponseEntity<?> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        try {
+            boolean isValid = otpService.verifyOtp(request.getEmail(), request.getOtpCode());
+            
+            if (!isValid) {
+                return ResponseEntity.badRequest().body(new OtpResponse(
+                        "Mã OTP không hợp lệ hoặc đã hết hạn",
+                        request.getEmail(),
+                        null
+                ));
+            }
+
+            // Activate user
+            userService.activateUserByEmail(request.getEmail());
+            
+            // Send verification success email
+            Users user = userService.getCurrentUser();
+            emailService.sendVerificationSuccessEmail(request.getEmail(), user.getFullName());
+
+            UserInfoResponseDTO response = userMapper.toResponse(user);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new OtpResponse(
+                    "Lỗi: " + e.getMessage(),
+                    request.getEmail(),
+                    null
+            ));
+        }
     }
 }

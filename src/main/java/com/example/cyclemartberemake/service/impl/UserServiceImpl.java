@@ -44,7 +44,7 @@ public class UserServiceImpl implements UserService {
 
         // New users get BUYER role by default (can also act as SELLER)
         user.setRole(Role.BUYER);
-        user.setStatus(UserStatus.ACTIVE);
+        user.setStatus(UserStatus.INACTIVE);  // Set to INACTIVE until email is verified
 
         return userRepository.save(user);
     }
@@ -179,5 +179,14 @@ public class UserServiceImpl implements UserService {
         return userMapper.toResponse(user);
     }
 
+    @Override
+    @Transactional
+    public void activateUserByEmail(String email) {
+        Users user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+
+        user.setStatus(UserStatus.ACTIVE);
+        userRepository.save(user);
+    }
 
 }

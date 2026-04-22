@@ -12,6 +12,7 @@ public class UserInfoResponseDTO {
     private String email;
     private String fullName;
     private String phone;
+    private String role;
     private String roleDisplay;
     private String status;
     private String statusDisplay;

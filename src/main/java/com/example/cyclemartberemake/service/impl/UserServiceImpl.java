@@ -14,6 +14,8 @@ import com.example.cyclemartberemake.repository.UserRepository;
 import com.example.cyclemartberemake.security.JwtService;
 import com.example.cyclemartberemake.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -169,9 +171,9 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
-    public List<UserInfoResponseDTO> getAllUsers() {
-        List<Users> users = userRepository.findAll();
-        return userMapper.toResponseList(users);
+    public Page<UserInfoResponseDTO> getAllUsers(Pageable pageable) {
+        Page<Users> usersPage = userRepository.findAll(pageable);
+        return usersPage.map(userMapper::toResponse);
     }
 
     @Override

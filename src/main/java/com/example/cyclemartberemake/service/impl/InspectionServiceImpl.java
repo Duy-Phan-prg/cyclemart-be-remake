@@ -34,7 +34,9 @@ public class InspectionServiceImpl implements InspectionService {
 
         BikePost post = bikePostRepository.findById(request.getPostId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bài đăng"));
-
+        if (post.getPostStatus() != PostStatus.APPROVED) {
+            throw new RuntimeException("Chỉ những bài đăng đã được duyệt mới có thể yêu cầu kiểm định lẻ.");
+        }
         // Chỉ chủ xe mới được yêu cầu kiểm định
         if (!post.getUser().getId().equals(currentUser.getId())) {
             throw new RuntimeException("Bạn không có quyền yêu cầu kiểm định cho xe này");

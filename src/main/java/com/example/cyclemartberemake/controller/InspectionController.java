@@ -11,7 +11,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
+import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 
 
@@ -26,7 +26,7 @@ public class InspectionController {
     // 1. User tạo yêu cầu (Ai đăng nhập cũng được)
     @PreAuthorize("isAuthenticated()")
     @PostMapping
-    public InspectionResponseDTO createRequest(@RequestBody InspectionRequestDTO request) {
+    public InspectionResponseDTO createRequest(@Valid @RequestBody InspectionRequestDTO request) {
         return inspectionService.createRequest(request);
     }
 

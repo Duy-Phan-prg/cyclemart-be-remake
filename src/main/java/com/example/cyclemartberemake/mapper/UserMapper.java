@@ -38,6 +38,7 @@ public interface UserMapper {
         if (role == Role.BUYER) return "Người mua";
         if (role == Role.SELLER) return "Người bán";
         if (role == Role.ADMIN) return "Quản trị viên";
+        if (role == Role.INSPECTOR) return "Kiểm định viên";
         return "";
     }
     

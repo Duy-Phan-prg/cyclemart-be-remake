@@ -59,6 +59,11 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Sai mật khẩu");
         }
 
+        // Kiểm tra account phải ACTIVE mới được đăng nhập
+        if (user.getStatus() == UserStatus.INACTIVE) {
+            throw new RuntimeException("Tài khoản chưa được xác thực. Vui lòng kiểm tra email để xác thực OTP");
+        }
+
         // Kiểm tra account bị ban
         if (user.getStatus() == UserStatus.BANNED) {
             throw new RuntimeException("Tài khoản đã bị ban");
@@ -68,9 +73,6 @@ public class UserServiceImpl implements UserService {
         if (user.getStatus() == UserStatus.SUSPENDED) {
             throw new RuntimeException("Tài khoản đã bị tạm khóa");
         }
-
-        // Allow INACTIVE users to login (they just verified OTP)
-        // Only block BANNED and SUSPENDED users
 
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);

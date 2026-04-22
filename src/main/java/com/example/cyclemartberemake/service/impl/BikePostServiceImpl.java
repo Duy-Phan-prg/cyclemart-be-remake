@@ -72,6 +72,9 @@ public class BikePostServiceImpl implements BikePostService {
         BikePost post = postRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
 
+        // 🔥 Tăng lượt xem khi user click vào bài
+        increaseViewCount(post);
+
         return buildResponse(post);
     }
 
@@ -188,6 +191,14 @@ public class BikePostServiceImpl implements BikePostService {
     }
 
     // ================= HELPER =================
+
+    private void increaseViewCount(BikePost post) {
+        if (post.getViewCount() == null) {
+            post.setViewCount(0);
+        }
+        post.setViewCount(post.getViewCount() + 1);
+        postRepo.save(post);
+    }
 
     private Categories validateCategory(Integer id) {
         Categories category = categoryRepo.findById(id)

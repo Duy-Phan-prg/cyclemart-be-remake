@@ -64,6 +64,10 @@ public class BikePostResponse {
     @Schema(description = "Lý do từ chối (nếu bị reject)")
     private String rejectionReason;
 
+    // ================= STATS =================
+    @Schema(description = "Lượt xem bài đăng", example = "0")
+    private Integer viewCount;
+
     // ================= TIME =================
     private LocalDateTime createdAt;
     private Boolean isVerified;

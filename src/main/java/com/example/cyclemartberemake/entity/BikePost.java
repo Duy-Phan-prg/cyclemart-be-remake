@@ -1,7 +1,11 @@
 package com.example.cyclemartberemake.entity;
 
+
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,9 +58,11 @@ public class BikePost {
 
     private Integer mileage;
 
-    // 🔥 FIX CHUẨN FK
+    @Column(name = "user_id")
+    private Long userId;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", insertable = false, updatable = false)
     private Users user;
 
     @Column(nullable = false)
@@ -85,11 +91,20 @@ public class BikePost {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
     private List<PostPrioritySubscription> prioritySubscriptions;
 
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
+    private Integer viewCount = 0;
+
     @Column(nullable = false)
     private Boolean isVerified = false;
 
     @PrePersist
     public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+        this.postStatus = PostStatus.PENDING; // 🔥 mặc định
+        if (this.viewCount == null) {
+            this.viewCount = 0;
+        }
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
 
@@ -100,6 +115,6 @@ public class BikePost {
 
     @PreUpdate
     public void preUpdate() {
-        updatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }

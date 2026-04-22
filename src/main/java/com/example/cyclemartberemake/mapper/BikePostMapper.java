@@ -12,7 +12,6 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface BikePostMapper {
 
-    // ================= ENTITY =================
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "user", ignore = true)
@@ -27,12 +26,13 @@ public interface BikePostMapper {
     @Mapping(target = "isVerified", ignore = true)
     BikePost toEntity(BikePostRequest request);
 
-    // ================= RESPONSE =================
     @Mapping(source = "category.name", target = "categoryName")
 
     // ENUM -> STRING
     @Mapping(source = "postStatus", target = "postStatus", qualifiedByName = "mapPostStatusEnum")
     @Mapping(source = "postStatus", target = "postStatusDisplay", qualifiedByName = "mapPostStatus")
+    @Mapping(source = "rejectionReason", target = "rejectionReason")
+    @Mapping(source = "viewCount", target = "viewCount")
     @Mapping(source = "status", target = "status", qualifiedByName = "mapBikeStatusEnum")
     @Mapping(source = "city", target = "city", qualifiedByName = "mapCityEnum")
     @Mapping(source = "district", target = "district", qualifiedByName = "mapDistrictEnum")
@@ -64,7 +64,7 @@ public interface BikePostMapper {
             FrameMaterial frameMaterial, FrameSize frameSize,
             BrakeType brakeType, Groupset groupset, Integer mileage,
             Integer categoryId, Boolean allowNegotiation) {
-        
+
         BikePostRequest request = new BikePostRequest();
         request.setTitle(title);
         request.setDescription(description);
@@ -85,9 +85,7 @@ public interface BikePostMapper {
         return request;
     }
 
-    // ================= ENUM MAPPERS =================
-
-    @Named("mapPostStatus")
+    @org.mapstruct.Named("mapPostStatus")
     default String mapPostStatus(PostStatus status) {
         if (status == null) return null;
         return switch (status) {

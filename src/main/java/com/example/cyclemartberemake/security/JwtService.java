@@ -27,6 +27,9 @@ public class JwtService {
                 .claim("fullName", user.getFullName())
                 .claim("phone", user.getPhone())
                 .claim("role", user.getRole().toString())
+                .claim("status", user.getStatus().toString())
+                .claim("statusDisplay", getStatusDisplay(user.getStatus().toString()))
+                .claim("point", user.getPoint())
                 // ----------------------------------------
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
@@ -52,5 +55,14 @@ public class JwtService {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    private String getStatusDisplay(String status) {
+        if (status == null) return "";
+        if (status.equals("ACTIVE")) return "Hoạt động";
+        if (status.equals("INACTIVE")) return "Chưa xác thực";
+        if (status.equals("BANNED")) return "Đã cấm";
+        if (status.equals("SUSPENDED")) return "Tạm khóa";
+        return "";
     }
 }

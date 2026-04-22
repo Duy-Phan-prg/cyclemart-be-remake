@@ -30,4 +30,6 @@ public interface UserService {
 
     void activateUserByEmail(String email);
 
+    Users getUserByEmail(String email);
+
 }

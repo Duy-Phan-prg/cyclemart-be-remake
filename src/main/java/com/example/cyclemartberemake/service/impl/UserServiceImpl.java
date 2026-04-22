@@ -42,8 +42,9 @@ public class UserServiceImpl implements UserService {
         Users user = userMapper.toEntity(dto);
         user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
 
+        // New users get BUYER role by default (can also act as SELLER)
         user.setRole(Role.BUYER);
-        user.setStatus(UserStatus.ACTIVE);
+        user.setStatus(UserStatus.INACTIVE);  // Set to INACTIVE until email is verified
 
         return userRepository.save(user);
     }
@@ -63,12 +64,13 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Tài khoản đã bị ban");
         }
 
-
         // Kiểm tra account bị suspend
         if (user.getStatus() == UserStatus.SUSPENDED) {
             throw new RuntimeException("Tài khoản đã bị tạm khóa");
         }
 
+        // Allow INACTIVE users to login (they just verified OTP)
+        // Only block BANNED and SUSPENDED users
 
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
@@ -178,5 +180,20 @@ public class UserServiceImpl implements UserService {
         return userMapper.toResponse(user);
     }
 
+    @Override
+    @Transactional
+    public void activateUserByEmail(String email) {
+        Users user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+
+        user.setStatus(UserStatus.ACTIVE);
+        userRepository.save(user);
+    }
+
+    @Override
+    public Users getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+    }
 
 }

@@ -28,4 +28,8 @@ public interface UserService {
 
     Users getCurrentUser();
 
+    void activateUserByEmail(String email);
+
+    Users getUserByEmail(String email);
+
 }

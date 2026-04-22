@@ -33,29 +33,10 @@ public class PaymentController extends BaseController {
     @PostMapping("/momo/create")
     @Operation(summary = "Create MoMo payment")
     public ResponseEntity<CreatePaymentResponse> createPayment(
-            @RequestParam("amount") Long amount,
-            @RequestParam(value = "description", required = false, defaultValue = "Nạp điểm CycleMart") String description,
-            @RequestParam(value = "city", required = false) String city,
-            @RequestParam(value = "district", required = false) String district,
+            @Valid @RequestBody CreatePaymentRequest request,
             HttpServletRequest httpRequest
     ) {
         try {
-            // Validate amount
-            if (amount < 10000 || amount > 50000000) {
-                return ResponseEntity.badRequest().body(
-                    CreatePaymentResponse.builder()
-                        .success(false)
-                        .message("Số tiền phải từ 10,000 - 50,000,000 VND")
-                        .build()
-                );
-            }
-            
-            CreatePaymentRequest request = new CreatePaymentRequest();
-            request.setAmount(amount);
-            request.setDescription(description);
-            request.setCity(city);
-            request.setDistrict(district);
-
             String ipAddress = getClientIpAddress(httpRequest);
             request.setIpAddress(ipAddress);
             

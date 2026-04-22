@@ -2,6 +2,7 @@ package com.example.cyclemartberemake.dto.request;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -13,10 +14,10 @@ public class CreatePaymentRequest {
     @Max(value = 50000000, message = "Số tiền tối đa là 50,000,000 VND")
     private Long amount;
 
+    @NotBlank(message = "Mô tả không được để trống")
     private String description;
     
-    // 🔥 NEW: Location information
-    private String city;        // Thành phố (HCM, Hà Nội, etc.)
-    private String district;    // Quận/Huyện
-    private String ipAddress;   // IP address for fraud detection (optional)
+    private String city;
+    private String district;
+    private String ipAddress;
 }

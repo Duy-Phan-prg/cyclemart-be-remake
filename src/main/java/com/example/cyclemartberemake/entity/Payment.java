@@ -1,6 +1,7 @@
 package com.example.cyclemartberemake.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,15 +22,24 @@ public class Payment {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @NotNull(message = "User is required")
     private Users user;
 
+    @NotBlank(message = "Order ID is required")
     private String orderId;
+    
+    @NotNull(message = "Amount is required")
+    @Min(value = 10000, message = "Minimum amount is 10,000 VND")
+    @Max(value = 50000000, message = "Maximum amount is 50,000,000 VND")
     private Long amount;
 
+    @NotNull(message = "Payment status is required")
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
 
+    @NotBlank(message = "Description is required")
     private String description;
+    
     private String momoTransId;
     private String responseCode;
     private String message;

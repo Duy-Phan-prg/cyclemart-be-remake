@@ -17,64 +17,66 @@ public class DataSeeder {
     @Bean
     CommandLineRunner initDatabase(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         return args -> {
+            System.out.println("\n========== INITIALIZING DATABASE ==========\n");
 
-            // ================= INSPECTOR 1 =================
-            String inspectorEmail1 = "inspector@test.com";
+            // ================= ADMIN ACCOUNTS =================
+            createAdminAccount(userRepository, passwordEncoder, "admin@cyclemart.com", "Admin CycleMart", "0901000001", "admin123");
+            createAdminAccount(userRepository, passwordEncoder, "admin2@cyclemart.com", "Admin 2 CycleMart", "0901000002", "admin123");
 
-            if (!userRepository.existsByEmail(inspectorEmail1)) {
-                Users inspector1 = Users.builder()
-                        .fullName("Trần Kiểm Định (Ảo 1)")
-                        .email(inspectorEmail1)
-                        .phone("0912345678")
-                        .passwordHash(passwordEncoder.encode("123456"))
-                        .role(Role.INSPECTOR)
-                        .status(UserStatus.ACTIVE)
-                        .createdAt(LocalDateTime.now())
-                        .build();
+            // ================= INSPECTOR ACCOUNTS =================
+            createInspectorAccount(userRepository, passwordEncoder, "inspector@test.com", "Trần Kiểm Định (Ảo 1)", "0912345678", "inspector123");
+            createInspectorAccount(userRepository, passwordEncoder, "inspector2@test.com", "Nguyễn Kiểm Định (Ảo 2)", "0987654321", "inspector123");
+            createInspectorAccount(userRepository, passwordEncoder, "inspector3@test.com", "Lê Kiểm Định (Ảo 3)", "0987654322", "inspector123");
 
-                userRepository.save(inspector1);
-                System.out.println("✅ ĐÃ TẠO INSPECTOR 1:");
-                System.out.println("   - Email: " + inspectorEmail1);
-                System.out.println("   - Pass:  123456");
-            }
+            System.out.println("\n========== DATABASE INITIALIZATION COMPLETE ==========\n");
+        };
+    }
 
-            // ================= INSPECTOR 2 =================
-            String inspectorEmail2 = "inspector2@test.com";
+    private void createAdminAccount(UserRepository userRepository, PasswordEncoder passwordEncoder, 
+                                    String email, String fullName, String phone, String password) {
+        if (!userRepository.existsByEmail(email)) {
+            Users admin = Users.builder()
+                    .fullName(fullName)
+                    .email(email)
+                    .phone(phone)
+                    .passwordHash(passwordEncoder.encode(password))
+                    .role(Role.ADMIN)
+                    .status(UserStatus.ACTIVE)
+                    .point(0)
+                    .createdAt(LocalDateTime.now())
+                    .build();
 
-            if (!userRepository.existsByEmail(inspectorEmail2)) {
-                Users inspector2 = Users.builder()
-                        .fullName("Nguyễn Kiểm Định (Ảo 2)")
-                        .email(inspectorEmail2)
-                        .phone("0987654321")
-                        .passwordHash(passwordEncoder.encode("123456"))
-                        .role(Role.INSPECTOR)
-                        .status(UserStatus.ACTIVE)
-                        .createdAt(LocalDateTime.now())
-                        .build();
-                userRepository.save(inspector2);
-                System.out.println("✅ ĐÃ TẠO INSPECTOR 2:");
-                System.out.println("   - Email: " + inspectorEmail2);
-                System.out.println("   - Pass:  123456");
-            }
-                String inspectorEmail3 = "inspector3@test.com";
-
-                if (!userRepository.existsByEmail(inspectorEmail3)) {
-                    Users inspector3 = Users.builder()
-                            .fullName("Nguyễn Kiểm Định (Ảo 3)")
-                            .email(inspectorEmail3)
-                            .phone("0987654322")
-                            .passwordHash(passwordEncoder.encode("123456"))
-                            .role(Role.INSPECTOR)
-                            .status(UserStatus.ACTIVE)
-                            .createdAt(LocalDateTime.now())
-                            .build();
-
-                    userRepository.save(inspector3);
-                    System.out.println("✅ ĐÃ TẠO INSPECTOR 3:");
-                    System.out.println("   - Email: " + inspectorEmail3);
-                    System.out.println("   - Pass:  123456");
-                }
-            }
-            ;
+            userRepository.save(admin);
+            System.out.println("ADMIN ACCOUNT CREATED:");
+            System.out.println("   Email: " + email);
+            System.out.println("   Name:  " + fullName);
+            System.out.println("   Phone: " + phone);
+            System.out.println("   Pass:  " + password);
+            System.out.println();
         }
     }
+
+    private void createInspectorAccount(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                                        String email, String fullName, String phone, String password) {
+        if (!userRepository.existsByEmail(email)) {
+            Users inspector = Users.builder()
+                    .fullName(fullName)
+                    .email(email)
+                    .phone(phone)
+                    .passwordHash(passwordEncoder.encode(password))
+                    .role(Role.INSPECTOR)
+                    .status(UserStatus.ACTIVE)
+                    .point(0)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            userRepository.save(inspector);
+            System.out.println("INSPECTOR ACCOUNT CREATED:");
+            System.out.println("   Email: " + email);
+            System.out.println("   Name:  " + fullName);
+            System.out.println("   Phone: " + phone);
+            System.out.println("   Pass:  " + password);
+            System.out.println();
+        }
+    }
+}

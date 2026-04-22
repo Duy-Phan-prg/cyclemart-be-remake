@@ -9,7 +9,7 @@ import lombok.Data;
 @Data
 public class PriorityPackageRequest {
 
-    @Size(min = 5, max = 100, message = "Tên gói phải từ 5-100 ký tự")
+    @Size(min = 3, max = 100, message = "Tên gói phải từ 3-100 ký tự")
     @Schema(description = "Tên gói ưu tiên", example = "Gói Platinum")
     private String name;
 

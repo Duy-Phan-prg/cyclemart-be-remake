@@ -195,7 +195,7 @@ public class AuthController {
             userService.activateUserByEmail(request.getEmail());
             
             // Send verification success email
-            Users user = userService.getCurrentUser();
+            Users user = userService.getUserByEmail(request.getEmail());
             emailService.sendVerificationSuccessEmail(request.getEmail(), user.getFullName());
 
             UserInfoResponseDTO response = userMapper.toResponse(user);

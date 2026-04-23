@@ -52,10 +52,15 @@ public class PaymentController extends BaseController {
     @PostMapping("/sepay/ipn")
     @Operation(summary = "Sepay IPN callback (internal use)")
     public ResponseEntity<String> handleIPN(@RequestBody Map<String, Object> data) {
+        System.out.println("=== IPN DATA RECEIVED: " + data);
+        System.out.println("=== IPN DATA KEYS: " + data.keySet());
         try {
             paymentService.handleIPN(data);
+            System.out.println("=== IPN PROCESSED SUCCESSFULLY");
             return ResponseEntity.ok("OK");
         } catch (Exception e) {
+            System.out.println("=== IPN ERROR: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body("ERROR: " + e.getMessage());
         }
     }

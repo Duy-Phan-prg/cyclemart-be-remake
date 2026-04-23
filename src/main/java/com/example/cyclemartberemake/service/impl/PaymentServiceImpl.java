@@ -95,6 +95,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         Payment payment = Payment.builder()
                 .user(userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found")))
+                .bikePost(bikePost)
                 .orderId(orderId)
                 .amount(amount)
                 .description(description)
@@ -140,32 +141,60 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public void handleIPN(Map<String, Object> data) {
+
+        Map<String, Object> order = (Map<String, Object>) data.get("order");
+
+        String orderId = null;
+        if (order != null) {
+            orderId = (String) order.get("order_id");
+        }
+
+        // fallback
+        if (orderId == null) {
+            orderId = (String) data.get("order_id");
+        }
+        if (orderId == null) {
+            orderId = (String) data.get("orderCode");
+        }
+
+        String status = (String) data.get("notification_type");
+        String signature = (String) data.get("signature");
         
-        String orderId = data.get("orderCode").toString();
-        String status = data.get("status").toString();
-        String signature = data.get("signature").toString();
+        System.out.println("=== handleIPN: orderId=" + orderId + ", status=" + status);
         
         log.info("Received Sepay IPN: orderId={}, status={}", orderId, status);
 
+        if (orderId == null) {
+            System.out.println("=== ERROR: orderId is null");
+            log.error("Order ID is null in IPN data");
+            return;
+        }
+
         Payment payment = paymentRepo.findByOrderId(orderId).orElse(null);
         if (payment == null) {
+            System.out.println("=== ERROR: Payment not found for orderId: " + orderId);
             log.error("Payment not found for orderId: {}", orderId);
             return;
         }
 
         if (payment.getStatus() == PaymentStatus.SUCCESS) {
+            System.out.println("=== Payment already processed: " + orderId);
             log.warn("Payment already processed: orderId={}", orderId);
             return;
         }
 
         try {
-            // Validate signature
-            String expectedSignature = generateSepaySignature(data);
-            if (!expectedSignature.equals(signature)) {
-                log.error("Invalid signature for orderId: {}", orderId);
-                return;
+            // Validate signature (nếu có)
+            if (signature != null) {
+                String expectedSignature = generateSepaySignature(data);
+                if (!expectedSignature.equals(signature)) {
+                    System.out.println("=== ERROR: Invalid signature");
+                    log.error("Invalid signature for orderId: {}", orderId);
+                    return;
+                }
             }
         } catch (Exception e) {
+            System.out.println("=== ERROR: Signature validation failed: " + e.getMessage());
             log.error("Error verifying signature for orderId: {}", orderId, e);
             return;
         }
@@ -173,7 +202,8 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setResponseCode(status);
         payment.setCompletedAt(LocalDateTime.now());
 
-        if ("COMPLETED".equals(status)) {
+        // Sepay gửi notification_type = PAYMENT_SUCCESS
+        if ("PAYMENT_SUCCESS".equals(status)) {
             payment.setStatus(PaymentStatus.SUCCESS);
 
             int points = (int) (payment.getAmount() / 1000);
@@ -183,6 +213,7 @@ public class PaymentServiceImpl implements PaymentService {
 
             userService.addPoint(payment.getUser().getId(), points);
             
+            System.out.println("=== Payment SUCCESS: orderId=" + orderId + ", points=" + points);
             log.info("Payment successful: orderId={}, points={}", orderId, points);
 
             notificationService.sendPaymentSuccessEmail(payment);
@@ -193,6 +224,7 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setStatus(PaymentStatus.FAILED);
             paymentRepo.save(payment);
             
+            System.out.println("=== Payment FAILED: orderId=" + orderId + ", status=" + status);
             log.warn("Payment failed: orderId={}, status={}", orderId, status);
 
             notificationService.sendPaymentFailedEmail(payment);

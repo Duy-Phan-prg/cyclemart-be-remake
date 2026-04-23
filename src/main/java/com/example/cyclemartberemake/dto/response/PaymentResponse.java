@@ -18,6 +18,13 @@ public class PaymentResponse {
     private Integer pointsEarned;
     private String message;
     
+    // 🔥 Bike information
+    private Long bikePostId;
+    private String bikeTitle;
+    private Long bikePrice;
+    private String sellerName;
+    private String sellerPhone;
+    
     // 🔥 Location information
     private String city;
     private String district;

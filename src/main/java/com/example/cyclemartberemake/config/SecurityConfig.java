@@ -55,7 +55,11 @@ public class SecurityConfig {
                         .requestMatchers("GET", "/api/v1/priority-packages/active").permitAll()
                         // Payment endpoints - require authentication
                         .requestMatchers("POST", "/api/v1/payments/sepay/create").authenticated()
+                        .requestMatchers("POST", "/api/v1/payments/vnpay/create").authenticated()
+                        // Payment callbacks - public
                         .requestMatchers("POST", "/api/v1/payments/sepay/ipn").permitAll()
+                        .requestMatchers("GET", "/api/v1/payments/vnpay/return").permitAll()
+                        .requestMatchers("POST", "/api/v1/payments/vnpay/ipn").permitAll()
                         // Admin endpoints - require authentication
                         .requestMatchers("/api/v1/admin/**").authenticated()
                         // All other endpoints require authentication

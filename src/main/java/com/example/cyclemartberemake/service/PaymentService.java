@@ -13,7 +13,9 @@ public interface PaymentService {
 
     CreatePaymentResponse createPayment(CreatePaymentRequest request) throws Exception;
 
-    void handleIPN(Map<String, Object> data);
+    void handleVNPayReturn(Map<String, String> params) throws Exception;
+
+    void handleVNPayIPN(Map<String, String> params) throws Exception;
 
     Page<PaymentResponse> getPaymentHistory(Pageable pageable);
     

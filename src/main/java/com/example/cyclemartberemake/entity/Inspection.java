@@ -55,6 +55,9 @@ public class Inspection {
     @Column(columnDefinition = "TEXT")
     private String resultNote; // Đánh giá của Inspector sau khi xem xe
 
+    @Column(columnDefinition = "TEXT")
+    private String checklistData;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

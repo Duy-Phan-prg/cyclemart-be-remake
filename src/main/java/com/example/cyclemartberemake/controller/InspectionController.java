@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
@@ -58,12 +59,16 @@ public class InspectionController {
         return inspectionService.getRequestsForInspector(PageRequest.of(page, size, Sort.by("scheduledDateTime").ascending()));
     }
 
-    // 6. Inspector cập nhật kết quả
-    @PreAuthorize("hasAnyAuthority('INSPECTOR', 'ROLE_INSPECTOR')")
-    @PutMapping("/{id}/result") // 🔥 ĐỔI PATH Ở ĐÂY CHO KHỚP VỚI FRONTEND
-    public void updateResult(@PathVariable Long id, @RequestParam String status, @RequestParam String resultNote) {
-        // Chú ý: Backend đang nhận param tên là 'resultNote' (có thể là 'note' trong service, hãy đảm bảo service của bạn nhận đúng)
-        inspectionService.updateResult(id, status, resultNote);
+    @PutMapping("/inspector/{id}/result")
+    public ResponseEntity<?> updateResult(
+            @PathVariable Long id,
+            @RequestParam String status,
+            @RequestParam String resultNote,
+            @RequestParam(required = false) String checklistData
+    ) {
+        // Truyền thêm checklistData vào service
+        inspectionService.updateResult(id, status, resultNote, checklistData);
+        return ResponseEntity.ok().body("Cập nhật kết quả thành công");
     }
 
     // 7. Admin đổi lại lịch

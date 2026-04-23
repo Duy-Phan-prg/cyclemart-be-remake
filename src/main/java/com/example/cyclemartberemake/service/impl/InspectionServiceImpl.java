@@ -124,7 +124,7 @@ public class InspectionServiceImpl implements InspectionService {
 
     @Override
     @Transactional
-    public void updateResult(Long inspectionId, String statusStr, String resultNote) {
+    public void updateResult(Long inspectionId, String statusStr, String resultNote, String checklistData) {
         // 1. Tìm yêu cầu
         Inspection inspection = inspectionRepository.findById(inspectionId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu"));
@@ -134,20 +134,16 @@ public class InspectionServiceImpl implements InspectionService {
         inspection.setStatus(newStatus);
         inspection.setResultNote(resultNote);
 
+        // 🔥 LƯU DỮ LIỆU CÁC Ô ĐÃ TICK VÀO ĐÂY
+        inspection.setChecklistData(checklistData);
+
         // 3. LOGIC ĐỒNG BỘ: Nếu trạng thái là PASSED, cập nhật ngay cho bài đăng
         if (newStatus == InspectionStatus.PASSED) {
             BikePost post = inspection.getBikePost();
-
-            // CẬP NHẬT CỜ VERIFIED - Frontend sẽ dựa vào đây để hiện tem
             post.setIsVerified(true);
-
-            // LƯU Ý: Nếu Entity BikePost của bạn không có phương thức setVerified,
-            // hãy kiểm tra lại xem tên field có phải là setVerified(true) không nhé.
             bikePostRepository.save(post);
         }
 
-        // 4. Nếu Inspector chấm FAILED, bạn có thể cân nhắc setVerified(false)
-        // để gỡ tem của xe bị rớt kiểm định (tùy nghiệp vụ bạn muốn)
         if (newStatus == InspectionStatus.FAILED) {
             BikePost post = inspection.getBikePost();
             post.setIsVerified(false);
@@ -179,6 +175,7 @@ public class InspectionServiceImpl implements InspectionService {
                 .inspectionFee(entity.getInspectionFee())
                 .note(entity.getNote())
                 .resultNote(entity.getResultNote())
+                .checklistData(entity.getChecklistData())
                 .createdAt(entity.getCreatedAt())
                 .build();
     }

@@ -12,5 +12,5 @@ public interface InspectionService {
     Page<InspectionResponseDTO> getRequestsForInspector(Pageable pageable); // Cho Inspector
 
     void assignInspector(Long inspectionId, Long inspectorId);
-    void updateResult(Long inspectionId, String status, String resultNote);
+    void updateResult(Long inspectionId, String status, String resultNote, String checklistData);
 }

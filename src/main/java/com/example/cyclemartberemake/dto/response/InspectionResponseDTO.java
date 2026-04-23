@@ -21,4 +21,5 @@ public class InspectionResponseDTO {
     private String note;
     private String resultNote;
     private LocalDateTime createdAt;
+    private String checklistData;
 }

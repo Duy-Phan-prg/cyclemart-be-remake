@@ -49,13 +49,31 @@ public class PaymentController extends BaseController {
         }
     }
 
-    @PostMapping("/sepay/ipn")
-    @Operation(summary = "Sepay IPN callback (internal use)")
-    public ResponseEntity<String> handleIPN(@RequestBody Map<String, Object> data) {
+    
+    @GetMapping("/vnpay/return")
+    @Operation(summary = "VNPay return URL callback")
+    public ResponseEntity<?> handleVNPayReturn(@RequestParam Map<String, String> params) {
+        System.out.println("=== VNPAY RETURN PARAMS: " + params);
         try {
-            paymentService.handleIPN(data);
+            paymentService.handleVNPayReturn(params);
+            return ResponseEntity.ok(Map.of("success", true, "message", "Payment processed"));
+        } catch (Exception e) {
+            System.out.println("=== VNPAY RETURN ERROR: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/vnpay/ipn")
+    @Operation(summary = "VNPay IPN callback")
+    public ResponseEntity<String> handleVNPayIPN(@RequestParam Map<String, String> params) {
+        System.out.println("=== VNPAY IPN PARAMS: " + params);
+        try {
+            paymentService.handleVNPayIPN(params);
+            System.out.println("=== VNPAY IPN PROCESSED SUCCESSFULLY");
             return ResponseEntity.ok("OK");
         } catch (Exception e) {
+            System.out.println("=== VNPAY IPN ERROR: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body("ERROR: " + e.getMessage());
         }
     }

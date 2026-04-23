@@ -9,10 +9,11 @@ public class CreatePaymentResponse {
     private String orderId;
     private Long amount;
     private String description;
-    private String payUrl;      // URL để redirect đến Sepay (deprecated)
-    private String qrUrl;       // QR Code URL cho chuyển khoản
-    private String qrCodeUrl;   // QR code để scan
-    private String deeplink;    // Deep link cho mobile app
+    private String paymentUrl;  // VNPay payment URL
+    private String payUrl;      // Legacy field
+    private String qrUrl;       // Legacy field
+    private String qrCodeUrl;   // Legacy field
+    private String deeplink;    // Legacy field
     private String message;
     private boolean success;
 }

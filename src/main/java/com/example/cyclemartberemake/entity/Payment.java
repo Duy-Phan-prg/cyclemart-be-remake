@@ -25,6 +25,10 @@ public class Payment {
     @NotNull(message = "User is required")
     private Users user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "bike_post_id")
+    private BikePost bikePost;
+
     @NotBlank(message = "Order ID is required")
     private String orderId;
     

@@ -12,6 +12,11 @@ import java.util.List;
 public interface PaymentMapper {
 
     @Mapping(source = "status", target = "statusDisplay", qualifiedByName = "mapPaymentStatus")
+    @Mapping(source = "bikePost.id", target = "bikePostId")
+    @Mapping(source = "bikePost.title", target = "bikeTitle")
+    @Mapping(source = "bikePost.price", target = "bikePrice")
+    @Mapping(source = "bikePost.user.fullName", target = "sellerName")
+    @Mapping(source = "bikePost.user.phone", target = "sellerPhone")
     PaymentResponse toResponse(Payment payment);
 
     List<PaymentResponse> toResponseList(List<Payment> payments);

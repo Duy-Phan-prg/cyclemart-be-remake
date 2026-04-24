@@ -30,6 +30,12 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- WEBSOCKET / STOMP -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
         <!-- EMAIL SUPPORT -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

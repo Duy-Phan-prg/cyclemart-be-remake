@@ -6,11 +6,14 @@ import com.example.cyclemartberemake.dto.response.PaymentResponse;
 import com.example.cyclemartberemake.entity.BikePost;
 import com.example.cyclemartberemake.entity.Payment;
 import com.example.cyclemartberemake.entity.PaymentStatus;
+import com.example.cyclemartberemake.entity.PaymentType; // 🔥 Import Enum
 import com.example.cyclemartberemake.entity.Users;
+import com.example.cyclemartberemake.entity.PostPrioritySubscription;
 import com.example.cyclemartberemake.mapper.PaymentMapper;
 import com.example.cyclemartberemake.repository.BikePostRepository;
 import com.example.cyclemartberemake.repository.PaymentRepository;
 import com.example.cyclemartberemake.repository.UserRepository;
+import com.example.cyclemartberemake.repository.PostPrioritySubscriptionRepository;
 import com.example.cyclemartberemake.service.PaymentNotificationService;
 import com.example.cyclemartberemake.service.PaymentService;
 import com.example.cyclemartberemake.service.UserService;
@@ -19,15 +22,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -49,6 +47,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final UserService userService;
     private final PaymentMapper paymentMapper;
     private final PaymentNotificationService notificationService;
+    private final PostPrioritySubscriptionRepository subscriptionRepository;
 
     @Value("${vnpay.tmnCode}")
     private String vnpayTmnCode;
@@ -71,45 +70,59 @@ public class PaymentServiceImpl implements PaymentService {
 
         Long userId = getCurrentUserId();
 
-        // Lấy BikePost để get price
-        BikePost bikePost = bikePostRepository.findById(request.getBikePostId())
-            .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
-        
-        Long amount = bikePost.getPrice().longValue();
+        // 1. Chuyển String type từ FE gửi lên thành Enum, mặc định là OTHER
+        PaymentType paymentType = PaymentType.OTHER;
+        if (request.getType() != null) {
+            try {
+                paymentType = PaymentType.valueOf(request.getType().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                log.warn("Loại thanh toán không hợp lệ: {}", request.getType());
+            }
+        }
 
-        if (amount < 10000 || amount > 50000000) {
+        BikePost bikePost = null;
+        // 2. Chỉ gán bikePost vào hóa đơn nếu KHÔNG PHẢI Mua Gói (để tránh lỗi hiển thị mua xe)
+        if (request.getBikePostId() != null && paymentType != PaymentType.PRIORITY_PACKAGE) {
+            bikePost = bikePostRepository.findById(request.getBikePostId())
+                    .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
+        }
+
+        Long amount = request.getAmount();
+        if (amount == null && bikePost != null) {
+            amount = bikePost.getPrice().longValue();
+        }
+
+        if (amount == null || amount < 10000 || amount > 50000000) {
             throw new RuntimeException("Số tiền không hợp lệ. Phải từ 10,000 - 50,000,000 VND");
         }
 
         String orderId = "ORDER_" + System.currentTimeMillis();
-        String description = request.getDescription() != null ? 
-            request.getDescription().replaceAll("[^a-zA-Z0-9\\s]", "") : "Nap diem CycleMart";
+        String description = request.getDescription() != null ?
+                request.getDescription().replaceAll("[^a-zA-Z0-9\\s_ÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂẾưăạảấầẩẫậắằẳẵặẹẻẽềềểếỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵỷỹ]", " ") : "Thanh toan CycleMart";
 
         Payment payment = Payment.builder()
                 .user(userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found")))
-                .bikePost(bikePost)
+                .bikePost(bikePost) // Có thể null nếu mua gói
                 .orderId(orderId)
                 .amount(amount)
                 .description(description)
                 .status(PaymentStatus.PENDING)
+                .type(paymentType) // 🔥 Đã thêm: Lưu loại giao dịch
+                .referenceId(request.getReferenceId()) // 🔥 Đã thêm: Lưu ID tương ứng (ID gói, ID kiểm định...)
                 .build();
 
         paymentRepo.save(payment);
-        log.info("Created payment record: orderId={}, userId={}, amount={}", orderId, userId, amount);
+        log.info("Created payment record: orderId={}, userId={}, amount={}, type={}", orderId, userId, amount, paymentType);
 
         try {
-            // 🔥 TẠO VNPAY PAYMENT URL
             String vnpayUrl = generateVNPayUrl(orderId, amount);
-            
-            System.out.println("=== Generated VNPay URL: " + vnpayUrl);
-            log.info("Generated VNPay URL: {}", vnpayUrl);
-            
+
             return CreatePaymentResponse.builder()
                     .orderId(orderId)
                     .amount(amount)
                     .description(description)
                     .paymentUrl(vnpayUrl)
-                    .message("Tạo link thanh toán thành công. Vui lòng chuyển hướng tới VNPay")
+                    .message("Tạo link thanh toán thành công")
                     .success(true)
                     .build();
 
@@ -117,13 +130,9 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setStatus(PaymentStatus.FAILED);
             payment.setMessage("Lỗi hệ thống: " + e.getMessage());
             paymentRepo.save(payment);
-            
-            System.out.println("=== Payment creation failed: " + e.getMessage());
-            log.error("Payment creation failed: orderId={}, error={}", orderId, e.getMessage(), e);
             throw new RuntimeException("Lỗi tạo thanh toán: " + e.getMessage());
         }
     }
-
 
     @Override
     public Page<PaymentResponse> getPaymentHistory(Pageable pageable) {
@@ -145,14 +154,14 @@ public class PaymentServiceImpl implements PaymentService {
         Long userId = getCurrentUserId();
         Payment payment = paymentRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch"));
-        
 
         if (!payment.getUser().getId().equals(userId)) {
             throw new RuntimeException("Bạn không có quyền xem giao dịch này");
         }
-        
+
         return paymentMapper.toResponse(payment);
     }
+
     @Override
     public Page<PaymentResponse> getAllPayments(Pageable pageable) {
         Page<Payment> payments = paymentRepo.findAll(pageable);
@@ -162,14 +171,14 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public Map<String, Object> getPaymentStatistics() {
         LocalDateTime startOfMonth = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
-        
+
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalPayments", paymentRepo.count());
         stats.put("successfulPayments", paymentRepo.countByStatus(PaymentStatus.SUCCESS));
         stats.put("pendingPayments", paymentRepo.countByStatus(PaymentStatus.PENDING));
         stats.put("failedPayments", paymentRepo.countByStatus(PaymentStatus.FAILED));
         stats.put("monthlyRevenue", paymentRepo.getTotalSuccessAmountSince(startOfMonth));
-        
+
         return stats;
     }
 
@@ -178,13 +187,13 @@ public class PaymentServiceImpl implements PaymentService {
     public void cleanupExpiredPayments() {
         LocalDateTime expiredTime = LocalDateTime.now().minusMinutes(30);
         List<Payment> expiredPayments = paymentRepo.findExpiredPendingPayments(expiredTime);
-        
+
         for (Payment payment : expiredPayments) {
             payment.setStatus(PaymentStatus.FAILED);
             payment.setMessage("Hết hạn thanh toán");
             paymentRepo.save(payment);
         }
-        
+
         log.info("Cleaned up {} expired payments", expiredPayments.size());
     }
 
@@ -205,7 +214,7 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setStatus(PaymentStatus.REFUNDED);
         payment.setRefundReason(reason);
         payment.setRefundedAt(LocalDateTime.now());
-        
+
         Users admin = userRepository.findById(adminId)
                 .orElseThrow(() -> new RuntimeException("Admin không tồn tại"));
         payment.setRefundedBy(admin);
@@ -222,10 +231,10 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         notificationService.sendRefundNotificationEmail(payment);
-        notificationService.sendRealTimeNotification(payment.getUser().getId(), 
-            "Giao dịch " + payment.getOrderId() + " đã được hoàn tiền.", "PAYMENT_REFUNDED");
+        notificationService.sendRealTimeNotification(payment.getUser().getId(),
+                "Giao dịch " + payment.getOrderId() + " đã được hoàn tiền.", "PAYMENT_REFUNDED");
 
-        log.info("Payment refunded successfully: paymentId={}, orderId={}, reason={}", 
+        log.info("Payment refunded successfully: paymentId={}, orderId={}, reason={}",
                 paymentId, payment.getOrderId(), reason);
 
         return paymentMapper.toResponse(payment);
@@ -252,15 +261,14 @@ public class PaymentServiceImpl implements PaymentService {
 
         paymentRepo.save(payment);
 
-        notificationService.sendRealTimeNotification(payment.getUser().getId(), 
-            "Giao dịch " + payment.getOrderId() + " đã được hủy.", "PAYMENT_CANCELLED");
+        notificationService.sendRealTimeNotification(payment.getUser().getId(),
+                "Giao dịch " + payment.getOrderId() + " đã được hủy.", "PAYMENT_CANCELLED");
 
-        log.info("Payment cancelled: paymentId={}, orderId={}, reason={}", 
+        log.info("Payment cancelled: paymentId={}, orderId={}, reason={}",
                 paymentId, payment.getOrderId(), reason);
 
         return paymentMapper.toResponse(payment);
     }
-
 
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -285,13 +293,12 @@ public class PaymentServiceImpl implements PaymentService {
         vnpParams.put("vnp_IpAddr", "127.0.0.1");
         vnpParams.put("vnp_CreateDate", new java.text.SimpleDateFormat("yyyyMMddHHmmss").format(new java.util.Date()));
 
-        // Sort params and create query string
         List<String> fieldNames = new ArrayList<>(vnpParams.keySet());
         Collections.sort(fieldNames);
-        
+
         StringBuilder hashData = new StringBuilder();
         StringBuilder query = new StringBuilder();
-        
+
         for (String fieldName : fieldNames) {
             String fieldValue = vnpParams.get(fieldName);
             if ((fieldValue != null) && (fieldValue.length() > 0)) {
@@ -315,7 +322,7 @@ public class PaymentServiceImpl implements PaymentService {
         SecretKeySpec secretKeySpec = new SecretKeySpec(key.getBytes("UTF-8"), "HmacSHA512");
         mac.init(secretKeySpec);
         byte[] rawHmac = mac.doFinal(data.getBytes("UTF-8"));
-        
+
         StringBuilder hex = new StringBuilder();
         for (byte b : rawHmac) {
             hex.append(String.format("%02x", b));
@@ -326,110 +333,98 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public void handleVNPayReturn(Map<String, String> params) throws Exception {
-        String orderId = params.get("vnp_TxnRef");
-        String responseCode = params.get("vnp_ResponseCode");
-        
-        System.out.println("=== VNPay Return: orderId=" + orderId + ", responseCode=" + responseCode);
-        log.info("VNPay Return: orderId={}, responseCode={}", orderId, responseCode);
-
-        if (orderId == null) {
-            throw new RuntimeException("Order ID is null");
-        }
-
-        Payment payment = paymentRepo.findByOrderId(orderId).orElse(null);
-        if (payment == null) {
-            throw new RuntimeException("Payment not found for orderId: " + orderId);
-        }
-
-        // VNPay response code: 00 = success
-        if ("00".equals(responseCode)) {
-            payment.setStatus(PaymentStatus.SUCCESS);
-            int points = (int) (payment.getAmount() / 1000);
-            payment.setPointsEarned(points);
-            payment.setCompletedAt(LocalDateTime.now());
-            paymentRepo.save(payment);
-            
-            userService.addPoint(payment.getUser().getId(), points);
-            
-            System.out.println("=== VNPay Payment SUCCESS: orderId=" + orderId + ", points=" + points);
-            log.info("VNPay payment successful: orderId={}, points={}", orderId, points);
-
-            notificationService.sendPaymentSuccessEmail(payment);
-            notificationService.sendRealTimeNotification(payment.getUser().getId(), 
-                "Thanh toán thành công! Bạn đã được cộng " + points + " điểm.", "PAYMENT_SUCCESS");
-        } else {
-            payment.setStatus(PaymentStatus.FAILED);
-            payment.setResponseCode(responseCode);
-            payment.setCompletedAt(LocalDateTime.now());
-            paymentRepo.save(payment);
-            
-            System.out.println("=== VNPay Payment FAILED: orderId=" + orderId + ", responseCode=" + responseCode);
-            log.warn("VNPay payment failed: orderId={}, responseCode={}", orderId, responseCode);
-
-            notificationService.sendPaymentFailedEmail(payment);
-            notificationService.sendRealTimeNotification(payment.getUser().getId(), 
-                "Thanh toán thất bại. Vui lòng thử lại.", "PAYMENT_FAILED");
-        }
+        processVNPayLogic(params);
     }
 
     @Override
     @Transactional
     public void handleVNPayIPN(Map<String, String> params) throws Exception {
-        String orderId = params.get("vnp_TxnRef");
-        String responseCode = params.get("vnp_ResponseCode");
-        String transactionNo = params.get("vnp_TransactionNo");
-        
-        System.out.println("=== VNPay IPN: orderId=" + orderId + ", responseCode=" + responseCode);
-        log.info("VNPay IPN: orderId={}, responseCode={}, transactionNo={}", orderId, responseCode, transactionNo);
-
-        if (orderId == null) {
-            System.out.println("=== ERROR: orderId is null");
-            throw new RuntimeException("Order ID is null");
-        }
-
-        Payment payment = paymentRepo.findByOrderId(orderId).orElse(null);
-        if (payment == null) {
-            System.out.println("=== ERROR: Payment not found for orderId: " + orderId);
-            throw new RuntimeException("Payment not found for orderId: " + orderId);
-        }
-
-        if (payment.getStatus() == PaymentStatus.SUCCESS) {
-            System.out.println("=== Payment already processed: " + orderId);
-            log.warn("Payment already processed: orderId={}", orderId);
-            return;
-        }
-
-        payment.setResponseCode(responseCode);
-        payment.setMomoTransId(transactionNo);
-        payment.setCompletedAt(LocalDateTime.now());
-
-        // VNPay response code: 00 = success
-        if ("00".equals(responseCode)) {
-            payment.setStatus(PaymentStatus.SUCCESS);
-            int points = (int) (payment.getAmount() / 1000);
-            payment.setPointsEarned(points);
-            
-            paymentRepo.save(payment);
-            userService.addPoint(payment.getUser().getId(), points);
-            
-            System.out.println("=== VNPay Payment SUCCESS: orderId=" + orderId + ", points=" + points);
-            log.info("VNPay payment successful: orderId={}, points={}", orderId, points);
-
-            notificationService.sendPaymentSuccessEmail(payment);
-            notificationService.sendRealTimeNotification(payment.getUser().getId(), 
-                "Thanh toán thành công! Bạn đã được cộng " + points + " điểm.", "PAYMENT_SUCCESS");
-        } else {
-            payment.setStatus(PaymentStatus.FAILED);
-            paymentRepo.save(payment);
-            
-            System.out.println("=== VNPay Payment FAILED: orderId=" + orderId + ", responseCode=" + responseCode);
-            log.warn("VNPay payment failed: orderId={}, responseCode={}", orderId, responseCode);
-
-            notificationService.sendPaymentFailedEmail(payment);
-            notificationService.sendRealTimeNotification(payment.getUser().getId(), 
-                "Thanh toán thất bại. Vui lòng thử lại.", "PAYMENT_FAILED");
-        }
+        processVNPayLogic(params);
     }
 
+    private void processVNPayLogic(Map<String, String> params) {
+        String orderId = params.get("vnp_TxnRef");
+        String responseCode = params.get("vnp_ResponseCode");
+        String transactionNo = params.get("vnp_TransactionNo"); // Lấy mã giao dịch VNPay
 
+        log.info("VNPay Callback: orderId={}, responseCode={}", orderId, responseCode);
+
+        if (orderId == null) throw new RuntimeException("Order ID is null");
+
+        Payment payment = paymentRepo.findByOrderId(orderId).orElse(null);
+        if (payment == null || payment.getStatus() == PaymentStatus.SUCCESS) return;
+
+        // Lưu thông tin VNPay trả về
+        payment.setResponseCode(responseCode);
+        if (transactionNo != null && !transactionNo.isEmpty()) {
+            payment.setMomoTransId(transactionNo); // Re-use trường này hoặc tạo trường vnpayTransId mới
+        }
+
+        if ("00".equals(responseCode)) {
+            payment.setStatus(PaymentStatus.SUCCESS);
+            payment.setCompletedAt(LocalDateTime.now());
+            int points = (int) (payment.getAmount() / 1000);
+            payment.setPointsEarned(points);
+
+            paymentRepo.save(payment);
+            userService.addPoint(payment.getUser().getId(), points);
+
+            log.info("VNPay payment successful: orderId={}, points={}", orderId, points);
+
+            // 🔥 SỬ DỤNG SWITCH-CASE ĐỂ KÍCH HOẠT DỊCH VỤ DỰA TRÊN ENUM (MỚI)
+            if (payment.getType() != null && payment.getReferenceId() != null) {
+                switch (payment.getType()) {
+                    case PRIORITY_PACKAGE:
+                        try {
+                            PostPrioritySubscription sub = subscriptionRepository.findById(payment.getReferenceId()).orElseThrow();
+                            sub.setIsActive(true);
+                            sub.setStartDate(LocalDateTime.now());
+                            sub.setEndDate(LocalDateTime.now().plusDays(sub.getPriorityPackage().getDurationDays()));
+                            subscriptionRepository.save(sub);
+
+                            BikePost post = sub.getPost();
+                            post.setIsPriority(true);
+                            bikePostRepository.save(post);
+                            log.info("Đã kích hoạt gói ưu tiên thành công cho Subscription ID: {}", payment.getReferenceId());
+                        } catch (Exception e) {
+                            log.error("Lỗi khi kích hoạt gói ưu tiên: ", e);
+                        }
+                        break;
+
+                    case INSPECTION_FEE:
+                        // Sau này thêm code xử lý kiểm định tại đây
+                        log.info("Thanh toán phí kiểm định thành công cho ID: {}", payment.getReferenceId());
+                        break;
+
+                    case ORDER_DEPOSIT:
+                        // Thêm code xử lý đặt cọc tại đây
+                        log.info("Đặt cọc thành công cho đơn hàng ID: {}", payment.getReferenceId());
+                        break;
+
+                    default:
+                        log.info("Giao dịch thành công, không cần kích hoạt dịch vụ đặc biệt. Type: {}", payment.getType());
+                        break;
+                }
+            }
+
+            try {
+                notificationService.sendPaymentSuccessEmail(payment);
+                notificationService.sendRealTimeNotification(payment.getUser().getId(),
+                        "Thanh toán thành công! Bạn đã được cộng " + points + " điểm.", "PAYMENT_SUCCESS");
+            } catch(Exception ignored) {}
+
+        } else {
+            payment.setStatus(PaymentStatus.FAILED);
+            payment.setCompletedAt(LocalDateTime.now());
+            paymentRepo.save(payment);
+
+            log.warn("VNPay payment failed: orderId={}, responseCode={}", orderId, responseCode);
+
+            try {
+                notificationService.sendPaymentFailedEmail(payment);
+                notificationService.sendRealTimeNotification(payment.getUser().getId(),
+                        "Thanh toán thất bại. Vui lòng thử lại.", "PAYMENT_FAILED");
+            } catch(Exception ignored) {}
+        }
+    }
 }

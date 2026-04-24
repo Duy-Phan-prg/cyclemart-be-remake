@@ -170,6 +170,12 @@ public class BikePostController {
         service.delete(id);
     }
 
+    @PostMapping("/{id}/cancel")
+    @Operation(summary = "Cancel pending bike post")
+    public void cancelPost(@PathVariable Long id) {
+        service.cancelPost(id);
+    }
+
     @GetMapping("/my-posts")
     @Operation(summary = "Get current user's bike posts (all statuses)")
     public Page<BikePostResponse> getMyPosts(

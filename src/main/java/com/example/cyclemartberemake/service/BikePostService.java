@@ -32,4 +32,6 @@ public interface BikePostService {
     void reject(Long id, String reason);
     
     Page<BikePostResponse> getAllForAdmin(Pageable pageable);
+
+    void cancelPost(Long id);
 }

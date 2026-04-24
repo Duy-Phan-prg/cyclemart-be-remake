@@ -168,6 +168,23 @@ public class BikePostServiceImpl implements BikePostService {
         postRepo.delete(post);
     }
 
+    @Override
+    public void cancelPost(Long id) {
+        BikePost post = postRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
+
+        Long currentUserId = getCurrentUserId();
+        if (!post.getUser().getId().equals(currentUserId)) {
+            throw new RuntimeException("Bạn không có quyền hủy bài đăng này");
+        }
+
+        if (!post.getPostStatus().equals(PostStatus.PENDING)) {
+            throw new RuntimeException("Chỉ có thể hủy bài đăng đang chờ duyệt");
+        }
+
+        postRepo.delete(post);
+    }
+
     // ================= GET MY POSTS =================
     @Override
     public Page<BikePostResponse> getMyPosts(Pageable pageable) {

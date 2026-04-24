@@ -29,11 +29,9 @@ public class PostPrioritySubscriptionServiceImpl implements PostPrioritySubscrip
     @Override
     @Transactional
     public PostPrioritySubscriptionResponse subscribe(PostPrioritySubscriptionRequest request) {
-        // Kiểm tra bài post tồn tại
         BikePost post = postRepository.findById(request.getPostId())
                 .orElseThrow(() -> new RuntimeException("Bài post không tồn tại"));
 
-        // Kiểm tra gói ưu tiên tồn tại và hoạt động
         PriorityPackage pkg = packageRepository.findById(request.getPackageId())
                 .orElseThrow(() -> new RuntimeException("Gói ưu tiên không tồn tại"));
 
@@ -41,7 +39,6 @@ public class PostPrioritySubscriptionServiceImpl implements PostPrioritySubscrip
             throw new RuntimeException("Gói ưu tiên không còn hoạt động");
         }
 
-        // Lấy tất cả các subscriptions đang thực sự hoạt động của bài post này (còn hạn và isActive = true)
         List<PostPrioritySubscription> activeSubscriptions = repository.findActiveSubscriptionsByPostId(request.getPostId());
 
         if (!activeSubscriptions.isEmpty()) {
@@ -53,8 +50,6 @@ public class PostPrioritySubscriptionServiceImpl implements PostPrioritySubscrip
             }
         }
 
-        // Nếu ko có gói nào đang hoạt động.
-        // Kiểm tra xem ĐÃ TỪNG đăng ký gói này chưa để tái sử dụng record
         var existingSubscriptionForThisPackage = repository.findByPostIdAndPriorityPackageId(request.getPostId(), request.getPackageId());
 
         LocalDateTime startDate = LocalDateTime.now();
@@ -63,24 +58,31 @@ public class PostPrioritySubscriptionServiceImpl implements PostPrioritySubscrip
         PostPrioritySubscription subscription;
 
         if (existingSubscriptionForThisPackage.isPresent()) {
-            // Reactivate old subscription (nếu đã hủy trước đó)
             subscription = existingSubscriptionForThisPackage.get();
-            subscription.setIsActive(true);
-            subscription.setStartDate(startDate);
-            subscription.setEndDate(endDate);
         } else {
-            // Create new subscription
             subscription = PostPrioritySubscription.builder()
                     .post(post)
                     .priorityPackage(pkg)
-                    .startDate(startDate)
-                    .endDate(endDate)
-                    .isActive(true)
                     .build();
         }
 
+        // 🔥 LOGIC THANH TOÁN GÓI ƯU TIÊN
+        if (pkg.getPrice() == null || pkg.getPrice() <= 0) {
+            subscription.setIsActive(true);
+            subscription.setStartDate(startDate);
+            subscription.setEndDate(endDate);
+
+            // Kích hoạt ưu tiên cho bài đăng
+            post.setIsPriority(true);
+            postRepository.save(post);
+        } else {
+            subscription.setIsActive(false); // Chờ thanh toán VNPay
+            subscription.setStartDate(startDate);
+            subscription.setEndDate(endDate);
+        }
+
         PostPrioritySubscription saved = repository.save(subscription);
-        repository.flush(); // Đảm bảo lưu lập tức vào DB
+        repository.flush();
         return toResponse(saved);
     }
 
@@ -96,9 +98,8 @@ public class PostPrioritySubscriptionServiceImpl implements PostPrioritySubscrip
 
         subscription.setIsActive(false);
         repository.save(subscription);
-        repository.flush();  // Ensure changes are flushed to database
+        repository.flush();
 
-        // Return success message
         Map<String, Object> response = new HashMap<>();
         response.put("status", "success");
         response.put("message", "Đã hủy đăng ký gói ưu tiên thành công");

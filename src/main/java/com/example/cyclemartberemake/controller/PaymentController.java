@@ -30,7 +30,7 @@ public class PaymentController extends BaseController {
 
     private final PaymentService paymentService;
 
-    @PostMapping("/sepay/create")
+    @PostMapping("/create")
     @Operation(summary = "Create Sepay payment")
     public ResponseEntity<CreatePaymentResponse> createPayment(
             @Valid @RequestBody CreatePaymentRequest request,

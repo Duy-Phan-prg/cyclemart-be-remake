@@ -1,14 +1,15 @@
 package com.example.cyclemartberemake.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
 public class CreatePaymentRequest {
 
-    @NotNull(message = "ID bài đăng không được để trống")
+    // Đã bỏ @NotNull để có thể dùng chung cho nhiều loại thanh toán
     private Long bikePostId;
+
+    private Long amount;
 
     @NotBlank(message = "Tên người nhận không được để trống")
     private String name;
@@ -21,4 +22,7 @@ public class CreatePaymentRequest {
 
     @NotBlank(message = "Mô tả không được để trống")
     private String description;
+
+    private String type;
+    private Long referenceId;
 }

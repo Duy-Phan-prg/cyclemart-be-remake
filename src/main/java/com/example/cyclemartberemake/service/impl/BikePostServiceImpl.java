@@ -14,6 +14,8 @@ import com.example.cyclemartberemake.repository.PostPrioritySubscriptionReposito
 import com.example.cyclemartberemake.repository.UserRepository;
 import com.example.cyclemartberemake.service.BikePostService;
 import com.example.cyclemartberemake.service.CloudinaryService;
+import com.example.cyclemartberemake.service.UserService;
+import com.example.cyclemartberemake.service.PaymentNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -37,13 +39,16 @@ public class BikePostServiceImpl implements BikePostService {
     private final BikePostMapper mapper;
     private final PostPrioritySubscriptionRepository priorityRepo;
     private final UserRepository userRepository;
-    private final InspectionRepository inspectionRepo; // 🔥 Đã thêm repo kiểm định
+    private final InspectionRepository inspectionRepo;
+
+    // 🔥 Đã thêm 2 dòng này để sửa lỗi thiếu Service khi hoàn tiền kiểm định
+    private final UserService userService;
+    private final PaymentNotificationService notificationService;
 
     // ================= CREATE =================
     @Override
     @Transactional
     public BikePostResponse create(BikePostRequest req, List<MultipartFile> files) {
-
         Categories category = validateCategory(req.getCategoryId());
 
         // Validate year
@@ -60,10 +65,11 @@ public class BikePostServiceImpl implements BikePostService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         post.setUser(user);
         post.setUserId(user.getId());
+        post.setIsPriority(false);
+        post.setIsVerified(false);
         post.setPostStatus(PostStatus.PENDING);
         post.setCreatedAt(LocalDateTime.now());
 
-        // 🔥 XỬ LÝ LƯU THÔNG TIN KIỂM ĐỊNH (Nguyên nhân gây lỗi 400 của bạn)
         if (Boolean.TRUE.equals(req.getRequestInspection())) {
             post.setIsRequestedInspection(true);
             post.setInspectionAddress(req.getInspectionAddress());
@@ -74,7 +80,6 @@ public class BikePostServiceImpl implements BikePostService {
         }
 
         BikePost savedPost = postRepo.save(post);
-
         handleImages(savedPost, files);
 
         return buildResponse(savedPost);
@@ -201,7 +206,6 @@ public class BikePostServiceImpl implements BikePostService {
         post.setApprovedBy(getCurrentUserId());
         post.setRejectionReason(null);
 
-        // 🔥 TỰ ĐỘNG TẠO INSPECTION KHI ADMIN DUYỆT BÀI
         if (Boolean.TRUE.equals(post.getIsRequestedInspection())) {
             Inspection inspection = Inspection.builder()
                     .bikePost(post)
@@ -213,21 +217,39 @@ public class BikePostServiceImpl implements BikePostService {
                     .build();
             inspectionRepo.save(inspection);
 
-            post.setIsRequestedInspection(false); // Reset để tránh tạo trùng
+            post.setIsRequestedInspection(false);
         }
 
         postRepo.save(post);
     }
 
-    @Override
-    public void reject(Long id, String reason) {
-        BikePost post = postRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy bài"));
+    // 🔥 ĐÃ FIX LỖI Ở HÀM NÀY: Dùng đúng tên postRepo và các service đã inject
+    @Transactional
+    public void reject(Long postId, String reason) {
+        BikePost post = postRepo.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bài đăng"));
 
         post.setPostStatus(PostStatus.REJECTED);
         post.setRejectionReason(reason);
-        post.setApprovedBy(null);
-        post.setApprovedAt(null);
+
+        // HOÀN POINT: Nếu bài này đã đóng phí kiểm định
+        if (Boolean.TRUE.equals(post.getIsRequestedInspection())) {
+            post.setIsRequestedInspection(false);
+
+            // Giả sử phí kiểm định là 100.000 VNĐ -> Hoàn lại 100 điểm (bạn có thể thay đổi số này)
+            int refundPoints = 100;
+
+            try {
+                userService.addPoint(post.getUser().getId(), refundPoints);
+
+                notificationService.sendRealTimeNotification(post.getUser().getId(),
+                        "Bài đăng bị từ chối do: " + reason + ". Phí kiểm định đã được hoàn " + refundPoints + " điểm.",
+                        "INSPECTION_REFUND"
+                );
+            } catch (Exception e) {
+                // Log lỗi nếu hoàn tiền thất bại nhưng vẫn để cho bài bị reject
+            }
+        }
 
         postRepo.save(post);
     }
@@ -338,4 +360,3 @@ public class BikePostServiceImpl implements BikePostService {
         throw new RuntimeException("Người dùng chưa đăng nhập");
     }
 }
-

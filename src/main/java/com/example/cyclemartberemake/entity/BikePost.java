@@ -127,4 +127,7 @@ public class BikePost {
 
     @Column(columnDefinition = "TEXT")
     private String inspectionNote;
+
+    @Column(nullable = false)
+    private Boolean isPriority = false;
 }

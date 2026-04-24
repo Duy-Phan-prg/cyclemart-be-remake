@@ -18,6 +18,8 @@ import com.example.cyclemartberemake.service.UserService;
 import com.example.cyclemartberemake.service.PaymentNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+
+import java.util.ArrayList;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -297,17 +299,25 @@ public class BikePostServiceImpl implements BikePostService {
     private void handleImages(BikePost post, List<MultipartFile> files) {
         if (files == null || files.isEmpty()) return;
 
-        List<BikeImage> images = files.stream().map(file -> {
-            String url = cloudinaryService.upload(file);
+        List<BikeImage> images = new ArrayList<>();
+        for (MultipartFile file : files) {
+            try {
+                String url = cloudinaryService.upload(file);
+                BikeImage image = BikeImage.builder()
+                        .url(url)
+                        .post(post)
+                        .build();
+                images.add(image);
+                System.out.println("✅ Uploaded: " + file.getOriginalFilename() + " -> " + url);
+            } catch (Exception e) {
+                System.err.println("❌ Failed to upload: " + file.getOriginalFilename() + " - " + e.getMessage());
+            }
+        }
 
-            return BikeImage.builder()
-                    .url(url)
-                    .post(post)
-                    .build();
-        }).toList();
-
-        post.setImages(images);
-        postRepo.save(post);
+        if (!images.isEmpty()) {
+            post.setImages(images);
+            postRepo.save(post);
+        }
     }
 
     private BikePostResponse buildResponse(BikePost post) {

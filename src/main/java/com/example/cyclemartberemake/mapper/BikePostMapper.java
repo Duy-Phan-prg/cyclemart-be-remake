@@ -60,7 +60,7 @@ public interface BikePostMapper {
             BikeStatus status, City city, HCMDistrict district,
             BikeBrand brand, String model, Integer year,
             FrameMaterial frameMaterial, FrameSize frameSize,
-            BrakeType brakeType, Groupset groupset, Integer mileage,
+            BrakeType brakeType, Groupset groupset,
             Integer categoryId, Boolean allowNegotiation) {
 
         BikePostRequest request = new BikePostRequest();
@@ -77,7 +77,6 @@ public interface BikePostMapper {
         request.setFrameSize(frameSize);
         request.setBrakeType(brakeType);
         request.setGroupset(groupset);
-        request.setMileage(mileage);
         request.setCategoryId(categoryId);
         request.setAllowNegotiation(allowNegotiation);
         return request;

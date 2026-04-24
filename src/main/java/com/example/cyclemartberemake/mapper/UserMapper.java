@@ -35,8 +35,7 @@ public interface UserMapper {
     @Named("roleToDisplay")
     default String roleToDisplay(Role role) {
         if (role == null) return "";
-        if (role == Role.BUYER) return "Người mua";
-        if (role == Role.SELLER) return "Người bán";
+        if (role == Role.USER) return "Người dùng";
         if (role == Role.ADMIN) return "Quản trị viên";
         if (role == Role.INSPECTOR) return "Kiểm định viên";
         return "";

@@ -46,6 +46,12 @@ public class BikePostServiceImpl implements BikePostService {
 
         Categories category = validateCategory(req.getCategoryId());
 
+        // Validate year
+        int currentYear = java.time.Year.now().getValue();
+        if (req.getYear() != null && req.getYear() > currentYear) {
+            throw new RuntimeException("Năm sản xuất không được vượt quá năm hiện tại (" + currentYear + ")");
+        }
+
         BikePost post = mapper.toEntity(req);
         post.setCategory(category);
 
@@ -106,6 +112,12 @@ public class BikePostServiceImpl implements BikePostService {
 
         Categories category = validateCategory(req.getCategoryId());
 
+        // Validate year
+        int currentYear = java.time.Year.now().getValue();
+        if (req.getYear() != null && req.getYear() > currentYear) {
+            throw new RuntimeException("Năm sản xuất không được vượt quá năm hiện tại (" + currentYear + ")");
+        }
+
         post.setTitle(req.getTitle());
         post.setDescription(req.getDescription());
         post.setPrice(req.getPrice());
@@ -119,7 +131,6 @@ public class BikePostServiceImpl implements BikePostService {
         post.setFrameSize(req.getFrameSize());
         post.setBrakeType(req.getBrakeType());
         post.setGroupset(req.getGroupset());
-        post.setMileage(req.getMileage());
         post.setCategory(category);
         post.setAllowNegotiation(req.getAllowNegotiation());
 

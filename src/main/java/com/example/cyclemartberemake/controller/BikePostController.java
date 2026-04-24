@@ -48,7 +48,6 @@ public class BikePostController {
             @RequestParam(value = "frameSize", required = false) FrameSize frameSize,
             @RequestParam(value = "brakeType", required = false) BrakeType brakeType,
             @RequestParam(value = "groupset", required = false) Groupset groupset,
-            @RequestParam(value = "mileage", required = false) Integer mileage,
 
             @RequestParam("categoryId") Integer categoryId,
 
@@ -76,7 +75,7 @@ public class BikePostController {
         BikePostRequest req = mapper.createRequest(
                 title, description, price, status, city, district,
                 brand, model, year, frameMaterial, frameSize,
-                brakeType, groupset, mileage, categoryId,
+                brakeType, groupset, categoryId,
                 allowNegotiation
         );
 
@@ -136,7 +135,6 @@ public class BikePostController {
             @RequestParam(value = "frameSize", required = false) FrameSize frameSize,
             @RequestParam(value = "brakeType", required = false) BrakeType brakeType,
             @RequestParam(value = "groupset", required = false) Groupset groupset,
-            @RequestParam(value = "mileage", required = false) Integer mileage,
 
             @RequestParam("categoryId") Integer categoryId,
 
@@ -154,7 +152,7 @@ public class BikePostController {
         BikePostRequest req = mapper.createRequest(
                 title, description, price, status, city, district,
                 brand, model, year, frameMaterial, frameSize,
-                brakeType, groupset, mileage, categoryId,
+                brakeType, groupset, categoryId,
                 allowNegotiation
         );
 

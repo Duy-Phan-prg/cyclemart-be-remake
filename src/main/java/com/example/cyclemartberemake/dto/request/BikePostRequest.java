@@ -49,7 +49,6 @@ public class BikePostRequest {
     private String model;
     
     @Min(value = 1990, message = "Năm sản xuất phải >= 1990")
-    @Max(value = 2030, message = "Năm sản xuất không hợp lệ")
     @Schema(description = "Năm sản xuất", example = "2024")
     private Integer year;
 
@@ -65,11 +64,6 @@ public class BikePostRequest {
     
     @Schema(description = "Groupset", example = "SHIMANO_105")
     private Groupset groupset;
-    
-    @Min(value = 0, message = "Số km phải >= 0")
-    @Max(value = 999999, message = "Số km không hợp lệ")
-    @Schema(description = "Số km đã đi", example = "2500")
-    private Integer mileage;
 
     @NotNull(message = "Danh mục không được để trống")
     @Min(value = 1, message = "Danh mục không hợp lệ")

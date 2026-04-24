@@ -36,6 +36,12 @@ public class DataSeeder {
             createInspectorAccount(userRepository, passwordEncoder, "inspector2@test.com", "Nguyễn Kiểm Định (Ảo 2)", "0987654321", "inspector123");
             createInspectorAccount(userRepository, passwordEncoder, "inspector3@test.com", "Lê Kiểm Định (Ảo 3)", "0987654322", "inspector123");
 
+            // ================= USER ACCOUNTS =================
+            createUserAccount(userRepository, passwordEncoder, "user1@test.com", "Nguyễn Văn A", "0901111111", "user123");
+            createUserAccount(userRepository, passwordEncoder, "user2@test.com", "Trần Thị B", "0902222222", "user123");
+            createUserAccount(userRepository, passwordEncoder, "user3@test.com", "Lê Văn C", "0903333333", "user123");
+            createUserAccount(userRepository, passwordEncoder, "user4@test.com", "Phạm Thị D", "0904444444", "user123");
+
             // ================= CATEGORIES =================
             seedCategories(categoryRepository);
 
@@ -81,6 +87,25 @@ public class DataSeeder {
 
             userRepository.save(inspector);
             System.out.println("INSPECTOR ACCOUNT CREATED: " + email);
+        }
+    }
+
+    private void createUserAccount(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                                   String email, String fullName, String phone, String password) {
+        if (!userRepository.existsByEmail(email)) {
+            Users user = Users.builder()
+                    .fullName(fullName)
+                    .email(email)
+                    .phone(phone)
+                    .passwordHash(passwordEncoder.encode(password))
+                    .role(Role.USER)
+                    .status(UserStatus.ACTIVE)
+                    .point(0)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            userRepository.save(user);
+            System.out.println("USER ACCOUNT CREATED: " + email);
         }
     }
 

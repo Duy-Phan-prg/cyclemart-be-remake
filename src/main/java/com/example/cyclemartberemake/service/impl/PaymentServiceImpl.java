@@ -3,12 +3,7 @@ package com.example.cyclemartberemake.service.impl;
 import com.example.cyclemartberemake.dto.request.CreatePaymentRequest;
 import com.example.cyclemartberemake.dto.response.CreatePaymentResponse;
 import com.example.cyclemartberemake.dto.response.PaymentResponse;
-import com.example.cyclemartberemake.entity.BikePost;
-import com.example.cyclemartberemake.entity.Payment;
-import com.example.cyclemartberemake.entity.PaymentStatus;
-import com.example.cyclemartberemake.entity.PaymentType; // 🔥 Import Enum
-import com.example.cyclemartberemake.entity.Users;
-import com.example.cyclemartberemake.entity.PostPrioritySubscription;
+import com.example.cyclemartberemake.entity.*;
 import com.example.cyclemartberemake.mapper.PaymentMapper;
 import com.example.cyclemartberemake.repository.BikePostRepository;
 import com.example.cyclemartberemake.repository.PaymentRepository;
@@ -70,7 +65,6 @@ public class PaymentServiceImpl implements PaymentService {
 
         Long userId = getCurrentUserId();
 
-        // 1. Chuyển String type từ FE gửi lên thành Enum, mặc định là OTHER
         PaymentType paymentType = PaymentType.OTHER;
         if (request.getType() != null) {
             try {
@@ -81,8 +75,12 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         BikePost bikePost = null;
-        // 2. Chỉ gán bikePost vào hóa đơn nếu KHÔNG PHẢI Mua Gói (để tránh lỗi hiển thị mua xe)
-        if (request.getBikePostId() != null && paymentType != PaymentType.PRIORITY_PACKAGE) {
+
+        // 🔥 FIX LỖI MUA LẠI XE CỦA CHÍNH MÌNH:
+        // Chỉ gán bikePost vào Payment nếu KHÔNG PHẢI là Mua Gói và KHÔNG PHẢI là Kiểm định.
+        if (request.getBikePostId() != null
+                && paymentType != PaymentType.PRIORITY_PACKAGE
+                && paymentType != PaymentType.INSPECTION_FEE) {
             bikePost = bikePostRepository.findById(request.getBikePostId())
                     .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
         }
@@ -102,17 +100,16 @@ public class PaymentServiceImpl implements PaymentService {
 
         Payment payment = Payment.builder()
                 .user(userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found")))
-                .bikePost(bikePost) // Có thể null nếu mua gói
+                .bikePost(bikePost) // Sẽ là null nếu thanh toán Gói/Kiểm định -> Khắc phục triệt để lỗi hiện vào Đơn mua
                 .orderId(orderId)
                 .amount(amount)
                 .description(description)
                 .status(PaymentStatus.PENDING)
-                .type(paymentType) // 🔥 Đã thêm: Lưu loại giao dịch
-                .referenceId(request.getReferenceId()) // 🔥 Đã thêm: Lưu ID tương ứng (ID gói, ID kiểm định...)
+                .type(paymentType)
+                .referenceId(request.getReferenceId())
                 .build();
 
         paymentRepo.save(payment);
-        log.info("Created payment record: orderId={}, userId={}, amount={}, type={}", orderId, userId, amount, paymentType);
 
         try {
             String vnpayUrl = generateVNPayUrl(orderId, amount);
@@ -193,8 +190,6 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setMessage("Hết hạn thanh toán");
             paymentRepo.save(payment);
         }
-
-        log.info("Cleaned up {} expired payments", expiredPayments.size());
     }
 
     @Override
@@ -224,7 +219,6 @@ public class PaymentServiceImpl implements PaymentService {
         if (payment.getPointsEarned() != null && payment.getPointsEarned() > 0) {
             try {
                 userService.addPoint(payment.getUser().getId(), -payment.getPointsEarned());
-                log.info("Deducted {} points from user {} for refund", payment.getPointsEarned(), payment.getUser().getId());
             } catch (Exception e) {
                 log.error("Failed to deduct points for refund: paymentId={}", paymentId, e);
             }
@@ -233,9 +227,6 @@ public class PaymentServiceImpl implements PaymentService {
         notificationService.sendRefundNotificationEmail(payment);
         notificationService.sendRealTimeNotification(payment.getUser().getId(),
                 "Giao dịch " + payment.getOrderId() + " đã được hoàn tiền.", "PAYMENT_REFUNDED");
-
-        log.info("Payment refunded successfully: paymentId={}, orderId={}, reason={}",
-                paymentId, payment.getOrderId(), reason);
 
         return paymentMapper.toResponse(payment);
     }
@@ -263,9 +254,6 @@ public class PaymentServiceImpl implements PaymentService {
 
         notificationService.sendRealTimeNotification(payment.getUser().getId(),
                 "Giao dịch " + payment.getOrderId() + " đã được hủy.", "PAYMENT_CANCELLED");
-
-        log.info("Payment cancelled: paymentId={}, orderId={}, reason={}",
-                paymentId, payment.getOrderId(), reason);
 
         return paymentMapper.toResponse(payment);
     }
@@ -345,19 +333,16 @@ public class PaymentServiceImpl implements PaymentService {
     private void processVNPayLogic(Map<String, String> params) {
         String orderId = params.get("vnp_TxnRef");
         String responseCode = params.get("vnp_ResponseCode");
-        String transactionNo = params.get("vnp_TransactionNo"); // Lấy mã giao dịch VNPay
+        String transactionNo = params.get("vnp_TransactionNo");
 
-        log.info("VNPay Callback: orderId={}, responseCode={}", orderId, responseCode);
-
-        if (orderId == null) throw new RuntimeException("Order ID is null");
+        if (orderId == null) return;
 
         Payment payment = paymentRepo.findByOrderId(orderId).orElse(null);
         if (payment == null || payment.getStatus() == PaymentStatus.SUCCESS) return;
 
-        // Lưu thông tin VNPay trả về
         payment.setResponseCode(responseCode);
         if (transactionNo != null && !transactionNo.isEmpty()) {
-            payment.setMomoTransId(transactionNo); // Re-use trường này hoặc tạo trường vnpayTransId mới
+            payment.setMomoTransId(transactionNo);
         }
 
         if ("00".equals(responseCode)) {
@@ -369,9 +354,7 @@ public class PaymentServiceImpl implements PaymentService {
             paymentRepo.save(payment);
             userService.addPoint(payment.getUser().getId(), points);
 
-            log.info("VNPay payment successful: orderId={}, points={}", orderId, points);
-
-            // 🔥 SỬ DỤNG SWITCH-CASE ĐỂ KÍCH HOẠT DỊCH VỤ DỰA TRÊN ENUM (MỚI)
+            // 🔥 XỬ LÝ THEO ENUM
             if (payment.getType() != null && payment.getReferenceId() != null) {
                 switch (payment.getType()) {
                     case PRIORITY_PACKAGE:
@@ -385,24 +368,38 @@ public class PaymentServiceImpl implements PaymentService {
                             BikePost post = sub.getPost();
                             post.setIsPriority(true);
                             bikePostRepository.save(post);
-                            log.info("Đã kích hoạt gói ưu tiên thành công cho Subscription ID: {}", payment.getReferenceId());
                         } catch (Exception e) {
                             log.error("Lỗi khi kích hoạt gói ưu tiên: ", e);
                         }
                         break;
 
                     case INSPECTION_FEE:
-                        // Sau này thêm code xử lý kiểm định tại đây
-                        log.info("Thanh toán phí kiểm định thành công cho ID: {}", payment.getReferenceId());
+                        try {
+                            BikePost post = bikePostRepository.findById(payment.getReferenceId()).orElseThrow();
+
+                            // Bật cờ đã thanh toán tiền
+                            post.setIsRequestedInspection(true);
+
+                            // KỊCH BẢN 1: Đang chờ duyệt -> Giữ nguyên chờ duyệt
+                            if (post.getPostStatus() == PostStatus.PENDING) {
+                                post.setPostStatus(PostStatus.PENDING);
+                            }
+                            // KỊCH BẢN 2: Bài đã hiển thị -> Báo Admin xếp người
+                            else if (post.getPostStatus() == PostStatus.APPROVED) {
+                                log.info("Bài đăng ID {} vừa thanh toán phí kiểm định bổ sung. Cần phân công Inspector!", post.getId());
+                            }
+
+                            bikePostRepository.save(post);
+                            log.info("Thanh toán phí kiểm định thành công cho ID: {}", payment.getReferenceId());
+                        } catch (Exception e) {
+                            log.error("Lỗi khi kích hoạt kiểm định: ", e);
+                        }
                         break;
 
                     case ORDER_DEPOSIT:
-                        // Thêm code xử lý đặt cọc tại đây
-                        log.info("Đặt cọc thành công cho đơn hàng ID: {}", payment.getReferenceId());
                         break;
 
                     default:
-                        log.info("Giao dịch thành công, không cần kích hoạt dịch vụ đặc biệt. Type: {}", payment.getType());
                         break;
                 }
             }
@@ -417,8 +414,6 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setStatus(PaymentStatus.FAILED);
             payment.setCompletedAt(LocalDateTime.now());
             paymentRepo.save(payment);
-
-            log.warn("VNPay payment failed: orderId={}, responseCode={}", orderId, responseCode);
 
             try {
                 notificationService.sendPaymentFailedEmail(payment);

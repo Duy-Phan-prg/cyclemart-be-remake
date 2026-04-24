@@ -75,4 +75,9 @@ public class Payment {
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+    // Trong Payment Entity
+    @Enumerated(EnumType.STRING)
+    private PaymentType type;
+
+    private Long referenceId; // Lưu ID của gói đăng ký hoặc ID của yêu cầu kiểm định
 }

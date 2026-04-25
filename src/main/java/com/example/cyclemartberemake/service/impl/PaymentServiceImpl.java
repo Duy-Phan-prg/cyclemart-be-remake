@@ -76,7 +76,6 @@ public class PaymentServiceImpl implements PaymentService {
 
         BikePost bikePost = null;
 
-        // 🔥 FIX LỖI MUA LẠI XE CỦA CHÍNH MÌNH:
         // Chỉ gán bikePost vào Payment nếu KHÔNG PHẢI là Mua Gói và KHÔNG PHẢI là Kiểm định.
         if (request.getBikePostId() != null
                 && paymentType != PaymentType.PRIORITY_PACKAGE
@@ -100,7 +99,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         Payment payment = Payment.builder()
                 .user(userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found")))
-                .bikePost(bikePost) // Sẽ là null nếu thanh toán Gói/Kiểm định -> Khắc phục triệt để lỗi hiện vào Đơn mua
+                .bikePost(bikePost)
                 .orderId(orderId)
                 .amount(amount)
                 .description(description)
@@ -377,15 +376,11 @@ public class PaymentServiceImpl implements PaymentService {
                         try {
                             BikePost post = bikePostRepository.findById(payment.getReferenceId()).orElseThrow();
 
-                            // Bật cờ đã thanh toán tiền
                             post.setIsRequestedInspection(true);
 
-                            // KỊCH BẢN 1: Đang chờ duyệt -> Giữ nguyên chờ duyệt
                             if (post.getPostStatus() == PostStatus.PENDING) {
                                 post.setPostStatus(PostStatus.PENDING);
-                            }
-                            // KỊCH BẢN 2: Bài đã hiển thị -> Báo Admin xếp người
-                            else if (post.getPostStatus() == PostStatus.APPROVED) {
+                            } else if (post.getPostStatus() == PostStatus.APPROVED) {
                                 log.info("Bài đăng ID {} vừa thanh toán phí kiểm định bổ sung. Cần phân công Inspector!", post.getId());
                             }
 
@@ -393,6 +388,20 @@ public class PaymentServiceImpl implements PaymentService {
                             log.info("Thanh toán phí kiểm định thành công cho ID: {}", payment.getReferenceId());
                         } catch (Exception e) {
                             log.error("Lỗi khi kích hoạt kiểm định: ", e);
+                        }
+                        break;
+
+                    case ORDER_PAYMENT:
+                        try {
+                            BikePost post = bikePostRepository.findById(payment.getReferenceId()).orElseThrow();
+
+                            // Đổi trạng thái bài đăng thành SOLD (Đã bán)
+                            post.setPostStatus(PostStatus.SOLD);
+                            bikePostRepository.save(post);
+
+                            log.info("Thanh toán đơn hàng thành công, xe ID: {} đã chuyển sang trạng thái ĐÃ BÁN.", payment.getReferenceId());
+                        } catch (Exception e) {
+                            log.error("Lỗi khi cập nhật trạng thái bán xe: ", e);
                         }
                         break;
 

@@ -197,8 +197,8 @@ public class BikePostServiceImpl implements BikePostService {
     // ================= SEARCH =================
     @Override
     public Page<BikePostResponse> search(String keyword, Double minPrice, Double maxPrice,
-                                         String brand, String city, Pageable pageable) {
-        Page<BikePost> posts = postRepo.searchPostsWithPriority(keyword, minPrice, maxPrice, brand, city, pageable);
+                                         String brand, String city, Integer categoryId, Pageable pageable) {
+        Page<BikePost> posts = postRepo.searchPostsWithPriority(keyword, minPrice, maxPrice, brand, city, categoryId, pageable);
         return posts.map(this::buildResponse);
     }
 

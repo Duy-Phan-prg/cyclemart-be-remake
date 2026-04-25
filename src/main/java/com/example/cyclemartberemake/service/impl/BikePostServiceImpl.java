@@ -26,6 +26,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -242,7 +247,7 @@ public class BikePostServiceImpl implements BikePostService {
                     .url(url)
                     .post(post)
                     .build();
-        }).toList();
+        }).collect(Collectors.toList());
 
         post.setImages(images);
         postRepo.save(post);

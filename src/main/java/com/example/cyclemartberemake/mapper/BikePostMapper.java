@@ -147,6 +147,6 @@ public interface BikePostMapper {
 
         return images.stream()
                 .map(BikeImage::getUrl)
-                .toList();
+                .collect(java.util.stream.Collectors.toList());
     }
 }

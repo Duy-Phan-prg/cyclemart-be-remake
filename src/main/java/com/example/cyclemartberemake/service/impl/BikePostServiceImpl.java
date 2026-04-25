@@ -52,7 +52,31 @@ public class BikePostServiceImpl implements BikePostService {
     public BikePostResponse create(BikePostRequest req, List<MultipartFile> files) {
         Categories category = validateCategory(req.getCategoryId());
 
-        BikePost post = mapper.toEntity(req);
+        // Debug: Log request data
+        System.out.println("=== DEBUG CREATE POST ===");
+        System.out.println("Title: " + req.getTitle());
+        System.out.println("Description: " + req.getDescription());
+        System.out.println("Price: " + req.getPrice());
+        System.out.println("Status: " + req.getStatus());
+        System.out.println("Brand: " + req.getBrand());
+        System.out.println("Model: " + req.getModel());
+        System.out.println("Year: " + req.getYear());
+        System.out.println("City: " + req.getCity());
+        System.out.println("District: " + req.getDistrict());
+        System.out.println("CategoryId: " + req.getCategoryId());
+        System.out.println("AllowNegotiation: " + req.getAllowNegotiation());
+
+        BikePost post = mapper.toEntityManual(req);
+        
+        // Debug: Log mapped entity
+        System.out.println("=== AFTER MAPPING ===");
+        System.out.println("Post Title: " + post.getTitle());
+        System.out.println("Post Brand: " + post.getBrand());
+        System.out.println("Post Model: " + post.getModel());
+        System.out.println("Post Year: " + post.getYear());
+        System.out.println("Post City: " + post.getCity());
+        System.out.println("Post District: " + post.getDistrict());
+        
         post.setCategory(category);
 
         Long userId = getCurrentUserId();

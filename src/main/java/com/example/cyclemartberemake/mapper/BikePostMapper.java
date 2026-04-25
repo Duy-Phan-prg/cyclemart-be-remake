@@ -24,7 +24,43 @@ public interface BikePostMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "prioritySubscriptions", ignore = true)
     @Mapping(target = "isVerified", ignore = true)
+    @Mapping(target = "userId", ignore = true)
+    @Mapping(target = "isPriority", ignore = true)
+    @Mapping(target = "isRequestedInspection", ignore = true)
+    @Mapping(target = "viewCount", ignore = true)
     BikePost toEntity(BikePostRequest request);
+
+    // Manual mapping method to ensure all fields are mapped correctly
+    default BikePost toEntityManual(BikePostRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        BikePost post = new BikePost();
+        post.setTitle(request.getTitle());
+        post.setDescription(request.getDescription());
+        post.setPrice(request.getPrice());
+        post.setStatus(request.getStatus());
+        post.setCity(request.getCity());
+        post.setDistrict(request.getDistrict());
+        post.setBrand(request.getBrand());
+        post.setModel(request.getModel());
+        post.setYear(request.getYear());
+        post.setFrameMaterial(request.getFrameMaterial());
+        post.setFrameSize(request.getFrameSize());
+        post.setBrakeType(request.getBrakeType());
+        post.setGroupset(request.getGroupset());
+        post.setMileage(request.getMileage());
+        post.setAllowNegotiation(request.getAllowNegotiation() != null ? request.getAllowNegotiation() : false);
+        
+        // Set default values for ignored fields
+        post.setViewCount(0);
+        post.setIsVerified(false);
+        post.setIsPriority(false);
+        post.setIsRequestedInspection(false);
+        
+        return post;
+    }
 
     @Mapping(source = "category.name", target = "categoryName")
     @Mapping(source = "userId", target = "userId")

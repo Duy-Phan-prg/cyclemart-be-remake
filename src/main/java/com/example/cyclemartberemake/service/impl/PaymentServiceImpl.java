@@ -105,6 +105,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .description(description)
                 .status(PaymentStatus.PENDING)
                 .type(paymentType)
+                .orderStatus(paymentType == PaymentType.ORDER_PAYMENT ? OrderStatus.PENDING_PAYMENT : null) // Thêm dòng này
                 .referenceId(request.getReferenceId())
                 .build();
 
@@ -190,6 +191,25 @@ public class PaymentServiceImpl implements PaymentService {
             paymentRepo.save(payment);
         }
     }
+
+    @Override
+    @Transactional
+    public PaymentResponse updateOrderStatus(String orderId, String newStatus) {
+        Payment payment = paymentRepo.findByOrderId(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng: " + orderId));
+
+        try {
+            OrderStatus status = OrderStatus.valueOf(newStatus.toUpperCase());
+            payment.setOrderStatus(status);
+            paymentRepo.save(payment);
+
+            // Tùy chọn: Gửi thông báo khi đổi trạng thái
+            return paymentMapper.toResponse(payment);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Trạng thái đơn hàng không hợp lệ");
+        }
+    }
+
 
     @Override
     @Transactional
@@ -407,6 +427,8 @@ public class PaymentServiceImpl implements PaymentService {
                             post.setPostStatus(PostStatus.SOLD);
                             bikePostRepository.save(post);
 
+                            payment.setOrderStatus(OrderStatus.PAID_WAITING_DELIVERY);
+
                             log.info("Thanh toán đơn hàng thành công, xe ID: {} đã chuyển sang trạng thái ĐÃ BÁN.", payment.getReferenceId());
                         } catch (Exception e) {
                             log.error("Lỗi khi cập nhật trạng thái bán xe: ", e);
@@ -443,6 +465,9 @@ public class PaymentServiceImpl implements PaymentService {
                 notificationService.sendRealTimeNotification(payment.getUser().getId(),
                         "Thanh toán thất bại. Vui lòng thử lại.", "PAYMENT_FAILED");
             } catch(Exception ignored) {}
+
+
+
         }
     }
 }

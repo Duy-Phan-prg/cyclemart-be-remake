@@ -171,4 +171,11 @@ public class PaymentController extends BaseController {
         
         return request.getRemoteAddr();
     }
+
+    @PutMapping("/{orderId}/order-status")
+    public ResponseEntity<?> updateOrderStatus(@PathVariable String orderId, @RequestParam String status) {
+        return ResponseEntity.ok(paymentService.updateOrderStatus(orderId, status));
+    }
+
+
 }

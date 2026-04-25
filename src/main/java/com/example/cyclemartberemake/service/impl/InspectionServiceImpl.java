@@ -6,6 +6,7 @@ import com.example.cyclemartberemake.entity.*;
 import com.example.cyclemartberemake.repository.BikePostRepository;
 import com.example.cyclemartberemake.repository.InspectionRepository;
 import com.example.cyclemartberemake.repository.UserRepository;
+import com.example.cyclemartberemake.repository.FeeInspectionSettingRepository;
 import com.example.cyclemartberemake.service.InspectionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,6 +27,9 @@ public class InspectionServiceImpl implements InspectionService {
     private final InspectionRepository inspectionRepository;
     private final BikePostRepository bikePostRepository;
     private final UserRepository userRepository;
+    private final FeeInspectionSettingRepository feeInspectionSettingRepository;
+
+    private static final String FEE_KEY = "GLOBAL_INSPECTION_FEE";
 
     @Override
     @Transactional
@@ -37,12 +41,10 @@ public class InspectionServiceImpl implements InspectionService {
         if (post.getPostStatus() != PostStatus.APPROVED) {
             throw new RuntimeException("Chỉ những bài đăng đã được duyệt mới có thể yêu cầu kiểm định lẻ.");
         }
-        // Chỉ chủ xe mới được yêu cầu kiểm định
         if (!post.getUser().getId().equals(currentUser.getId())) {
             throw new RuntimeException("Bạn không có quyền yêu cầu kiểm định cho xe này");
         }
 
-        // Kiểm tra xem xe này có đang chờ kiểm định không
         boolean isPending = inspectionRepository.existsByBikePostIdAndStatusIn(
                 post.getId(),
                 Arrays.asList(InspectionStatus.PENDING, InspectionStatus.ASSIGNED, InspectionStatus.INSPECTING)
@@ -51,16 +53,36 @@ public class InspectionServiceImpl implements InspectionService {
             throw new RuntimeException("Xe này đang trong quá trình xử lý kiểm định rồi!");
         }
 
+        // Lấy mức phí chung hiện tại từ cài đặt hệ thống
+        Double currentFee = getGlobalInspectionFee();
+
         Inspection inspection = Inspection.builder()
                 .bikePost(post)
                 .seller(currentUser)
                 .address(request.getAddress())
                 .scheduledDateTime(request.getScheduledDateTime())
                 .note(request.getNote())
+                .inspectionFee(currentFee) // Gán phí tại thời điểm tạo yêu cầu
                 .build();
 
         Inspection saved = inspectionRepository.save(inspection);
         return mapToResponse(saved);
+    }
+
+    @Override
+    public Double getGlobalInspectionFee() {
+        return feeInspectionSettingRepository.findById(FEE_KEY)
+                .map(s -> Double.parseDouble(s.getSettingValue()))
+                .orElse(250000.0); // Mặc định là 250k nếu chưa có trong DB
+    }
+
+    @Override
+    @Transactional
+    public void updateGlobalInspectionFee(Double fee) {
+        FeeInspectionSetting setting = feeInspectionSettingRepository.findById(FEE_KEY)
+                .orElse(FeeInspectionSetting.builder().settingKey(FEE_KEY).build());
+        setting.setSettingValue(String.valueOf(fee));
+        feeInspectionSettingRepository.save(setting);
     }
 
     @Override
@@ -83,11 +105,9 @@ public class InspectionServiceImpl implements InspectionService {
     @Override
     @Transactional
     public void assignInspector(Long inspectionId, Long inspectorId) {
-        // 1. Tìm yêu cầu kiểm định
         Inspection inspection = inspectionRepository.findById(inspectionId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu"));
 
-        // 2. Tìm Inspector
         Users inspector = userRepository.findById(inspectorId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Inspector"));
 
@@ -95,10 +115,7 @@ public class InspectionServiceImpl implements InspectionService {
             throw new RuntimeException("Người dùng này không có quyền Inspector");
         }
 
-        // 3. LOGIC CHẶN TRÙNG LỊCH 2 TIẾNG
         LocalDateTime proposedTime = inspection.getScheduledDateTime();
-
-        // Lấy tất cả lịch sắp tới hoặc đang làm của Inspector này
         List<Inspection> activeTasks = inspectionRepository.findByInspectorIdAndStatusIn(
                 inspectorId,
                 Arrays.asList(InspectionStatus.ASSIGNED, InspectionStatus.INSPECTING, InspectionStatus.PASSED)
@@ -106,17 +123,13 @@ public class InspectionServiceImpl implements InspectionService {
 
         for (Inspection task : activeTasks) {
             if (task.getId().equals(inspectionId)) continue;
-
-            // Tính khoảng cách phút giữa 2 lịch
             long minutesDiff = Math.abs(java.time.Duration.between(proposedTime, task.getScheduledDateTime()).toMinutes());
-
-            if (minutesDiff < 120) { // 120 phút = 2 tiếng
+            if (minutesDiff < 120) {
                 String timeStr = task.getScheduledDateTime().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm dd/MM"));
                 throw new RuntimeException("Inspector này đã có lịch lúc " + timeStr + ". Vui lòng chọn người khác hoặc đổi khung giờ (cách ít nhất 2 tiếng).");
             }
         }
 
-        // 4. Gán và cập nhật trạng thái
         inspection.setInspector(inspector);
         inspection.setStatus(InspectionStatus.ASSIGNED);
         inspectionRepository.save(inspection);
@@ -125,19 +138,14 @@ public class InspectionServiceImpl implements InspectionService {
     @Override
     @Transactional
     public void updateResult(Long inspectionId, String statusStr, String resultNote, String checklistData) {
-        // 1. Tìm yêu cầu
         Inspection inspection = inspectionRepository.findById(inspectionId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu"));
 
-        // 2. Chuyển đổi trạng thái
         InspectionStatus newStatus = InspectionStatus.valueOf(statusStr.toUpperCase());
         inspection.setStatus(newStatus);
         inspection.setResultNote(resultNote);
-
-        // 🔥 LƯU DỮ LIỆU CÁC Ô ĐÃ TICK VÀO ĐÂY
         inspection.setChecklistData(checklistData);
 
-        // 3. LOGIC ĐỒNG BỘ: Nếu trạng thái là PASSED, cập nhật ngay cho bài đăng
         if (newStatus == InspectionStatus.PASSED) {
             BikePost post = inspection.getBikePost();
             post.setIsVerified(true);

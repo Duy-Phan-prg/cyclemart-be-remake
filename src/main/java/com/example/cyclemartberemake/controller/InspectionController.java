@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 
-
 @RestController
 @RequestMapping("/api/v1/inspections")
 @RequiredArgsConstructor
@@ -24,35 +23,30 @@ public class InspectionController {
     private final InspectionService inspectionService;
     private final InspectionRepository inspectionRepository;
 
-    // 1. User tạo yêu cầu (Ai đăng nhập cũng được)
     @PreAuthorize("isAuthenticated()")
     @PostMapping
     public InspectionResponseDTO createRequest(@Valid @RequestBody InspectionRequestDTO request) {
         return inspectionService.createRequest(request);
     }
 
-    // 2. User xem lịch sử yêu cầu của mình
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/me")
     public Page<InspectionResponseDTO> getMyRequests(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
         return inspectionService.getMyRequests(PageRequest.of(page, size, Sort.by("createdAt").descending()));
     }
 
-    // 3. Admin xem tất cả
     @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
     @GetMapping("/admin/all")
     public Page<InspectionResponseDTO> getAllRequests(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
         return inspectionService.getAllRequests(PageRequest.of(page, size, Sort.by("createdAt").descending()));
     }
 
-    // 4. Admin phân công
     @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
     @PutMapping("/admin/{id}/assign")
     public void assignInspector(@PathVariable Long id, @RequestParam Long inspectorId) {
         inspectionService.assignInspector(id, inspectorId);
     }
 
-    // 5. Inspector xem việc của mình
     @PreAuthorize("hasAnyAuthority('INSPECTOR', 'ROLE_INSPECTOR')")
     @GetMapping("/inspector/me")
     public Page<InspectionResponseDTO> getInspectorTasks(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
@@ -66,17 +60,29 @@ public class InspectionController {
             @RequestParam String resultNote,
             @RequestParam(required = false) String checklistData
     ) {
-        // Truyền thêm checklistData vào service
         inspectionService.updateResult(id, status, resultNote, checklistData);
         return ResponseEntity.ok().body("Cập nhật kết quả thành công");
     }
 
-    // 7. Admin đổi lại lịch
     @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
     @PutMapping("/admin/{id}/reschedule")
     public void reschedule(@PathVariable Long id, @RequestParam LocalDateTime newTime) {
         Inspection ins = inspectionRepository.findById(id).orElseThrow();
         ins.setScheduledDateTime(newTime);
         inspectionRepository.save(ins);
+    }
+
+    // Lấy phí chung (Công khai cho Seller xem trước)
+    @GetMapping("/global-fee")
+    public ResponseEntity<Double> getGlobalFee() {
+        return ResponseEntity.ok(inspectionService.getGlobalInspectionFee());
+    }
+
+    // Admin cập nhật phí chung cho toàn bộ hệ thống
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
+    @PutMapping("/admin/global-fee")
+    public ResponseEntity<?> updateGlobalFee(@RequestParam Double fee) {
+        inspectionService.updateGlobalInspectionFee(fee);
+        return ResponseEntity.ok("Đã cập nhật phí kiểm định hệ thống thành công.");
     }
 }

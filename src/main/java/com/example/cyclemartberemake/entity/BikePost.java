@@ -120,13 +120,6 @@ public class BikePost {
     @Column(nullable = false)
     private Boolean isRequestedInspection = false;
 
-    @Column(columnDefinition = "TEXT")
-    private String inspectionAddress;
-
-    private LocalDateTime inspectionScheduledDate;
-
-    @Column(columnDefinition = "TEXT")
-    private String inspectionNote;
 
     @Column(nullable = false)
     private Boolean isPriority = false;

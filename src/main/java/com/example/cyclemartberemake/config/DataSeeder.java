@@ -31,6 +31,10 @@ public class DataSeeder {
             createAdminAccount(userRepository, passwordEncoder, "admin@cyclemart.com", "Admin CycleMart", "0901000001", "admin123");
             createAdminAccount(userRepository, passwordEncoder, "admin2@cyclemart.com", "Admin 2 CycleMart", "0901000002", "admin123");
 
+            // ================= USER ACCOUNTS =================
+            createUserAccount(userRepository, passwordEncoder, "user1@test.com", "Nguyễn Văn A", "0912345001", "31072005Xy09@");
+            createUserAccount(userRepository, passwordEncoder, "user2@test.com", "Trần Thị B", "0912345002", "31072005Xy09@");
+
             // ================= INSPECTOR ACCOUNTS =================
             createInspectorAccount(userRepository, passwordEncoder, "inspector@test.com", "Trần Kiểm Định (Ảo 1)", "0912345678", "inspector123");
             createInspectorAccount(userRepository, passwordEncoder, "inspector2@test.com", "Nguyễn Kiểm Định (Ảo 2)", "0987654321", "inspector123");
@@ -62,6 +66,25 @@ public class DataSeeder {
 
             userRepository.save(admin);
             System.out.println("ADMIN ACCOUNT CREATED: " + email);
+        }
+    }
+
+    private void createUserAccount(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                                   String email, String fullName, String phone, String password) {
+        if (!userRepository.existsByEmail(email)) {
+            Users user = Users.builder()
+                    .fullName(fullName)
+                    .email(email)
+                    .phone(phone)
+                    .passwordHash(passwordEncoder.encode(password))
+                    .role(Role.USER)
+                    .status(UserStatus.ACTIVE)
+                    .point(0)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            userRepository.save(user);
+            System.out.println("USER ACCOUNT CREATED: " + email);
         }
     }
 

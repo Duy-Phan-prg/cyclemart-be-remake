@@ -9,12 +9,10 @@ import com.example.cyclemartberemake.exception.CategoryValidationException;
 import com.example.cyclemartberemake.mapper.BikePostMapper;
 import com.example.cyclemartberemake.repository.BikePostRepository;
 import com.example.cyclemartberemake.repository.CategoryRepository;
-import com.example.cyclemartberemake.repository.InspectionRepository;
 import com.example.cyclemartberemake.repository.PostPrioritySubscriptionRepository;
 import com.example.cyclemartberemake.repository.UserRepository;
 import com.example.cyclemartberemake.service.BikePostService;
 import com.example.cyclemartberemake.service.CloudinaryService;
-import com.example.cyclemartberemake.service.UserService;
 import com.example.cyclemartberemake.service.PaymentNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -39,10 +37,8 @@ public class BikePostServiceImpl implements BikePostService {
     private final BikePostMapper mapper;
     private final PostPrioritySubscriptionRepository priorityRepo;
     private final UserRepository userRepository;
-    private final InspectionRepository inspectionRepo;
 
-    // 🔥 Đã thêm 2 dòng này để sửa lỗi thiếu Service khi hoàn tiền kiểm định
-    private final UserService userService;
+    // Chỉ giữ lại NotificationService để báo cho User khi bài bị từ chối
     private final PaymentNotificationService notificationService;
 
     // ================= CREATE =================
@@ -64,14 +60,8 @@ public class BikePostServiceImpl implements BikePostService {
         post.setPostStatus(PostStatus.PENDING);
         post.setCreatedAt(LocalDateTime.now());
 
-        if (Boolean.TRUE.equals(req.getRequestInspection())) {
-            post.setIsRequestedInspection(true);
-            post.setInspectionAddress(req.getInspectionAddress());
-            post.setInspectionScheduledDate(req.getInspectionScheduledDate());
-            post.setInspectionNote(req.getInspectionNote());
-        } else {
-            post.setIsRequestedInspection(false);
-        }
+        // Mặc định bài đăng mới tạo sẽ chưa yêu cầu kiểm định
+        post.setIsRequestedInspection(false);
 
         BikePost savedPost = postRepo.save(post);
         handleImages(savedPost, files);
@@ -195,24 +185,10 @@ public class BikePostServiceImpl implements BikePostService {
         post.setApprovedBy(getCurrentUserId());
         post.setRejectionReason(null);
 
-        if (Boolean.TRUE.equals(post.getIsRequestedInspection())) {
-            Inspection inspection = Inspection.builder()
-                    .bikePost(post)
-                    .seller(post.getUser())
-                    .address(post.getInspectionAddress())
-                    .scheduledDateTime(post.getInspectionScheduledDate())
-                    .note(post.getInspectionNote())
-                    .status(InspectionStatus.PENDING)
-                    .build();
-            inspectionRepo.save(inspection);
-
-            post.setIsRequestedInspection(false);
-        }
-
         postRepo.save(post);
     }
 
-    // 🔥 ĐÃ FIX LỖI Ở HÀM NÀY: Dùng đúng tên postRepo và các service đã inject
+    @Override
     @Transactional
     public void reject(Long postId, String reason) {
         BikePost post = postRepo.findById(postId)
@@ -221,23 +197,13 @@ public class BikePostServiceImpl implements BikePostService {
         post.setPostStatus(PostStatus.REJECTED);
         post.setRejectionReason(reason);
 
-        // HOÀN POINT: Nếu bài này đã đóng phí kiểm định
-        if (Boolean.TRUE.equals(post.getIsRequestedInspection())) {
-            post.setIsRequestedInspection(false);
-
-            // Giả sử phí kiểm định là 100.000 VNĐ -> Hoàn lại 100 điểm (bạn có thể thay đổi số này)
-            int refundPoints = 100;
-
-            try {
-                userService.addPoint(post.getUser().getId(), refundPoints);
-
-                notificationService.sendRealTimeNotification(post.getUser().getId(),
-                        "Bài đăng bị từ chối do: " + reason + ". Phí kiểm định đã được hoàn " + refundPoints + " điểm.",
-                        "INSPECTION_REFUND"
-                );
-            } catch (Exception e) {
-                // Log lỗi nếu hoàn tiền thất bại nhưng vẫn để cho bài bị reject
-            }
+        try {
+            notificationService.sendRealTimeNotification(post.getUser().getId(),
+                    "Bài đăng của bạn bị từ chối duyệt do: " + reason,
+                    "POST_REJECTED"
+            );
+        } catch (Exception e) {
+            // Bỏ qua lỗi gửi thông báo để tránh block quá trình reject
         }
 
         postRepo.save(post);

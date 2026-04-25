@@ -78,11 +78,4 @@ public class BikePostRequest {
 
     private Boolean allowNegotiation;
 
-    private Boolean requestInspection; // Checkbox chọn đki ngay
-    @NotBlank(message = "Vui lòng nhập địa chỉ xem xe")
-    private String inspectionAddress;
-    @NotNull(message = "Vui lòng chọn ngày giờ hẹn xem xe")
-    @Future(message = "Ngày giờ hẹn kiểm định không được ở trong quá khứ")
-    private LocalDateTime inspectionScheduledDate;
-    private String inspectionNote;
 }

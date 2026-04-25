@@ -13,11 +13,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -54,12 +52,6 @@ public class BikePostController {
 
             @RequestParam(value = "allowNegotiation", required = false, defaultValue = "false") Boolean allowNegotiation,
 
-            // 🔥 THÊM CÁC THAM SỐ KIỂM ĐỊNH TỪ FRONTEND GỬI LÊN
-            @RequestParam(value = "requestInspection", required = false, defaultValue = "false") Boolean requestInspection,
-            @RequestParam(value = "inspectionAddress", required = false) String inspectionAddress,
-            @RequestParam(value = "inspectionScheduledDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inspectionScheduledDate,
-            @RequestParam(value = "inspectionNote", required = false) String inspectionNote,
-
             @RequestPart(value = "images", required = false) List<MultipartFile> images
     ) {
 
@@ -79,12 +71,6 @@ public class BikePostController {
                 brakeType, groupset, mileage, categoryId,
                 allowNegotiation
         );
-
-        // 🔥 GẮN DỮ LIỆU KIỂM ĐỊNH VÀO REQUEST
-        req.setRequestInspection(requestInspection);
-        req.setInspectionAddress(inspectionAddress);
-        req.setInspectionScheduledDate(inspectionScheduledDate);
-        req.setInspectionNote(inspectionNote);
 
         return service.create(req, images != null ? images : List.of());
     }
@@ -142,12 +128,6 @@ public class BikePostController {
 
             @RequestParam(value = "allowNegotiation", required = false, defaultValue = "false") Boolean allowNegotiation,
 
-            // 🔥 THÊM CÁC THAM SỐ KIỂM ĐỊNH (PHÒNG TRƯỜNG HỢP UPDATE CÓ ĐÍNH KÈM)
-            @RequestParam(value = "requestInspection", required = false, defaultValue = "false") Boolean requestInspection,
-            @RequestParam(value = "inspectionAddress", required = false) String inspectionAddress,
-            @RequestParam(value = "inspectionScheduledDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inspectionScheduledDate,
-            @RequestParam(value = "inspectionNote", required = false) String inspectionNote,
-
             @RequestPart(value = "images", required = false) List<MultipartFile> images
     ) {
 
@@ -157,11 +137,6 @@ public class BikePostController {
                 brakeType, groupset, mileage, categoryId,
                 allowNegotiation
         );
-
-        req.setRequestInspection(requestInspection);
-        req.setInspectionAddress(inspectionAddress);
-        req.setInspectionScheduledDate(inspectionScheduledDate);
-        req.setInspectionNote(inspectionNote);
 
         return service.update(id, req, images);
     }
@@ -245,4 +220,3 @@ public class BikePostController {
         };
     }
 }
-

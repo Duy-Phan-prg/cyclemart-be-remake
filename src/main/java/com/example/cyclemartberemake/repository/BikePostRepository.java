@@ -41,6 +41,7 @@ public interface BikePostRepository extends JpaRepository<BikePost, Long> {
             "(:maxPrice IS NULL OR bp.price <= :maxPrice) AND " +
             "(:brand IS NULL OR bp.brand = :brand) AND " +
             "(:city IS NULL OR bp.city = :city) AND " +
+            "(:categoryId IS NULL OR bp.category.id = :categoryId) AND " +
             "bp.postStatus = 'APPROVED' " +
             "ORDER BY CASE " +
             "  WHEN pkg.priorityLevel = com.example.cyclemartberemake.entity.PriorityLevel.PLATINUM THEN 3 " +
@@ -52,5 +53,6 @@ public interface BikePostRepository extends JpaRepository<BikePost, Long> {
                                            @Param("maxPrice") Double maxPrice,
                                            @Param("brand") String brand,
                                            @Param("city") String city,
+                                           @Param("categoryId") Integer categoryId,
                                            Pageable pageable);
 }

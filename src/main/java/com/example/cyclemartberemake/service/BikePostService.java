@@ -24,7 +24,7 @@ public interface BikePostService {
     Page<BikePostResponse> getPostsByUserId(Long userId, Pageable pageable);
 
     Page<BikePostResponse> search(String keyword, Double minPrice, Double maxPrice, 
-                                 String brand, String city, Pageable pageable);
+                                 String brand, String city, Integer categoryId, Pageable pageable);
     
     // Admin methods
     void approve(Long id);

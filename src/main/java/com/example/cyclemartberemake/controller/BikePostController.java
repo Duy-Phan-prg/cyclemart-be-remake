@@ -192,6 +192,7 @@ public class BikePostController {
             @RequestParam(required = false) Double maxPrice,
             @RequestParam(required = false) String brand,
             @RequestParam(required = false) String city,
+            @RequestParam(required = false) Integer categoryId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sort,
@@ -200,7 +201,7 @@ public class BikePostController {
         String validSort = validateSortField(sort);
         Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, validSort));
-        return service.search(keyword, minPrice, maxPrice, brand, city, pageable);
+        return service.search(keyword, minPrice, maxPrice, brand, city, categoryId, pageable);
     }
 
     private String validateSortField(String sort) {

@@ -347,13 +347,22 @@ public class PaymentServiceImpl implements PaymentService {
         if ("00".equals(responseCode)) {
             payment.setStatus(PaymentStatus.SUCCESS);
             payment.setCompletedAt(LocalDateTime.now());
-            int points = (int) (payment.getAmount() / 1000);
+
+            // 🔥 ĐÃ CẬP NHẬT: CHỈ CỘNG ĐIỂM NẾU KHÔNG PHẢI MUA GÓI VÀ KIỂM ĐỊNH
+            int points = 0;
+            if (payment.getType() != null &&
+                    payment.getType() != PaymentType.PRIORITY_PACKAGE &&
+                    payment.getType() != PaymentType.INSPECTION_FEE) {
+                points = (int) (payment.getAmount() / 1000);
+            }
+
             payment.setPointsEarned(points);
-
             paymentRepo.save(payment);
-            userService.addPoint(payment.getUser().getId(), points);
 
-            // 🔥 XỬ LÝ THEO ENUM
+            if (points > 0) {
+                userService.addPoint(payment.getUser().getId(), points);
+            }
+
             if (payment.getType() != null && payment.getReferenceId() != null) {
                 switch (payment.getType()) {
                     case PRIORITY_PACKAGE:
@@ -395,7 +404,6 @@ public class PaymentServiceImpl implements PaymentService {
                         try {
                             BikePost post = bikePostRepository.findById(payment.getReferenceId()).orElseThrow();
 
-                            // Đổi trạng thái bài đăng thành SOLD (Đã bán)
                             post.setPostStatus(PostStatus.SOLD);
                             bikePostRepository.save(post);
 
@@ -415,8 +423,14 @@ public class PaymentServiceImpl implements PaymentService {
 
             try {
                 notificationService.sendPaymentSuccessEmail(payment);
-                notificationService.sendRealTimeNotification(payment.getUser().getId(),
-                        "Thanh toán thành công! Bạn đã được cộng " + points + " điểm.", "PAYMENT_SUCCESS");
+
+                // Cập nhật câu thông báo gửi đến Client
+                String notifyMsg = "Thanh toán thành công!";
+                if (points > 0) {
+                    notifyMsg += " Bạn đã được cộng " + points + " điểm.";
+                }
+
+                notificationService.sendRealTimeNotification(payment.getUser().getId(), notifyMsg, "PAYMENT_SUCCESS");
             } catch(Exception ignored) {}
 
         } else {

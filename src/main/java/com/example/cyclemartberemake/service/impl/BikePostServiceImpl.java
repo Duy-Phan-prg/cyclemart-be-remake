@@ -2,6 +2,7 @@ package com.example.cyclemartberemake.service.impl;
 
 import com.example.cyclemartberemake.dto.request.BikePostRequest;
 import com.example.cyclemartberemake.dto.response.BikePostResponse;
+import com.example.cyclemartberemake.dto.response.PostPrioritySubscriptionResponse;
 import com.example.cyclemartberemake.dto.response.PriorityPackageResponse;
 import com.example.cyclemartberemake.entity.*;
 import com.example.cyclemartberemake.entity.PostStatus;
@@ -328,16 +329,17 @@ public class BikePostServiceImpl implements BikePostService {
 
         if (highest != null) {
             response.setActivePriority(
-                    PriorityPackageResponse.builder()
-                            .id(highest.getPriorityPackage().getId())
-                            .name(highest.getPriorityPackage().getName())
-                            .description(highest.getPriorityPackage().getDescription())
-                            .price(highest.getPriorityPackage().getPrice())
-                            .durationDays(highest.getPriorityPackage().getDurationDays())
+                    PostPrioritySubscriptionResponse.builder()
+                            .id(highest.getId())
+                            .postId(highest.getPost().getId())
+                            .postTitle(highest.getPost().getTitle())
+                            .packageName(highest.getPriorityPackage().getName())
                             .priorityLevel(highest.getPriorityPackage().getPriorityLevel())
+                            .startDate(highest.getStartDate()) // Lấy ngày bắt đầu gói
+                            .endDate(highest.getEndDate())     // Lấy ngày kết thúc gói (HSD)
                             .isActive(highest.getIsActive())
-                            .createdAt(highest.getPriorityPackage().getCreatedAt())
-                            .updatedAt(highest.getPriorityPackage().getUpdatedAt())
+                            .createdAt(highest.getCreatedAt())
+                            .updatedAt(highest.getUpdatedAt())
                             .build()
             );
         }

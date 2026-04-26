@@ -51,8 +51,8 @@ public class BikePostResponse {
     private String sellerEmail;
 
     // ================= PRIORITY =================
-    @Schema(description = "Priority package info (if post has active priority)")
-    private PriorityPackageResponse activePriority;
+    @Schema(description = "Thông tin đăng ký gói ưu tiên của bài viết (có chứa endDate)")
+    private PostPrioritySubscriptionResponse activePriority;
 
     // ================= MODERATION =================
     @Schema(description = "Trạng thái duyệt bài", example = "PENDING / APPROVED / REJECTED")

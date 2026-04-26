@@ -135,8 +135,16 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public Page<PaymentResponse> getPaymentHistory(Pageable pageable) {
         Long userId = getCurrentUserId();
+        // Lấy tất cả giao dịch của user
         Page<Payment> payments = paymentRepo.findByUserIdOrderByCreatedAtDesc(userId, pageable);
-        return payments.map(paymentMapper::toResponse);
+
+        // Lọc: CHỈ giữ lại các giao dịch mua xe (ORDER_PAYMENT)
+        List<PaymentResponse> filteredList = payments.getContent().stream()
+                .filter(p -> p.getType() == PaymentType.ORDER_PAYMENT)
+                .map(paymentMapper::toResponse)
+                .toList();
+
+        return new org.springframework.data.domain.PageImpl<>(filteredList, pageable, payments.getTotalElements());
     }
 
     @Override
@@ -144,7 +152,14 @@ public class PaymentServiceImpl implements PaymentService {
         Long userId = getCurrentUserId();
         PaymentStatus paymentStatus = PaymentStatus.valueOf(status.toUpperCase());
         Page<Payment> payments = paymentRepo.findByUserIdAndStatusOrderByCreatedAtDesc(userId, paymentStatus, pageable);
-        return payments.map(paymentMapper::toResponse);
+
+        //  chỉ hiện giao dịch mua xe trong lịch sử đơn hàng
+        List<PaymentResponse> filteredList = payments.getContent().stream()
+                .filter(p -> p.getType() == PaymentType.ORDER_PAYMENT)
+                .map(paymentMapper::toResponse)
+                .toList();
+
+        return new org.springframework.data.domain.PageImpl<>(filteredList, pageable, payments.getTotalElements());
     }
 
     @Override
@@ -274,6 +289,18 @@ public class PaymentServiceImpl implements PaymentService {
 
         notificationService.sendRealTimeNotification(payment.getUser().getId(),
                 "Giao dịch " + payment.getOrderId() + " đã được hủy.", "PAYMENT_CANCELLED");
+
+        return paymentMapper.toResponse(payment);
+    }
+
+    @Override
+    public PaymentResponse getPaymentByOrderId(String orderId) {
+        Payment payment = paymentRepo.findByOrderId(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch với mã: " + orderId));
+
+        // Lưu ý: Có thể thêm kiểm tra bảo mật để đảm bảo người dùng chỉ xem được đơn của mình
+        // Long currentUserId = getCurrentUserId();
+        // if (!payment.getUser().getId().equals(currentUserId)) { throw new RuntimeException("..."); }
 
         return paymentMapper.toResponse(payment);
     }

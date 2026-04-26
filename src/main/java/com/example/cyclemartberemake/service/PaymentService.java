@@ -30,7 +30,7 @@ public interface PaymentService {
     void cleanupExpiredPayments();
 
     PaymentResponse refundPayment(Long paymentId, String reason, Long adminId);
-    
+    PaymentResponse getPaymentByOrderId(String orderId);
     PaymentResponse cancelPayment(Long paymentId, String reason);
     PaymentResponse updateOrderStatus(String orderId, String newStatus);
 }

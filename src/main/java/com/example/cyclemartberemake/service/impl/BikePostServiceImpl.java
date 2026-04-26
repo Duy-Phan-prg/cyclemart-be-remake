@@ -40,6 +40,7 @@ public class BikePostServiceImpl implements BikePostService {
     private final BikePostMapper mapper;
     private final PostPrioritySubscriptionRepository priorityRepo;
     private final UserRepository userRepository;
+    private final InspectionRepository inspectionRepository;
 
     // Chỉ giữ lại NotificationService để báo cho User khi bài bị từ chối
     private final PaymentNotificationService notificationService;
@@ -284,6 +285,13 @@ public class BikePostServiceImpl implements BikePostService {
         }
 
         response.setIsVerified(post.getIsVerified());
+
+        // Check if post has completed inspection
+        boolean hasCompletedInspection = inspectionRepository.existsByBikePostIdAndStatusIn(
+            post.getId(), 
+            List.of(InspectionStatus.PASSED)
+        );
+        response.setIsInspected(hasCompletedInspection);
 
         if (response.getUserId() == null && post.getUserId() != null) {
             response.setUserId(post.getUserId());

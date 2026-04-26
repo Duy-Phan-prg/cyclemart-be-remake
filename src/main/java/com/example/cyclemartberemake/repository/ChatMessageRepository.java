@@ -30,4 +30,19 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     int markMessagesAsRead(@Param("roomId") Long roomId,
                            @Param("currentUserId") Long currentUserId,
                            @Param("readAt") LocalDateTime readAt);
+
+    @Modifying
+    @Query("""
+            update ChatMessage m
+            set m.isRead = true, m.readAt = :readAt
+            where m.isRead = false
+              and m.senderId <> :currentUserId
+              and m.room.id in (
+                select r.id
+                from ChatRoom r
+                where r.buyerId = :currentUserId or r.sellerId = :currentUserId
+            )
+            """)
+    int markAllIncomingMessagesAsRead(@Param("currentUserId") Long currentUserId,
+                                      @Param("readAt") LocalDateTime readAt);
 }

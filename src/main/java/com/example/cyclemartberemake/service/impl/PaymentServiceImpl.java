@@ -9,6 +9,7 @@ import com.example.cyclemartberemake.repository.BikePostRepository;
 import com.example.cyclemartberemake.repository.PaymentRepository;
 import com.example.cyclemartberemake.repository.UserRepository;
 import com.example.cyclemartberemake.repository.PostPrioritySubscriptionRepository;
+import com.example.cyclemartberemake.repository.InspectionRepository;
 import com.example.cyclemartberemake.service.PaymentNotificationService;
 import com.example.cyclemartberemake.service.PaymentService;
 import com.example.cyclemartberemake.service.UserService;
@@ -43,6 +44,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentMapper paymentMapper;
     private final PaymentNotificationService notificationService;
     private final PostPrioritySubscriptionRepository subscriptionRepository;
+    private final InspectionRepository inspectionRepository;
 
     @Value("${vnpay.tmnCode}")
     private String vnpayTmnCode;
@@ -82,6 +84,17 @@ public class PaymentServiceImpl implements PaymentService {
                 && paymentType != PaymentType.INSPECTION_FEE) {
             bikePost = bikePostRepository.findById(request.getBikePostId())
                     .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
+            
+            // Kiểm tra: Chỉ cho phép mua trực tiếp hoặc đặt cọc nếu post đã được kiểm định
+            if (paymentType == PaymentType.ORDER_PAYMENT || paymentType == PaymentType.ORDER_DEPOSIT) {
+                boolean hasCompletedInspection = inspectionRepository.existsByBikePostIdAndStatusIn(
+                    bikePost.getId(), 
+                    List.of(InspectionStatus.PASSED)
+                );
+                if (!hasCompletedInspection) {
+                    throw new RuntimeException("Bài đăng chưa được kiểm định. Vui lòng yêu cầu kiểm định trước khi mua hoặc đặt cọc.");
+                }
+            }
         }
 
         Long amount = request.getAmount();

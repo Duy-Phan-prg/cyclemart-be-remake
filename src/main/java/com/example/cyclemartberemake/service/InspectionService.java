@@ -19,4 +19,6 @@ public interface InspectionService {
     // Cập nhật mới: Quản lý mức phí kiểm định chung cho toàn bộ hệ thống
     Double getGlobalInspectionFee();
     void updateGlobalInspectionFee(Double fee);
+    InspectionResponseDTO getLatestPassedReport(Long postId);
+    Page<InspectionResponseDTO> getTasksByInspectorId(Long inspectorId, Pageable pageable);
 }

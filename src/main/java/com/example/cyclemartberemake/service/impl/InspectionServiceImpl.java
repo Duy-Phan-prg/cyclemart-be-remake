@@ -188,4 +188,34 @@ public class InspectionServiceImpl implements InspectionService {
                 .createdAt(entity.getCreatedAt())
                 .build();
     }
+    @Override
+    public InspectionResponseDTO getLatestPassedReport(Long postId) {
+        // Tìm biên bản có trạng thái PASSED của postId, sắp xếp mới nhất
+        Inspection inspection = inspectionRepository.findFirstByBikePostIdAndStatusOrderByCreatedAtDesc(postId, InspectionStatus.PASSED)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy biên bản kiểm định hợp lệ cho xe này"));
+
+        // Trả về DTO (Dùng đúng Builder mà chúng ta đã sửa hôm trước)
+        return InspectionResponseDTO.builder()
+                .id(inspection.getId())
+                .postId(inspection.getBikePost() != null ? inspection.getBikePost().getId() : null)
+                .postTitle(inspection.getBikePost() != null ? inspection.getBikePost().getTitle() : null)
+                .sellerName(inspection.getSeller() != null ? inspection.getSeller().getFullName() : null)
+                .sellerPhone(inspection.getSeller() != null ? inspection.getSeller().getPhone() : null)
+                .inspectorId(inspection.getInspector() != null ? inspection.getInspector().getId() : null)
+                .inspectorName(inspection.getInspector() != null ? inspection.getInspector().getFullName() : null)
+                .status(inspection.getStatus() != null ? inspection.getStatus().name() : null)
+                .address(inspection.getAddress())
+                .scheduledDateTime(inspection.getScheduledDateTime())
+                .inspectionFee(inspection.getInspectionFee() != null ? inspection.getInspectionFee().doubleValue() : null)
+                .sellerNote(inspection.getNote())
+                .resultNote(inspection.getResultNote())
+                .checklistData(inspection.getChecklistData())
+                .createdAt(inspection.getCreatedAt())
+                .build();
+    }
+    @Override
+    public Page<InspectionResponseDTO> getTasksByInspectorId(Long inspectorId, Pageable pageable) {
+        return inspectionRepository.findByInspectorId(inspectorId, pageable).map(this::mapToResponse);
+    }
+
 }

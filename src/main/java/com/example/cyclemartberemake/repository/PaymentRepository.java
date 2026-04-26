@@ -21,7 +21,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Page<Payment> findByUserIdOrderByCreatedAtDesc(@Param("userId") Long userId, Pageable pageable);
 
     @Query("SELECT p FROM Payment p WHERE p.user.id = :userId AND p.status = :status ORDER BY p.createdAt DESC")
-    Page<Payment> findByUserIdAndStatusOrderByCreatedAtDesc(@Param("userId") Long userId, @Param("status") PaymentStatus status, Pageable pageable);
+    Page<Payment> findByUserIdAndStatusOrderByCreatedAtDesc(@Param("userId") Long userId,
+            @Param("status") PaymentStatus status, Pageable pageable);
 
     @Query("SELECT COUNT(p) FROM Payment p WHERE p.status = :status")
     long countByStatus(@Param("status") PaymentStatus status);

@@ -20,11 +20,10 @@ public class CloudinaryServiceImpl implements CloudinaryService {
             if (file.isEmpty()) {
                 throw new RuntimeException("File is empty");
             }
-            
+
             Map uploadResult = cloudinary.uploader().upload(
                     file.getBytes(),
-                    Map.of("folder", "cyclemart")
-            );
+                    Map.of("folder", "cyclemart"));
 
             return uploadResult.get("secure_url").toString();
 

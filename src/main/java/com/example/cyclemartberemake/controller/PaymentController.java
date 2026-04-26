@@ -34,8 +34,7 @@ public class PaymentController extends BaseController {
     @Operation(summary = "Create Sepay payment")
     public ResponseEntity<CreatePaymentResponse> createPayment(
             @Valid @RequestBody CreatePaymentRequest request,
-            HttpServletRequest httpRequest
-    ) {
+            HttpServletRequest httpRequest) {
         try {
             CreatePaymentResponse response = paymentService.createPayment(request);
             return ResponseEntity.ok(response);
@@ -44,8 +43,7 @@ public class PaymentController extends BaseController {
                     CreatePaymentResponse.builder()
                             .success(false)
                             .message(e.getMessage())
-                            .build()
-            );
+                            .build());
         }
     }
 
@@ -93,10 +91,8 @@ public class PaymentController extends BaseController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sort,
-            @RequestParam(defaultValue = "desc") String direction
-    ) {
-        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ?
-                Sort.Direction.ASC : Sort.Direction.DESC;
+            @RequestParam(defaultValue = "desc") String direction) {
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
 
         return paymentService.getPaymentHistory(pageable);
@@ -106,8 +102,7 @@ public class PaymentController extends BaseController {
     @Operation(summary = "Get order history where current user is the seller")
     public Page<PaymentResponse> getPaymentHistoryAsSeller(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "50") int size
-    ) {
+            @RequestParam(defaultValue = "50") int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return paymentService.getPaymentHistoryAsSeller(pageable);
     }
@@ -117,8 +112,7 @@ public class PaymentController extends BaseController {
     public Page<PaymentResponse> getPaymentHistoryByStatus(
             @PathVariable String status,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
-    ) {
+            @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return paymentService.getPaymentHistoryByStatus(status, pageable);
     }
@@ -144,8 +138,7 @@ public class PaymentController extends BaseController {
     @Operation(summary = "Refund a payment (admin only)")
     public ResponseEntity<?> refundPayment(
             @PathVariable Long id,
-            @RequestParam String reason
-    ) {
+            @RequestParam String reason) {
         try {
             Long adminId = getCurrentUserId();
             PaymentResponse response = paymentService.refundPayment(id, reason, adminId);
@@ -159,8 +152,7 @@ public class PaymentController extends BaseController {
     @Operation(summary = "Cancel a pending payment (user can cancel their own payment)")
     public ResponseEntity<?> cancelPayment(
             @PathVariable Long id,
-            @RequestParam(defaultValue = "Hủy bởi người dùng") String reason
-    ) {
+            @RequestParam(defaultValue = "Hủy bởi người dùng") String reason) {
         try {
             PaymentResponse response = paymentService.cancelPayment(id, reason);
             return ResponseEntity.ok(response);
@@ -192,8 +184,7 @@ public class PaymentController extends BaseController {
     @Operation(summary = "Seller submits delivery evidence")
     public ResponseEntity<?> submitDelivery(
             @PathVariable Long id,
-            @Valid @RequestBody DeliveryUpdateRequest request
-    ) {
+            @Valid @RequestBody DeliveryUpdateRequest request) {
         try {
             Long sellerId = getCurrentUserId();
             return ResponseEntity.ok(paymentService.submitDelivery(id, sellerId, request));
@@ -217,8 +208,7 @@ public class PaymentController extends BaseController {
     @Operation(summary = "Buyer requests cancellation before delivery")
     public ResponseEntity<?> cancelRequest(
             @PathVariable Long id,
-            @RequestParam(defaultValue = "Người mua yêu cầu hủy") String reason
-    ) {
+            @RequestParam(defaultValue = "Người mua yêu cầu hủy") String reason) {
         try {
             Long buyerId = getCurrentUserId();
             return ResponseEntity.ok(paymentService.cancelRequest(id, buyerId, reason));
@@ -226,7 +216,6 @@ public class PaymentController extends BaseController {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
     }
-
 
     @GetMapping("/order/{orderId}")
     @Operation(summary = "Get payment detail by VNPay Order ID")

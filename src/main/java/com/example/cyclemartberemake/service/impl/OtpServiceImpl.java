@@ -31,7 +31,7 @@ public class OtpServiceImpl implements OtpService {
 
         // Check if OTP already exists for this email
         Optional<OtpVerification> existingOtp = otpRepository.findByEmail(email);
-        
+
         OtpVerification otp;
         if (existingOtp.isPresent()) {
             // Update existing OTP
@@ -119,7 +119,8 @@ public class OtpServiceImpl implements OtpService {
     }
 
     private String normalizeFlow(String flow) {
-        if (flow == null) return "OTP";
+        if (flow == null)
+            return "OTP";
         return switch (flow.trim().toLowerCase()) {
             case "register" -> "Đăng ký";
             case "forgot-password", "forgotpassword" -> "Quên mật khẩu";

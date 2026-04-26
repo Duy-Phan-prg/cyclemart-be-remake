@@ -9,23 +9,23 @@ import java.time.LocalDateTime;
 
 @Data
 public class BikePostRequest {
-    
+
     @NotBlank(message = "Tiêu đề không được để trống")
     @Size(min = 10, max = 200, message = "Tiêu đề phải từ 10-200 ký tự")
     @Schema(description = "Tiêu đề bài đăng", example = "Xe đạp Giant Defy Advanced 2 - 2024")
     private String title;
-    
+
     @NotBlank(message = "Mô tả không được để trống")
     @Size(min = 20, max = 2000, message = "Mô tả phải từ 20-2000 ký tự")
     @Schema(description = "Mô tả chi tiết về xe", example = "Xe đạp road bike cao cấp, phù hợp cho đường trường...")
     private String description;
-    
+
     @NotNull(message = "Giá bán không được để trống")
     @DecimalMin(value = "100000", message = "Giá bán phải >= 100,000 VND")
     @DecimalMax(value = "999999999", message = "Giá bán phải <= 999,999,999 VND")
     @Schema(description = "Giá bán (VND)", example = "15000000")
     private Double price;
-    
+
     @NotNull(message = "Tình trạng xe không được để trống")
     @Schema(description = "Tình trạng xe", example = "LIKE_NEW")
     private BikeStatus status;
@@ -34,7 +34,7 @@ public class BikePostRequest {
     @NotNull(message = "Thành phố không được để trống")
     @Schema(description = "Thành phố", example = "HO_CHI_MINH")
     private City city;
-    
+
     @NotNull(message = "Quận/Huyện không được để trống")
     @Schema(description = "Quận/Huyện", example = "QUAN_1")
     private HCMDistrict district;
@@ -43,11 +43,11 @@ public class BikePostRequest {
     @NotNull(message = "Hãng xe không được để trống")
     @Schema(description = "Thương hiệu xe", example = "GIANT")
     private BikeBrand brand;
-    
+
     @Size(max = 100, message = "Model không được quá 100 ký tự")
     @Schema(description = "Model xe", example = "Defy Advanced 2")
     private String model;
-    
+
     @Min(value = 1990, message = "Năm sản xuất phải >= 1990")
     @Max(value = 2030, message = "Năm sản xuất không hợp lệ")
     @Schema(description = "Năm sản xuất", example = "2024")
@@ -56,16 +56,16 @@ public class BikePostRequest {
     // Technical specs
     @Schema(description = "Chất liệu khung", example = "CARBON")
     private FrameMaterial frameMaterial;
-    
+
     @Schema(description = "Size khung", example = "M")
     private FrameSize frameSize;
-    
+
     @Schema(description = "Loại phanh", example = "DISC_HYDRAULIC")
     private BrakeType brakeType;
-    
+
     @Schema(description = "Groupset", example = "SHIMANO_105")
     private Groupset groupset;
-    
+
     @Min(value = 0, message = "Số km phải >= 0")
     @Max(value = 999999, message = "Số km không hợp lệ")
     @Schema(description = "Số km đã đi", example = "2500")

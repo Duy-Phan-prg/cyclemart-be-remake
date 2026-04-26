@@ -31,8 +31,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-
-
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -47,38 +45,34 @@ public class AuthController {
     @PostMapping("/register")
     @Operation(summary = "Register new user")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User registered successfully, OTP sent to email",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = OtpResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Validation failed",
-                    content = @Content(mediaType = "application/json", schema = @Schema(example = """
-                            {
-                              "status": "error",
-                              "message": "Validation failed",
-                              "errors": {
-                                "email": "Email không hợp lệ",
-                                "fullName": "Tên phải từ 2-100 ký tự",
-                                "phone": "SĐT phải bắt đầu 0 và có đúng 10 số",
-                                "password": "Password phải có ít nhất 1 chữ hoa và 1 ký tự đặc biệt"
-                              }
-                            }
-                            """)))
+            @ApiResponse(responseCode = "200", description = "User registered successfully, OTP sent to email", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OtpResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Validation failed", content = @Content(mediaType = "application/json", schema = @Schema(example = """
+                    {
+                      "status": "error",
+                      "message": "Validation failed",
+                      "errors": {
+                        "email": "Email không hợp lệ",
+                        "fullName": "Tên phải từ 2-100 ký tự",
+                        "phone": "SĐT phải bắt đầu 0 và có đúng 10 số",
+                        "password": "Password phải có ít nhất 1 chữ hoa và 1 ký tự đặc biệt"
+                      }
+                    }
+                    """)))
     })
     public ResponseEntity<OtpResponse> register(@Valid @RequestBody UserRegisterRequestDTO dto) {
         Users user = userService.register(dto);
         otpService.generateAndSendOtp(dto.getEmail());
-        
+
         return ResponseEntity.ok(new OtpResponse(
                 "Đăng ký thành công! Mã OTP đã được gửi đến email của bạn",
                 dto.getEmail(),
-                10
-        ));
+                10));
     }
 
     @PostMapping("/login")
     @Operation(summary = "User login")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Login successful",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserLoginResponseDTO.class))),
+            @ApiResponse(responseCode = "200", description = "Login successful", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserLoginResponseDTO.class))),
             @ApiResponse(responseCode = "400", description = "Invalid credentials")
     })
     public ResponseEntity<UserLoginResponseDTO> login(
@@ -90,8 +84,7 @@ public class AuthController {
     @GetMapping("/me")
     @Operation(summary = "Get current user info")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User info retrieved",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserInfoResponseDTO.class))),
+            @ApiResponse(responseCode = "200", description = "User info retrieved", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserInfoResponseDTO.class))),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     public ResponseEntity<?> getMe() {
@@ -142,8 +135,7 @@ public class AuthController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "100") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir
-    ) {
+            @RequestParam(defaultValue = "desc") String sortDir) {
         // 1. Tạo điều kiện sắp xếp
         Sort.Direction direction = sortDir.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
 
@@ -157,8 +149,7 @@ public class AuthController {
     @GetMapping("/users/{id}")
     @Operation(summary = "Get user by ID")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User found",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserInfoResponseDTO.class))),
+            @ApiResponse(responseCode = "200", description = "User found", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserInfoResponseDTO.class))),
             @ApiResponse(responseCode = "404", description = "User not found")
     })
     public ResponseEntity<UserInfoResponseDTO> getUserById(@PathVariable Long id) {
@@ -168,8 +159,7 @@ public class AuthController {
     @PostMapping("/send-otp")
     @Operation(summary = "Send OTP to email")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "OTP sent successfully",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = OtpResponse.class))),
+            @ApiResponse(responseCode = "200", description = "OTP sent successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = OtpResponse.class))),
             @ApiResponse(responseCode = "400", description = "Invalid email")
     })
     public ResponseEntity<OtpResponse> sendOtp(@RequestParam String email) {
@@ -178,14 +168,12 @@ public class AuthController {
             return ResponseEntity.ok(new OtpResponse(
                     "Mã OTP đã được gửi đến email của bạn",
                     email,
-                    10
-            ));
+                    10));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new OtpResponse(
                     "Lỗi: " + e.getMessage(),
                     email,
-                    null
-            ));
+                    null));
         }
     }
 
@@ -210,33 +198,30 @@ public class AuthController {
             return ResponseEntity.badRequest().body(new OtpResponse(
                     e.getMessage(),
                     email,
-                    null
-            ));
+                    null));
         }
     }
 
     @PostMapping("/verify-otp")
     @Operation(summary = "Verify OTP and activate account")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "OTP verified successfully",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserInfoResponseDTO.class))),
+            @ApiResponse(responseCode = "200", description = "OTP verified successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserInfoResponseDTO.class))),
             @ApiResponse(responseCode = "400", description = "Invalid or expired OTP")
     })
     public ResponseEntity<?> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
         try {
             boolean isValid = otpService.verifyOtp(request.getEmail(), request.getOtpCode());
-            
+
             if (!isValid) {
                 return ResponseEntity.badRequest().body(new OtpResponse(
                         "Mã OTP không hợp lệ hoặc đã hết hạn",
                         request.getEmail(),
-                        null
-                ));
+                        null));
             }
 
             // Activate user
             userService.activateUserByEmail(request.getEmail());
-            
+
             // Send verification success email
             Users user = userService.getUserByEmail(request.getEmail());
             emailService.sendVerificationSuccessEmail(request.getEmail(), user.getFullName());
@@ -247,8 +232,7 @@ public class AuthController {
             return ResponseEntity.badRequest().body(new OtpResponse(
                     "Lỗi: " + e.getMessage(),
                     request.getEmail(),
-                    null
-            ));
+                    null));
         }
     }
 
@@ -261,14 +245,12 @@ public class AuthController {
             return ResponseEntity.ok(new OtpResponse(
                     "Mã OTP đặt lại mật khẩu đã được gửi đến email của bạn",
                     request.getEmail(),
-                    10
-            ));
+                    10));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new OtpResponse(
                     "Lỗi: " + e.getMessage(),
                     request.getEmail(),
-                    null
-            ));
+                    null));
         }
     }
 
@@ -280,8 +262,7 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(new OtpResponse(
                         "Xác nhận mật khẩu mới không khớp",
                         request.getEmail(),
-                        null
-                ));
+                        null));
             }
 
             boolean isValid = otpService.verifyOtp(request.getEmail(), request.getOtpCode());
@@ -289,22 +270,19 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(new OtpResponse(
                         "Mã OTP không hợp lệ hoặc đã hết hạn",
                         request.getEmail(),
-                        null
-                ));
+                        null));
             }
 
             userService.resetPasswordByEmail(request.getEmail(), request.getNewPassword());
             return ResponseEntity.ok(new OtpResponse(
                     "Đặt lại mật khẩu thành công",
                     request.getEmail(),
-                    null
-            ));
+                    null));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new OtpResponse(
                     "Lỗi: " + e.getMessage(),
                     request.getEmail(),
-                    null
-            ));
+                    null));
         }
     }
 }

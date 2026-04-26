@@ -52,13 +52,13 @@ public interface BikePostMapper {
         post.setGroupset(request.getGroupset());
         post.setMileage(request.getMileage());
         post.setAllowNegotiation(request.getAllowNegotiation() != null ? request.getAllowNegotiation() : false);
-        
+
         // Set default values for ignored fields
         post.setViewCount(0);
         post.setIsVerified(false);
         post.setIsPriority(false);
         post.setIsRequestedInspection(false);
-        
+
         return post;
     }
 
@@ -121,7 +121,8 @@ public interface BikePostMapper {
 
     @org.mapstruct.Named("mapPostStatus")
     default String mapPostStatus(PostStatus status) {
-        if (status == null) return null;
+        if (status == null)
+            return null;
         return switch (status) {
             case PENDING -> "Chờ duyệt";
             case APPROVED -> "Đã duyệt";
@@ -179,7 +180,8 @@ public interface BikePostMapper {
     // ================= IMAGE =================
     @Named("mapImages")
     default List<String> mapImages(List<BikeImage> images) {
-        if (images == null || images.isEmpty()) return List.of();
+        if (images == null || images.isEmpty())
+            return List.of();
 
         return images.stream()
                 .map(BikeImage::getUrl)

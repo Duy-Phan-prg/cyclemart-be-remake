@@ -37,9 +37,7 @@ public class SecurityConfig {
         http
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
                 .authorizeHttpRequests(auth -> auth
@@ -48,8 +46,8 @@ public class SecurityConfig {
                                 "/api/auth/register",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/ws/**"
-                        ).permitAll()
+                                "/ws/**")
+                        .permitAll()
                         .requestMatchers("OPTIONS", "/**").permitAll()
                         // Public GET endpoints
                         .requestMatchers("GET", "/api/v1/categories/**").permitAll()
@@ -66,8 +64,7 @@ public class SecurityConfig {
                         // Admin endpoints - require ADMIN role
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         // All other endpoints require authentication
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -79,13 +76,12 @@ public class SecurityConfig {
 
         // Merge cả 2 phần: giữ tất cả origins và headers
         configuration.setAllowedOrigins(Arrays.asList(
-            "http://localhost:3000",
-            "http://localhost:5173", 
-            "http://localhost:5174",
-            "http://localhost:5175",
-            "http://127.0.0.1:3000",
-            "http://127.0.0.1:5173"
-        ));
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://localhost:5174",
+                "http://localhost:5175",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:5173"));
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
 

@@ -45,6 +45,7 @@ public class BikePostServiceImpl implements BikePostService {
     // Chỉ giữ lại NotificationService để báo cho User khi bài bị từ chối
     private final PaymentNotificationService notificationService;
     private final PaymentRepository paymentRepo;
+
     // ================= CREATE =================
     @Override
     @Transactional
@@ -66,7 +67,7 @@ public class BikePostServiceImpl implements BikePostService {
         System.out.println("AllowNegotiation: " + req.getAllowNegotiation());
 
         BikePost post = mapper.toEntityManual(req);
-        
+
         // Debug: Log mapped entity
         System.out.println("=== AFTER MAPPING ===");
         System.out.println("Post Title: " + post.getTitle());
@@ -75,7 +76,7 @@ public class BikePostServiceImpl implements BikePostService {
         System.out.println("Post Year: " + post.getYear());
         System.out.println("Post City: " + post.getCity());
         System.out.println("Post District: " + post.getDistrict());
-        
+
         post.setCategory(category);
 
         Long userId = getCurrentUserId();
@@ -196,8 +197,9 @@ public class BikePostServiceImpl implements BikePostService {
     // ================= SEARCH =================
     @Override
     public Page<BikePostResponse> search(String keyword, Double minPrice, Double maxPrice,
-                                         String brand, String city, Integer categoryId, Pageable pageable) {
-        Page<BikePost> posts = postRepo.searchPostsWithPriority(keyword, minPrice, maxPrice, brand, city, categoryId, pageable);
+            String brand, String city, Integer categoryId, Pageable pageable) {
+        Page<BikePost> posts = postRepo.searchPostsWithPriority(keyword, minPrice, maxPrice, brand, city, categoryId,
+                pageable);
         return posts.map(this::buildResponse);
     }
 
@@ -228,8 +230,7 @@ public class BikePostServiceImpl implements BikePostService {
         try {
             notificationService.sendRealTimeNotification(post.getUser().getId(),
                     "Bài đăng của bạn bị từ chối duyệt do: " + reason,
-                    "POST_REJECTED"
-            );
+                    "POST_REJECTED");
         } catch (Exception e) {
             // Bỏ qua lỗi gửi thông báo để tránh block quá trình reject
         }
@@ -261,7 +262,8 @@ public class BikePostServiceImpl implements BikePostService {
     }
 
     private void handleImages(BikePost post, List<MultipartFile> files) {
-        if (files == null || files.isEmpty()) return;
+        if (files == null || files.isEmpty())
+            return;
 
         List<BikeImage> images = files.stream().map(file -> {
             String url = cloudinaryService.upload(file);
@@ -288,9 +290,8 @@ public class BikePostServiceImpl implements BikePostService {
 
         // Check if post has completed inspection
         boolean hasCompletedInspection = inspectionRepository.existsByBikePostIdAndStatusIn(
-            post.getId(), 
-            List.of(InspectionStatus.PASSED)
-        );
+                post.getId(),
+                List.of(InspectionStatus.PASSED));
         response.setIsInspected(hasCompletedInspection);
 
         if (response.getUserId() == null && post.getUserId() != null) {
@@ -323,12 +324,13 @@ public class BikePostServiceImpl implements BikePostService {
 
         return response;
     }
+
     private void setActivePriorityInfo(BikePostResponse response, Long postId) {
 
-        List<PostPrioritySubscription> activeSubs =
-                priorityRepo.findActiveSubscriptionsByPostId(postId);
+        List<PostPrioritySubscription> activeSubs = priorityRepo.findActiveSubscriptionsByPostId(postId);
 
-        if (activeSubs.isEmpty()) return;
+        if (activeSubs.isEmpty())
+            return;
 
         PostPrioritySubscription highest = activeSubs.stream()
                 .max((a, b) -> a.getPriorityPackage().getPriorityLevel()
@@ -344,12 +346,11 @@ public class BikePostServiceImpl implements BikePostService {
                             .packageName(highest.getPriorityPackage().getName())
                             .priorityLevel(highest.getPriorityPackage().getPriorityLevel())
                             .startDate(highest.getStartDate()) // Lấy ngày bắt đầu gói
-                            .endDate(highest.getEndDate())     // Lấy ngày kết thúc gói (HSD)
+                            .endDate(highest.getEndDate()) // Lấy ngày kết thúc gói (HSD)
                             .isActive(highest.getIsActive())
                             .createdAt(highest.getCreatedAt())
                             .updatedAt(highest.getUpdatedAt())
-                            .build()
-            );
+                            .build());
         }
     }
 

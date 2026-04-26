@@ -33,7 +33,6 @@ public class UserServiceImpl implements UserService {
     private final JwtService jwtService;
     private final UserMapper userMapper;
 
-
     @Override
     public Users register(UserRegisterRequestDTO dto) {
 
@@ -46,7 +45,7 @@ public class UserServiceImpl implements UserService {
 
         // New users get USER role by default
         user.setRole(Role.USER);
-        user.setStatus(UserStatus.INACTIVE);  // Set to INACTIVE until email is verified
+        user.setStatus(UserStatus.INACTIVE); // Set to INACTIVE until email is verified
 
         return userRepository.save(user);
     }
@@ -178,7 +177,6 @@ public class UserServiceImpl implements UserService {
         return userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
-
 
     @Override
     public Page<UserInfoResponseDTO> getAllUsers(Pageable pageable) {

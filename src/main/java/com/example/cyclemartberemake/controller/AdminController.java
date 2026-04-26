@@ -42,8 +42,7 @@ public class AdminController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "100") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir
-    ) {
+            @RequestParam(defaultValue = "desc") String sortDir) {
         Sort.Direction direction = sortDir.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
 
@@ -51,33 +50,26 @@ public class AdminController {
     }
 
     // ================= BIKE POST MANAGEMENT =================
-    
+
     @GetMapping("/posts")
     @Operation(summary = "Get all posts for admin (all statuses)")
     public Page<BikePostResponse> getAllPosts(
-            @Parameter(description = "Page number (0-based)", example = "0")
-            @RequestParam(defaultValue = "0") int page,
-            
-            @Parameter(description = "Page size", example = "20")
-            @RequestParam(defaultValue = "20") int size,
-            
-            @Parameter(description = "Sort field: id, title, price, createdAt, updatedAt, postStatus, approvedAt, brand, city, year", 
-                      example = "createdAt")
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            
-            @Parameter(description = "Sort direction: asc or desc", example = "desc")
-            @RequestParam(defaultValue = "desc") String sortDir
-    ) {
+            @Parameter(description = "Page number (0-based)", example = "0") @RequestParam(defaultValue = "0") int page,
+
+            @Parameter(description = "Page size", example = "20") @RequestParam(defaultValue = "20") int size,
+
+            @Parameter(description = "Sort field: id, title, price, createdAt, updatedAt, postStatus, approvedAt, brand, city, year", example = "createdAt") @RequestParam(defaultValue = "createdAt") String sortBy,
+
+            @Parameter(description = "Sort direction: asc or desc", example = "desc") @RequestParam(defaultValue = "desc") String sortDir) {
         // Validate sort field to prevent errors
         String validSortBy = validateSortField(sortBy);
-        
+
         // Create sort direction
-        Sort.Direction direction = sortDir.equalsIgnoreCase("asc") ? 
-            Sort.Direction.ASC : Sort.Direction.DESC;
-        
+        Sort.Direction direction = sortDir.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+
         // Create pageable with validated parameters
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, validSortBy));
-        
+
         return bikePostService.getAllForAdmin(pageable);
     }
 
@@ -94,19 +86,17 @@ public class AdminController {
     }
 
     // ================= PAYMENT MANAGEMENT =================
-    
+
     @GetMapping("/payments")
     @Operation(summary = "Get all payments for admin")
     public Page<PaymentResponse> getAllPayments(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sort,
-            @RequestParam(defaultValue = "desc") String direction
-    ) {
-        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? 
-            Sort.Direction.ASC : Sort.Direction.DESC;
+            @RequestParam(defaultValue = "desc") String direction) {
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
-        
+
         return paymentService.getAllPayments(pageable);
     }
 
@@ -121,8 +111,7 @@ public class AdminController {
     @Operation(summary = "Admin refund a payment")
     public ResponseEntity<?> adminRefundPayment(
             @PathVariable Long id,
-            @RequestParam String reason
-    ) {
+            @RequestParam String reason) {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             Users admin = (Users) auth.getPrincipal();
@@ -130,9 +119,8 @@ public class AdminController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", e.getMessage()
-            ));
+                    "success", false,
+                    "message", e.getMessage()));
         }
     }
 
@@ -159,7 +147,7 @@ public class AdminController {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
     }
-    
+
     /**
      * Validate sort field to prevent "No property found" errors
      */
@@ -184,8 +172,7 @@ public class AdminController {
     public ResponseEntity<Page<Map<String, Object>>> getUserLogs(
             @PathVariable Long id,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "50") int size
-    ) {
+            @RequestParam(defaultValue = "50") int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         // Bóc tách dữ liệu an toàn ra Map để tránh lỗi vòng lặp JSON của Hibernate
@@ -202,6 +189,5 @@ public class AdminController {
 
         return ResponseEntity.ok(safeLogs);
     }
-
 
 }

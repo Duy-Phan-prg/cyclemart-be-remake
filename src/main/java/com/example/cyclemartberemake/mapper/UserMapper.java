@@ -13,7 +13,7 @@ import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface UserMapper {
-    
+
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "passwordHash", ignore = true)
     @Mapping(target = "role", ignore = true)
@@ -25,29 +25,38 @@ public interface UserMapper {
     @Mapping(target = "sellerRating", ignore = true)
     @Mapping(target = "sellerReviewCount", ignore = true)
     Users toEntity(UserRegisterRequestDTO dto);
-    
+
     @Mapping(source = "role", target = "roleDisplay", qualifiedByName = "roleToDisplay")
     @Mapping(source = "status", target = "statusDisplay", qualifiedByName = "statusToDisplay")
     UserInfoResponseDTO toResponse(Users user);
-    
+
     List<UserInfoResponseDTO> toResponseList(List<Users> users);
-    
+
     @Named("roleToDisplay")
     default String roleToDisplay(Role role) {
-        if (role == null) return "";
-        if (role == Role.USER) return "Người dùng";
-        if (role == Role.ADMIN) return "Quản trị viên";
-        if (role == Role.INSPECTOR) return "Kiểm định viên";
+        if (role == null)
+            return "";
+        if (role == Role.USER)
+            return "Người dùng";
+        if (role == Role.ADMIN)
+            return "Quản trị viên";
+        if (role == Role.INSPECTOR)
+            return "Kiểm định viên";
         return "";
     }
-    
+
     @Named("statusToDisplay")
     default String statusToDisplay(UserStatus status) {
-        if (status == null) return "";
-        if (status == UserStatus.ACTIVE) return "Hoạt động";
-        if (status == UserStatus.INACTIVE) return "Chưa xác thực";
-        if (status == UserStatus.BANNED) return "Đã cấm";
-        if (status == UserStatus.SUSPENDED) return "Tạm khóa";
+        if (status == null)
+            return "";
+        if (status == UserStatus.ACTIVE)
+            return "Hoạt động";
+        if (status == UserStatus.INACTIVE)
+            return "Chưa xác thực";
+        if (status == UserStatus.BANNED)
+            return "Đã cấm";
+        if (status == UserStatus.SUSPENDED)
+            return "Tạm khóa";
         return "";
     }
 }

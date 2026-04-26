@@ -37,8 +37,7 @@ public class UserTrackingAspect {
             Map.entry("login", "Đăng nhập hệ thống"),
             Map.entry("banUser", "Khóa tài khoản người dùng"),
             Map.entry("unbanUser", "Mở khóa tài khoản"),
-            Map.entry("createNegotiation", "Gửi yêu cầu thương lượng")
-    );
+            Map.entry("createNegotiation", "Gửi yêu cầu thương lượng"));
 
     @AfterReturning("execution(* com.example.cyclemartberemake.controller..*(..))")
     public void logUserActivity(JoinPoint joinPoint) {
@@ -46,15 +45,20 @@ public class UserTrackingAspect {
             String methodName = joinPoint.getSignature().getName();
 
             // Bỏ qua đổi mật khẩu và các hàm GET
-            if (methodName.equalsIgnoreCase("changePassword")) return;
+            if (methodName.equalsIgnoreCase("changePassword"))
+                return;
 
-            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-            if (attributes == null) return;
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
+                    .getRequestAttributes();
+            if (attributes == null)
+                return;
             HttpServletRequest request = attributes.getRequest();
-            if (request.getMethod().equalsIgnoreCase("GET")) return;
+            if (request.getMethod().equalsIgnoreCase("GET"))
+                return;
 
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth == null || "anonymousUser".equals(auth.getPrincipal())) return;
+            if (auth == null || "anonymousUser".equals(auth.getPrincipal()))
+                return;
 
             Long userId = ((Users) auth.getPrincipal()).getId();
 

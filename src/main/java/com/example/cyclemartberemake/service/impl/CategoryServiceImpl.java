@@ -54,7 +54,7 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryResponseDTO getCategoryById(Integer id) {
         Categories category = categoryRepository.findById(id)
                 .orElseThrow(() -> new CategoryValidationException("Danh mục không tồn tại"));
-        
+
         return categoryMapper.toResponse(category);
     }
 
@@ -108,7 +108,8 @@ public class CategoryServiceImpl implements CategoryService {
                 // Nếu không có parent -> Nó là danh mục gốc
                 rootCategories.add(dto);
             } else {
-                // Nếu có parent -> Tìm parent trong Map và nhét nó vào danh sách children của parent
+                // Nếu có parent -> Tìm parent trong Map và nhét nó vào danh sách children của
+                // parent
                 CategoryResponseDTO parent = dtoMap.get(dto.getParentId());
                 if (parent != null) {
                     if (parent.getChildren() == null) {
@@ -121,7 +122,6 @@ public class CategoryServiceImpl implements CategoryService {
 
         return rootCategories;
     }
-
 
     @Override
     @Transactional(readOnly = true)
@@ -181,7 +181,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     private void validateNotCircularReference(Integer categoryId, Integer parentId) {
         Categories parent = categoryRepository.findById(parentId).orElse(null);
-        
+
         while (parent != null) {
             if (parent.getId().equals(categoryId)) {
                 throw new CategoryValidationException("Không thể set danh mục cha là danh mục con của chính nó");
@@ -196,12 +196,14 @@ public class CategoryServiceImpl implements CategoryService {
 
         // Kiểm tra có danh mục con không
         if (categoryRepository.existsByParentId(categoryId)) {
-            throw new CategoryValidationException("Không thể xóa danh mục có danh mục con. Vui lòng xóa danh mục con trước.");
+            throw new CategoryValidationException(
+                    "Không thể xóa danh mục có danh mục con. Vui lòng xóa danh mục con trước.");
         }
 
         // Kiểm tra có bike posts nào đang sử dụng category này không
         if (categoryRepository.countBikePostsByCategory(categoryId) > 0) {
-            throw new CategoryValidationException("Không thể xóa danh mục đang có bài đăng. Vui lòng di chuyển hoặc xóa các bài đăng trước.");
+            throw new CategoryValidationException(
+                    "Không thể xóa danh mục đang có bài đăng. Vui lòng di chuyển hoặc xóa các bài đăng trước.");
         }
     }
 }

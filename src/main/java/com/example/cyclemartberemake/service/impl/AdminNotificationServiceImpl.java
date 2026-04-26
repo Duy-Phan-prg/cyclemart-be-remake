@@ -29,29 +29,29 @@ public class AdminNotificationServiceImpl implements AdminNotificationService {
         try {
             // Lấy notifications từ database nếu có
             List<AdminNotification> dbNotifications = adminNotificationRepository.findAllByOrderByCreatedAtDesc();
-            
+
             // Tự động tạo notification cho tin đăng chờ duyệt
             long pendingPostsCount = bikePostRepository.countByPostStatus(PostStatus.PENDING);
             if (pendingPostsCount > 0) {
                 // Kiểm tra xem đã có notification cho pending posts chưa
-                List<AdminNotification> existingPendingNotifications = 
-                    adminNotificationRepository.findByTypeAndIsReadFalse("POST_PENDING");
-                
+                List<AdminNotification> existingPendingNotifications = adminNotificationRepository
+                        .findByTypeAndIsReadFalse("POST_PENDING");
+
                 if (existingPendingNotifications.isEmpty()) {
                     createNotification(
-                        "POST_PENDING",
-                        "Tin đăng mới cần duyệt",
-                        String.format("Có %d tin đăng mới đang chờ duyệt", pendingPostsCount),
-                        (int) pendingPostsCount,
-                        "/admin/listings?status=PENDING"
-                    );
+                            "POST_PENDING",
+                            "Tin đăng mới cần duyệt",
+                            String.format("Có %d tin đăng mới đang chờ duyệt", pendingPostsCount),
+                            (int) pendingPostsCount,
+                            "/admin/listings?status=PENDING");
                     // Refresh danh sách sau khi tạo mới
                     dbNotifications = adminNotificationRepository.findAllByOrderByCreatedAtDesc();
                 } else {
                     // Cập nhật count cho notification hiện tại
                     AdminNotification existingNotification = existingPendingNotifications.get(0);
                     existingNotification.setCount((int) pendingPostsCount);
-                    existingNotification.setMessage(String.format("Có %d tin đăng mới đang chờ duyệt", pendingPostsCount));
+                    existingNotification
+                            .setMessage(String.format("Có %d tin đăng mới đang chờ duyệt", pendingPostsCount));
                     adminNotificationRepository.save(existingNotification);
                 }
             }
@@ -60,11 +60,11 @@ public class AdminNotificationServiceImpl implements AdminNotificationService {
             notifications = dbNotifications.stream()
                     .map(this::convertToResponse)
                     .collect(Collectors.toList());
-                    
+
         } catch (Exception e) {
             // Fallback nếu database chưa có bảng admin_notifications
             System.out.println("Database table not found, using fallback logic: " + e.getMessage());
-            
+
             // Tạo notification tạm thời cho pending posts
             long pendingPostsCount = bikePostRepository.countByPostStatus(PostStatus.PENDING);
             if (pendingPostsCount > 0) {
@@ -114,7 +114,7 @@ public class AdminNotificationServiceImpl implements AdminNotificationService {
         try {
             AdminNotification notification = adminNotificationRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Notification not found"));
-            
+
             notification.setIsRead(true);
             adminNotificationRepository.save(notification);
         } catch (Exception e) {
@@ -147,7 +147,7 @@ public class AdminNotificationServiceImpl implements AdminNotificationService {
                     .isRead(false)
                     .createdAt(LocalDateTime.now())
                     .build();
-            
+
             adminNotificationRepository.save(notification);
         } catch (Exception e) {
             // Fallback - không làm gì nếu database chưa có bảng

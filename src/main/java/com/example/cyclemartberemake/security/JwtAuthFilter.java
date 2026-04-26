@@ -26,14 +26,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
+            HttpServletResponse response,
+            FilterChain filterChain)
             throws ServletException, IOException {
 
         String path = request.getRequestURI();
         String method = request.getMethod();
         System.out.println(" JWT Filter - " + method + " " + path);
-
 
         if (path.equals("/api/auth/login") ||
                 path.equals("/api/auth/register") ||
@@ -43,8 +42,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 path.startsWith("/api/v1/post-priority-subscriptions") ||
                 path.equals("/api/v1/payments/sepay/ipn") ||
                 path.equals("/api/v1/payments/vnpay/return") ||
-                path.equals("/api/v1/payments/vnpay/ipn"))
-        {
+                path.equals("/api/v1/payments/vnpay/ipn")) {
 
             System.out.println(" Skipping JWT for: " + method + " " + path);
             filterChain.doFilter(request, response);
@@ -54,7 +52,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         System.out.println(" JWT required for: " + method + " " + path);
 
         final String authHeader = request.getHeader("Authorization");
-        System.out.println(" Auth header: " + (authHeader != null ? authHeader.substring(0, Math.min(30, authHeader.length())) + "..." : "null"));
+        System.out.println(" Auth header: "
+                + (authHeader != null ? authHeader.substring(0, Math.min(30, authHeader.length())) + "..." : "null"));
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             System.out.println(" No valid auth header");
@@ -82,10 +81,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         if (user != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             List<SimpleGrantedAuthority> authorities = List.of(
-                    new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
-            );
-            UsernamePasswordAuthenticationToken auth =
-                    new UsernamePasswordAuthenticationToken(user, null, authorities);
+                    new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(user, null, authorities);
 
             SecurityContextHolder.getContext().setAuthentication(auth);
             System.out.println(" Authentication set for: " + user.getEmail());

@@ -1,6 +1,5 @@
 package com.example.cyclemartberemake.entity;
 
-
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -107,16 +106,21 @@ public class BikePost {
         }
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-        if (isRequestedInspection == null) isRequestedInspection = false;
-        if (postStatus == null) postStatus = PostStatus.PENDING;
-        if (allowNegotiation == null) allowNegotiation = false;
-        if (isVerified == null) isVerified = false;
+        if (isRequestedInspection == null)
+            isRequestedInspection = false;
+        if (postStatus == null)
+            postStatus = PostStatus.PENDING;
+        if (allowNegotiation == null)
+            allowNegotiation = false;
+        if (isVerified == null)
+            isVerified = false;
     }
 
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
     @Column(nullable = false)
     private Boolean isRequestedInspection = false;
 

@@ -80,4 +80,7 @@ public class Payment {
     private PaymentType type;
 
     private Long referenceId; // Lưu ID của gói đăng ký hoặc ID của yêu cầu kiểm định
+    @Enumerated(EnumType.STRING)
+    @Column(name = "order_status")
+    private OrderStatus orderStatus;
 }

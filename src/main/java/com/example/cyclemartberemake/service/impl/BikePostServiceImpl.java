@@ -7,10 +7,7 @@ import com.example.cyclemartberemake.entity.*;
 import com.example.cyclemartberemake.entity.PostStatus;
 import com.example.cyclemartberemake.exception.CategoryValidationException;
 import com.example.cyclemartberemake.mapper.BikePostMapper;
-import com.example.cyclemartberemake.repository.BikePostRepository;
-import com.example.cyclemartberemake.repository.CategoryRepository;
-import com.example.cyclemartberemake.repository.PostPrioritySubscriptionRepository;
-import com.example.cyclemartberemake.repository.UserRepository;
+import com.example.cyclemartberemake.repository.*;
 import com.example.cyclemartberemake.service.BikePostService;
 import com.example.cyclemartberemake.service.CloudinaryService;
 import com.example.cyclemartberemake.service.PaymentNotificationService;
@@ -45,7 +42,7 @@ public class BikePostServiceImpl implements BikePostService {
 
     // Chỉ giữ lại NotificationService để báo cho User khi bài bị từ chối
     private final PaymentNotificationService notificationService;
-
+    private final PaymentRepository paymentRepo;
     // ================= CREATE =================
     @Override
     @Transactional
@@ -303,10 +300,19 @@ public class BikePostServiceImpl implements BikePostService {
         }
 
         setActivePriorityInfo(response, post.getId());
+        if (post.getPostStatus() == PostStatus.SOLD) {
+            paymentRepo.findSuccessfulPaymentForBike(post.getId()).ifPresent(payment -> {
+                response.setPaymentOrderId(payment.getOrderId()); // Sẽ trả ra ORDER_1777...
+                if (payment.getOrderStatus() != null) {
+                    response.setOrderStatus(payment.getOrderStatus().name());
+                } else {
+                    response.setOrderStatus("PAID_WAITING_DELIVERY");
+                }
+            });
+        }
 
         return response;
     }
-
     private void setActivePriorityInfo(BikePostResponse response, Long postId) {
 
         List<PostPrioritySubscription> activeSubs =

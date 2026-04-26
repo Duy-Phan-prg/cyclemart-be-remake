@@ -14,9 +14,11 @@ import java.util.List;
 @Repository
 public interface BikePostRepository extends JpaRepository<BikePost, Long> {
 
-    List<BikePost> findByPostStatus(PostStatus status);
+    List<BikePost> findByPostStatus(PostStatus postStatus);
 
     Page<BikePost> findByPostStatus(PostStatus status, Pageable pageable);
+    
+    long countByPostStatus(PostStatus status);
 
     //  Lấy danh sách có sắp xếp theo Gói ưu tiên (PLATINUM > GOLD > SILVER > NO_PKG)
     @Query("SELECT bp FROM BikePost bp " +

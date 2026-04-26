@@ -32,4 +32,5 @@ public interface PaymentService {
     PaymentResponse refundPayment(Long paymentId, String reason, Long adminId);
     
     PaymentResponse cancelPayment(Long paymentId, String reason);
+    PaymentResponse updateOrderStatus(String orderId, String newStatus);
 }

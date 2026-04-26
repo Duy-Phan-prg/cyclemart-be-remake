@@ -2,6 +2,7 @@ package com.example.cyclemartberemake.repository;
 
 import com.example.cyclemartberemake.entity.Payment;
 import com.example.cyclemartberemake.entity.PaymentStatus;
+import com.example.cyclemartberemake.entity.PaymentType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -27,7 +28,9 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.status = 'SUCCESS' AND p.createdAt >= :startDate")
     Long getTotalSuccessAmountSince(@Param("startDate") LocalDateTime startDate);
-    
+
     @Query("SELECT p FROM Payment p WHERE p.status = 'PENDING' AND p.createdAt < :expiredTime")
     List<Payment> findExpiredPendingPayments(@Param("expiredTime") LocalDateTime expiredTime);
-}
+
+    @Query(value = "SELECT * FROM payments WHERE (reference_id = :bikeId OR bike_post_id = :bikeId) AND status = 'SUCCESS' ORDER BY created_at DESC LIMIT 1", nativeQuery = true)
+    Optional<Payment> findSuccessfulPaymentForBike(@Param("bikeId") Long bikeId);}

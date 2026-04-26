@@ -105,6 +105,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .description(description)
                 .status(PaymentStatus.PENDING)
                 .type(paymentType)
+                .orderStatus(paymentType == PaymentType.ORDER_PAYMENT ? OrderStatus.PENDING_PAYMENT : null) // Thêm dòng này
                 .referenceId(request.getReferenceId())
                 .build();
 
@@ -190,6 +191,25 @@ public class PaymentServiceImpl implements PaymentService {
             paymentRepo.save(payment);
         }
     }
+
+    @Override
+    @Transactional
+    public PaymentResponse updateOrderStatus(String orderId, String newStatus) {
+        Payment payment = paymentRepo.findByOrderId(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng: " + orderId));
+
+        try {
+            OrderStatus status = OrderStatus.valueOf(newStatus.toUpperCase());
+            payment.setOrderStatus(status);
+            paymentRepo.save(payment);
+
+            // Tùy chọn: Gửi thông báo khi đổi trạng thái
+            return paymentMapper.toResponse(payment);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Trạng thái đơn hàng không hợp lệ");
+        }
+    }
+
 
     @Override
     @Transactional
@@ -347,13 +367,22 @@ public class PaymentServiceImpl implements PaymentService {
         if ("00".equals(responseCode)) {
             payment.setStatus(PaymentStatus.SUCCESS);
             payment.setCompletedAt(LocalDateTime.now());
-            int points = (int) (payment.getAmount() / 1000);
+
+            // 🔥 ĐÃ CẬP NHẬT: CHỈ CỘNG ĐIỂM NẾU KHÔNG PHẢI MUA GÓI VÀ KIỂM ĐỊNH
+            int points = 0;
+            if (payment.getType() != null &&
+                    payment.getType() != PaymentType.PRIORITY_PACKAGE &&
+                    payment.getType() != PaymentType.INSPECTION_FEE) {
+                points = (int) (payment.getAmount() / 1000);
+            }
+
             payment.setPointsEarned(points);
-
             paymentRepo.save(payment);
-            userService.addPoint(payment.getUser().getId(), points);
 
-            // 🔥 XỬ LÝ THEO ENUM
+            if (points > 0) {
+                userService.addPoint(payment.getUser().getId(), points);
+            }
+
             if (payment.getType() != null && payment.getReferenceId() != null) {
                 switch (payment.getType()) {
                     case PRIORITY_PACKAGE:
@@ -395,9 +424,10 @@ public class PaymentServiceImpl implements PaymentService {
                         try {
                             BikePost post = bikePostRepository.findById(payment.getReferenceId()).orElseThrow();
 
-                            // Đổi trạng thái bài đăng thành SOLD (Đã bán)
                             post.setPostStatus(PostStatus.SOLD);
                             bikePostRepository.save(post);
+
+                            payment.setOrderStatus(OrderStatus.PAID_WAITING_DELIVERY);
 
                             log.info("Thanh toán đơn hàng thành công, xe ID: {} đã chuyển sang trạng thái ĐÃ BÁN.", payment.getReferenceId());
                         } catch (Exception e) {
@@ -415,8 +445,14 @@ public class PaymentServiceImpl implements PaymentService {
 
             try {
                 notificationService.sendPaymentSuccessEmail(payment);
-                notificationService.sendRealTimeNotification(payment.getUser().getId(),
-                        "Thanh toán thành công! Bạn đã được cộng " + points + " điểm.", "PAYMENT_SUCCESS");
+
+                // Cập nhật câu thông báo gửi đến Client
+                String notifyMsg = "Thanh toán thành công!";
+                if (points > 0) {
+                    notifyMsg += " Bạn đã được cộng " + points + " điểm.";
+                }
+
+                notificationService.sendRealTimeNotification(payment.getUser().getId(), notifyMsg, "PAYMENT_SUCCESS");
             } catch(Exception ignored) {}
 
         } else {
@@ -429,6 +465,9 @@ public class PaymentServiceImpl implements PaymentService {
                 notificationService.sendRealTimeNotification(payment.getUser().getId(),
                         "Thanh toán thất bại. Vui lòng thử lại.", "PAYMENT_FAILED");
             } catch(Exception ignored) {}
+
+
+
         }
     }
 }

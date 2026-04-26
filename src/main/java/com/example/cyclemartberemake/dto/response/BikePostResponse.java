@@ -73,4 +73,11 @@ public class BikePostResponse {
     private Boolean isVerified;
     @Schema(description = "Có yêu cầu kiểm định ngay lúc đăng bài không")
     private Boolean isRequestedInspection;
+
+    // ================= ORDER SYNC =================
+    @Schema(description = "Mã hóa đơn VNPay (nếu xe đã bán)")
+    private String paymentOrderId;
+
+    @Schema(description = "Trạng thái giao hàng (nếu xe đã bán)")
+    private String orderStatus;
 }

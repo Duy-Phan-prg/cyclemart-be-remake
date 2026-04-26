@@ -40,13 +40,13 @@ public class BikePostController {
 
             @RequestParam("brand") BikeBrand brand,
             @RequestParam(value = "model", required = false) String model,
-            @RequestParam(value = "year", required = false) Integer year,
+            @RequestParam(value = "year", required = false) String yearStr,
 
             @RequestParam(value = "frameMaterial", required = false) FrameMaterial frameMaterial,
             @RequestParam(value = "frameSize", required = false) FrameSize frameSize,
             @RequestParam(value = "brakeType", required = false) BrakeType brakeType,
             @RequestParam(value = "groupset", required = false) Groupset groupset,
-            @RequestParam(value = "mileage", required = false) Integer mileage,
+            @RequestParam(value = "mileage", required = false) String mileageStr,
 
             @RequestParam("categoryId") Integer categoryId,
 
@@ -64,6 +64,10 @@ public class BikePostController {
         if (price == null || price <= 0) {
             throw new RuntimeException("Giá bán phải lớn hơn 0");
         }
+
+        // Convert string parameters to Integer safely
+        Integer year = parseIntegerSafely(yearStr);
+        Integer mileage = parseIntegerSafely(mileageStr);
 
         BikePostRequest req = mapper.createRequest(
                 title, description, price, status, city, district,
@@ -116,13 +120,13 @@ public class BikePostController {
 
             @RequestParam("brand") BikeBrand brand,
             @RequestParam(value = "model", required = false) String model,
-            @RequestParam(value = "year", required = false) Integer year,
+            @RequestParam(value = "year", required = false) String yearStr,
 
             @RequestParam(value = "frameMaterial", required = false) FrameMaterial frameMaterial,
             @RequestParam(value = "frameSize", required = false) FrameSize frameSize,
             @RequestParam(value = "brakeType", required = false) BrakeType brakeType,
             @RequestParam(value = "groupset", required = false) Groupset groupset,
-            @RequestParam(value = "mileage", required = false) Integer mileage,
+            @RequestParam(value = "mileage", required = false) String mileageStr,
 
             @RequestParam("categoryId") Integer categoryId,
 
@@ -130,6 +134,10 @@ public class BikePostController {
 
             @RequestPart(value = "images", required = false) List<MultipartFile> images
     ) {
+
+        // Convert string parameters to Integer safely
+        Integer year = parseIntegerSafely(yearStr);
+        Integer mileage = parseIntegerSafely(mileageStr);
 
         BikePostRequest req = mapper.createRequest(
                 title, description, price, status, city, district,
@@ -219,5 +227,19 @@ public class BikePostController {
             case "year" -> "year";
             default -> "createdAt"; // Default fallback
         };
+    }
+
+    /**
+     * Safely parse string to Integer, handling null, empty, and "null" strings
+     */
+    private Integer parseIntegerSafely(String value) {
+        if (value == null || value.trim().isEmpty() || "null".equalsIgnoreCase(value.trim())) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

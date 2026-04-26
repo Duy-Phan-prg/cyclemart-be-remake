@@ -1,0 +1,55 @@
+package com.example.cyclemartberemake.service.impl;
+
+import com.example.cyclemartberemake.dto.response.UserNotificationResponse;
+import com.example.cyclemartberemake.entity.UserNotification;
+import com.example.cyclemartberemake.repository.UserNotificationRepository;
+import com.example.cyclemartberemake.service.UserNotificationService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class UserNotificationServiceImpl implements UserNotificationService {
+
+    private static final String CHAT_TYPE = "CHAT_MESSAGE";
+
+    private final UserNotificationRepository userNotificationRepository;
+
+    @Override
+    public List<UserNotificationResponse> getMyNotifications(Long currentUserId) {
+        return userNotificationRepository.findByUserIdOrderByCreatedAtDesc(currentUserId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void createChatMessageNotification(Long receiverId, Long roomId, String senderName, String messageContent) {
+        UserNotification notification = UserNotification.builder()
+                .userId(receiverId)
+                .type(CHAT_TYPE)
+                .title("Tin nhắn mới")
+                .message((senderName != null ? senderName : "Người dùng") + ": " + messageContent)
+                .actionUrl("/chat?roomId=" + roomId)
+                .isRead(false)
+                .build();
+        userNotificationRepository.save(notification);
+    }
+
+    private UserNotificationResponse toResponse(UserNotification notification) {
+        return UserNotificationResponse.builder()
+                .id(notification.getId())
+                .type(notification.getType())
+                .title(notification.getTitle())
+                .message(notification.getMessage())
+                .actionUrl(notification.getActionUrl())
+                .isRead(notification.getIsRead())
+                .createdAt(notification.getCreatedAt())
+                .readAt(notification.getReadAt())
+                .build();
+    }
+}

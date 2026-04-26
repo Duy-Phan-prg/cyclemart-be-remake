@@ -302,7 +302,8 @@ public class BikePostServiceImpl implements BikePostService {
         setActivePriorityInfo(response, post.getId());
         if (post.getPostStatus() == PostStatus.SOLD) {
             paymentRepo.findSuccessfulPaymentForBike(post.getId()).ifPresent(payment -> {
-                response.setPaymentOrderId(payment.getOrderId()); // Sẽ trả ra ORDER_1777...
+                response.setPaymentOrderId(payment.getOrderId());
+                response.setDeliveryAddress(payment.getAddress());
                 if (payment.getOrderStatus() != null) {
                     response.setOrderStatus(payment.getOrderStatus().name());
                 } else {

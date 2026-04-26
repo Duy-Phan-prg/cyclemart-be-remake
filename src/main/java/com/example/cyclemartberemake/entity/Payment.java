@@ -83,4 +83,5 @@ public class Payment {
     @Enumerated(EnumType.STRING)
     @Column(name = "order_status")
     private OrderStatus orderStatus;
+    private String address;
 }

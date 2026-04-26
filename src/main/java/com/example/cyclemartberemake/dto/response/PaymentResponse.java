@@ -17,19 +17,25 @@ public class PaymentResponse {
     private String description;
     private Integer pointsEarned;
     private String message;
-    
+
+    // 🔥 TRƯỜNG QUAN TRỌNG NHẤT ĐỂ NGƯỜI MUA THẤY TRẠNG THÁI VẬN CHUYỂN
+    private String orderStatus;
+
     // 🔥 Bike information
     private Long bikePostId;
     private String bikeTitle;
     private Long bikePrice;
     private String sellerName;
     private String sellerPhone;
-    
+
     // 🔥 Location information
     private String city;
     private String district;
     private String ipAddress;
-    
+
     private LocalDateTime createdAt;
     private LocalDateTime completedAt;
+
+    // Địa chỉ người mua đã nhập
+    private String address;
 }

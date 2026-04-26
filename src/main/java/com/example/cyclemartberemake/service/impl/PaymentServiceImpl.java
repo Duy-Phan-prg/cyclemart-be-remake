@@ -107,6 +107,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .type(paymentType)
                 .orderStatus(paymentType == PaymentType.ORDER_PAYMENT ? OrderStatus.PENDING_PAYMENT : null) // Thêm dòng này
                 .referenceId(request.getReferenceId())
+                .address(request.getAddress())
                 .build();
 
         paymentRepo.save(payment);

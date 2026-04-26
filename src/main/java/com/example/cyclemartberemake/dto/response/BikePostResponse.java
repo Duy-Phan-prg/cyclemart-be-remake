@@ -80,4 +80,5 @@ public class BikePostResponse {
 
     @Schema(description = "Trạng thái giao hàng (nếu xe đã bán)")
     private String orderStatus;
+    private String deliveryAddress;
 }

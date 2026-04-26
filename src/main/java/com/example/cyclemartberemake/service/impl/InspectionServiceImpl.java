@@ -213,6 +213,9 @@ public class InspectionServiceImpl implements InspectionService {
                 .createdAt(inspection.getCreatedAt())
                 .build();
     }
-
+    @Override
+    public Page<InspectionResponseDTO> getTasksByInspectorId(Long inspectorId, Pageable pageable) {
+        return inspectionRepository.findByInspectorId(inspectorId, pageable).map(this::mapToResponse);
+    }
 
 }

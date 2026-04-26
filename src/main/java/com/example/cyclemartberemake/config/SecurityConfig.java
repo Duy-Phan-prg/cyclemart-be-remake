@@ -4,6 +4,7 @@ import com.example.cyclemartberemake.security.JwtAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -19,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Configuration
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -60,8 +62,8 @@ public class SecurityConfig {
                         .requestMatchers("POST", "/api/v1/payments/sepay/ipn").permitAll()
                         .requestMatchers("GET", "/api/v1/payments/vnpay/return").permitAll()
                         .requestMatchers("POST", "/api/v1/payments/vnpay/ipn").permitAll()
-                        // Admin endpoints - require authentication
-                        .requestMatchers("/api/v1/admin/**").authenticated()
+                        // Admin endpoints - require ADMIN role
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )

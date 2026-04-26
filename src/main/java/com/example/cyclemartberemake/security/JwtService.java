@@ -4,6 +4,7 @@ import com.example.cyclemartberemake.entity.Users; // Bổ sung import này
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -12,7 +13,8 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-    private final String SECRET = "my-super-secret-key-which-is-very-long-123456";
+    @Value("${app.jwt.secret:my-super-secret-key-which-is-very-long-123456}")
+    private String SECRET;
 
     private SecretKey getSignKey() {
         return Keys.hmacShaKeyFor(SECRET.getBytes());

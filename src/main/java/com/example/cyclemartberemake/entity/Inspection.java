@@ -67,10 +67,10 @@ public class Inspection {
     @PrePersist
     public void prePersist() {
         if (this.status == null) {
-            this.status = InspectionStatus.PENDING;
+            this.status = InspectionStatus.PENDING_PAYMENT;
         }
         if (this.inspectionFee == null) {
-            this.inspectionFee = 0.0; // Tạm thời để 0 để test
+            this.inspectionFee = 0.0;
         }
     }
 }

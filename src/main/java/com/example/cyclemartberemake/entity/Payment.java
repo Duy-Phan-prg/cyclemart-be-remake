@@ -80,7 +80,24 @@ public class Payment {
     private PaymentType type;
 
     private Long referenceId; // Lưu ID của gói đăng ký hoặc ID của yêu cầu kiểm định
+
     @Enumerated(EnumType.STRING)
     @Column(name = "order_status")
     private OrderStatus orderStatus;
+
+    // --- Escrow / Point fields ---
+    private Long convertedPoints;  // Số điểm quy đổi từ amount VNPay (1 VND = 1 point)
+    private Long escrowPoints;     // Điểm đang giữ escrow cho giao dịch này
+
+    private Boolean verifiedAtPurchase; // Snapshot listing.isVerified tại thời điểm thanh toán
+
+    // --- Delivery fields ---
+    private String deliveryMethod;          // HANDOFF hoặc EXTERNAL_SHIPPING
+    @Column(columnDefinition = "TEXT")
+    private String deliveryEvidenceUrls;    // Bằng chứng giao hàng
+
+    // --- Timeline fields ---
+    private LocalDateTime deliveredAt;     // Khi buyer confirm received
+    private LocalDateTime releasedAt;      // Khi escrow được xử lý (release hoặc refund)
+    private LocalDateTime autoReleaseAt;   // Deadline tự động release (7 ngày sau deliveredAt)
 }

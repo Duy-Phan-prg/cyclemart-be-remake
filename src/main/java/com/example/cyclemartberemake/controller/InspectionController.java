@@ -35,19 +35,19 @@ public class InspectionController {
         return inspectionService.getMyRequests(PageRequest.of(page, size, Sort.by("createdAt").descending()));
     }
 
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin/all")
     public Page<InspectionResponseDTO> getAllRequests(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
         return inspectionService.getAllRequests(PageRequest.of(page, size, Sort.by("createdAt").descending()));
     }
 
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/admin/{id}/assign")
     public void assignInspector(@PathVariable Long id, @RequestParam Long inspectorId) {
         inspectionService.assignInspector(id, inspectorId);
     }
 
-    @PreAuthorize("hasAnyAuthority('INSPECTOR', 'ROLE_INSPECTOR')")
+    @PreAuthorize("hasRole('INSPECTOR')")
     @GetMapping("/inspector/me")
     public Page<InspectionResponseDTO> getInspectorTasks(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
         return inspectionService.getRequestsForInspector(PageRequest.of(page, size, Sort.by("scheduledDateTime").ascending()));
@@ -64,7 +64,7 @@ public class InspectionController {
         return ResponseEntity.ok().body("Cập nhật kết quả thành công");
     }
 
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/admin/{id}/reschedule")
     public void reschedule(@PathVariable Long id, @RequestParam LocalDateTime newTime) {
         Inspection ins = inspectionRepository.findById(id).orElseThrow();
@@ -79,7 +79,7 @@ public class InspectionController {
     }
 
     // Admin cập nhật phí chung cho toàn bộ hệ thống
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/admin/global-fee")
     public ResponseEntity<?> updateGlobalFee(@RequestParam Double fee) {
         inspectionService.updateGlobalInspectionFee(fee);

@@ -33,4 +33,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     List<Payment> findExpiredPendingPayments(@Param("expiredTime") LocalDateTime expiredTime);
 
     @Query(value = "SELECT * FROM payments WHERE (reference_id = :bikeId OR bike_post_id = :bikeId) AND status = 'SUCCESS' ORDER BY created_at DESC LIMIT 1", nativeQuery = true)
-    Optional<Payment> findSuccessfulPaymentForBike(@Param("bikeId") Long bikeId);}
+    Optional<Payment> findSuccessfulPaymentForBike(@Param("bikeId") Long bikeId);
+
+    @Query("SELECT p FROM Payment p WHERE p.bikePost.user.id = :sellerId AND p.type = com.example.cyclemartberemake.entity.PaymentType.ORDER_PAYMENT ORDER BY p.createdAt DESC")
+    Page<Payment> findBySellerIdOrderByCreatedAtDesc(@Param("sellerId") Long sellerId, Pageable pageable);
+}

@@ -1,12 +1,14 @@
 package com.example.cyclemartberemake.service.impl;
 
 import com.example.cyclemartberemake.dto.request.CreatePaymentRequest;
+import com.example.cyclemartberemake.dto.request.DeliveryUpdateRequest;
 import com.example.cyclemartberemake.dto.response.CreatePaymentResponse;
 import com.example.cyclemartberemake.dto.response.PaymentResponse;
 import com.example.cyclemartberemake.entity.*;
 import com.example.cyclemartberemake.mapper.PaymentMapper;
 import com.example.cyclemartberemake.repository.BikePostRepository;
 import com.example.cyclemartberemake.repository.PaymentRepository;
+import com.example.cyclemartberemake.repository.PointTransactionRepository;
 import com.example.cyclemartberemake.repository.UserRepository;
 import com.example.cyclemartberemake.repository.PostPrioritySubscriptionRepository;
 import com.example.cyclemartberemake.service.PaymentNotificationService;
@@ -43,6 +45,8 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentMapper paymentMapper;
     private final PaymentNotificationService notificationService;
     private final PostPrioritySubscriptionRepository subscriptionRepository;
+    private final com.example.cyclemartberemake.repository.InspectionRepository inspectionRepository;
+    private final PointTransactionRepository pointTransactionRepository;
 
     @Value("${vnpay.tmnCode}")
     private String vnpayTmnCode;
@@ -135,6 +139,13 @@ public class PaymentServiceImpl implements PaymentService {
     public Page<PaymentResponse> getPaymentHistory(Pageable pageable) {
         Long userId = getCurrentUserId();
         Page<Payment> payments = paymentRepo.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+        return payments.map(paymentMapper::toResponse);
+    }
+
+    @Override
+    public Page<PaymentResponse> getPaymentHistoryAsSeller(Pageable pageable) {
+        Long sellerId = getCurrentUserId();
+        Page<Payment> payments = paymentRepo.findBySellerIdOrderByCreatedAtDesc(sellerId, pageable);
         return payments.map(paymentMapper::toResponse);
     }
 
@@ -277,6 +288,223 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentMapper.toResponse(payment);
     }
 
+    @Override
+    @Transactional
+    public CreatePaymentResponse createOrderPaymentForNegotiation(Long buyerId, Long bikePostId, Long amount, String description) throws Exception {
+        Users buyer = userRepository.findById(buyerId)
+                .orElseThrow(() -> new RuntimeException("Buyer không tồn tại"));
+        BikePost bikePost = bikePostRepository.findById(bikePostId)
+                .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
+
+        String orderId = "ORDER_" + System.currentTimeMillis();
+        String desc = description != null ? description : "Thanh toan don hang " + orderId;
+
+        Payment payment = Payment.builder()
+                .user(buyer)
+                .bikePost(bikePost)
+                .orderId(orderId)
+                .amount(amount)
+                .description(desc)
+                .status(PaymentStatus.PENDING)
+                .type(PaymentType.ORDER_PAYMENT)
+                .orderStatus(OrderStatus.PENDING_PAYMENT)
+                .referenceId(bikePostId)
+                .build();
+        paymentRepo.save(payment);
+
+        String vnpayUrl = generateVNPayUrl(orderId, amount);
+        return CreatePaymentResponse.builder()
+                .orderId(orderId)
+                .amount(amount)
+                .description(desc)
+                .paymentUrl(vnpayUrl)
+                .message("Tạo link thanh toán thành công")
+                .success(true)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public CreatePaymentResponse createInspectionPayment(Long sellerId, Long inspectionId, Double fee) throws Exception {
+        Users seller = userRepository.findById(sellerId)
+                .orElseThrow(() -> new RuntimeException("Seller không tồn tại"));
+
+        Long amount = fee.longValue();
+        if (amount < 10000) amount = 10000L;
+
+        String orderId = "INSP_" + System.currentTimeMillis();
+        String desc = "Phi kiem dinh xe - ID " + inspectionId;
+
+        Payment payment = Payment.builder()
+                .user(seller)
+                .orderId(orderId)
+                .amount(amount)
+                .description(desc)
+                .status(PaymentStatus.PENDING)
+                .type(PaymentType.INSPECTION_FEE)
+                .referenceId(inspectionId)
+                .build();
+        paymentRepo.save(payment);
+
+        String vnpayUrl = generateVNPayUrl(orderId, amount);
+        return CreatePaymentResponse.builder()
+                .orderId(orderId)
+                .amount(amount)
+                .description(desc)
+                .paymentUrl(vnpayUrl)
+                .message("Tạo link thanh toán phí kiểm định thành công")
+                .success(true)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public PaymentResponse submitDelivery(Long paymentId, Long sellerId, DeliveryUpdateRequest request) {
+        Payment payment = paymentRepo.findById(paymentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch"));
+
+        if (payment.getBikePost() == null || !payment.getBikePost().getUser().getId().equals(sellerId)) {
+            throw new RuntimeException("Bạn không phải người bán của đơn hàng này");
+        }
+
+        if (payment.getOrderStatus() != OrderStatus.PAID_WAITING_DELIVERY) {
+            throw new RuntimeException("Đơn hàng không ở trạng thái chờ giao hàng");
+        }
+
+        payment.setDeliveryMethod(request.getDeliveryMethod());
+        payment.setDeliveryEvidenceUrls(request.getDeliveryEvidenceUrls());
+        payment.setOrderStatus(OrderStatus.IN_DELIVERY);
+        paymentRepo.save(payment);
+
+        return paymentMapper.toResponse(payment);
+    }
+
+    @Override
+    @Transactional
+    public PaymentResponse confirmReceived(Long paymentId, Long buyerId) {
+        Payment payment = paymentRepo.findById(paymentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch"));
+
+        if (!payment.getUser().getId().equals(buyerId)) {
+            throw new RuntimeException("Bạn không phải người mua của đơn hàng này");
+        }
+
+        if (payment.getOrderStatus() != OrderStatus.IN_DELIVERY) {
+            throw new RuntimeException("Đơn hàng không ở trạng thái đang giao");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        payment.setOrderStatus(OrderStatus.DELIVERED);
+        payment.setDeliveredAt(now);
+        payment.setAutoReleaseAt(now.plusDays(7));
+        paymentRepo.save(payment);
+
+        return paymentMapper.toResponse(payment);
+    }
+
+    @Override
+    @Transactional
+    public PaymentResponse cancelRequest(Long paymentId, Long buyerId, String reason) {
+        Payment payment = paymentRepo.findById(paymentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch"));
+
+        if (!payment.getUser().getId().equals(buyerId)) {
+            throw new RuntimeException("Bạn không phải người mua của đơn hàng này");
+        }
+
+        if (payment.getOrderStatus() != OrderStatus.PAID_WAITING_DELIVERY) {
+            throw new RuntimeException("Chỉ có thể yêu cầu hủy khi đơn hàng chưa được giao");
+        }
+
+        payment.setOrderStatus(OrderStatus.RETURN_REQUESTED);
+        payment.setRefundReason(reason);
+        paymentRepo.save(payment);
+
+        return paymentMapper.toResponse(payment);
+    }
+
+    @Override
+    @Transactional
+    public PaymentResponse releaseEscrow(Long paymentId, Long adminId) {
+        Payment payment = paymentRepo.findById(paymentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch"));
+
+        if (payment.getReleasedAt() != null) {
+            throw new RuntimeException("Escrow đã được xử lý cho đơn hàng này");
+        }
+
+        Long escrowAmt = payment.getEscrowPoints();
+        if (escrowAmt == null || escrowAmt <= 0) {
+            throw new RuntimeException("Không có điểm escrow để giải phóng");
+        }
+
+        if (payment.getBikePost() == null || payment.getBikePost().getUser() == null) {
+            throw new RuntimeException("Không xác định được người bán");
+        }
+
+        Users seller = payment.getBikePost().getUser();
+        long sellerBalanceAfter = seller.getPoint().longValue() + escrowAmt;
+        seller.setPoint((int) sellerBalanceAfter);
+        userRepository.save(seller);
+
+        recordPointTransaction(seller, payment, PointTransactionType.ESCROW_RELEASE,
+                escrowAmt, sellerBalanceAfter, "Giải phóng escrow cho người bán - đơn " + payment.getOrderId());
+
+        payment.setEscrowPoints(0L);
+        payment.setReleasedAt(LocalDateTime.now());
+        payment.setOrderStatus(OrderStatus.COMPLETED);
+        payment.setCompletedAt(LocalDateTime.now());
+        paymentRepo.save(payment);
+
+        log.info("Released {} escrow points to seller {} for payment {}", escrowAmt, seller.getId(), payment.getOrderId());
+        return paymentMapper.toResponse(payment);
+    }
+
+    @Override
+    @Transactional
+    public PaymentResponse refundEscrow(Long paymentId, Long adminId) {
+        Payment payment = paymentRepo.findById(paymentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch"));
+
+        if (payment.getReleasedAt() != null) {
+            throw new RuntimeException("Escrow đã được xử lý cho đơn hàng này");
+        }
+
+        Long escrowAmt = payment.getEscrowPoints();
+        if (escrowAmt == null || escrowAmt <= 0) {
+            throw new RuntimeException("Không có điểm escrow để hoàn lại");
+        }
+
+        Users buyer = payment.getUser();
+        long buyerBalanceAfter = buyer.getPoint().longValue() + escrowAmt;
+        buyer.setPoint((int) buyerBalanceAfter);
+        userRepository.save(buyer);
+
+        recordPointTransaction(buyer, payment, PointTransactionType.ESCROW_REFUND,
+                escrowAmt, buyerBalanceAfter, "Hoàn điểm escrow cho người mua - đơn " + payment.getOrderId());
+
+        payment.setEscrowPoints(0L);
+        payment.setReleasedAt(LocalDateTime.now());
+        payment.setOrderStatus(OrderStatus.CANCELLED);
+        paymentRepo.save(payment);
+
+        log.info("Refunded {} escrow points to buyer {} for payment {}", escrowAmt, buyer.getId(), payment.getOrderId());
+        return paymentMapper.toResponse(payment);
+    }
+
+    private void recordPointTransaction(Users user, Payment payment, PointTransactionType type,
+                                        long delta, long balanceAfter, String note) {
+        PointTransaction tx = PointTransaction.builder()
+                .user(user)
+                .payment(payment)
+                .type(type)
+                .pointsDelta(delta)
+                .balanceAfter(balanceAfter)
+                .note(note)
+                .build();
+        pointTransactionRepository.save(tx);
+    }
+
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof Users user) {
@@ -368,11 +596,12 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setStatus(PaymentStatus.SUCCESS);
             payment.setCompletedAt(LocalDateTime.now());
 
-            // 🔥 ĐÃ CẬP NHẬT: CHỈ CỘNG ĐIỂM NẾU KHÔNG PHẢI MUA GÓI VÀ KIỂM ĐỊNH
+            // Only award points for non-escrow, non-package, non-inspection payments
             int points = 0;
             if (payment.getType() != null &&
                     payment.getType() != PaymentType.PRIORITY_PACKAGE &&
-                    payment.getType() != PaymentType.INSPECTION_FEE) {
+                    payment.getType() != PaymentType.INSPECTION_FEE &&
+                    payment.getType() != PaymentType.ORDER_PAYMENT) {
                 points = (int) (payment.getAmount() / 1000);
             }
 
@@ -403,18 +632,16 @@ public class PaymentServiceImpl implements PaymentService {
 
                     case INSPECTION_FEE:
                         try {
-                            BikePost post = bikePostRepository.findById(payment.getReferenceId()).orElseThrow();
+                            com.example.cyclemartberemake.entity.Inspection inspection =
+                                    inspectionRepository.findById(payment.getReferenceId()).orElseThrow();
+                            inspection.setStatus(com.example.cyclemartberemake.entity.InspectionStatus.PENDING);
+                            inspectionRepository.save(inspection);
 
+                            BikePost post = inspection.getBikePost();
                             post.setIsRequestedInspection(true);
-
-                            if (post.getPostStatus() == PostStatus.PENDING) {
-                                post.setPostStatus(PostStatus.PENDING);
-                            } else if (post.getPostStatus() == PostStatus.APPROVED) {
-                                log.info("Bài đăng ID {} vừa thanh toán phí kiểm định bổ sung. Cần phân công Inspector!", post.getId());
-                            }
-
                             bikePostRepository.save(post);
-                            log.info("Thanh toán phí kiểm định thành công cho ID: {}", payment.getReferenceId());
+
+                            log.info("Thanh toán phí kiểm định thành công, inspection ID: {} → PENDING", payment.getReferenceId());
                         } catch (Exception e) {
                             log.error("Lỗi khi kích hoạt kiểm định: ", e);
                         }
@@ -423,15 +650,31 @@ public class PaymentServiceImpl implements PaymentService {
                     case ORDER_PAYMENT:
                         try {
                             BikePost post = bikePostRepository.findById(payment.getReferenceId()).orElseThrow();
-
                             post.setPostStatus(PostStatus.SOLD);
                             bikePostRepository.save(post);
 
-                            payment.setOrderStatus(OrderStatus.PAID_WAITING_DELIVERY);
+                            // Escrow: convert VND → points 1:1, hold in escrow (net 0 on buyer balance)
+                            long escrowAmt = payment.getAmount();
+                            Users buyer = payment.getUser();
+                            long balanceBeforeTopup = buyer.getPoint().longValue();
+                            long balanceAfterTopup = balanceBeforeTopup + escrowAmt;
+                            long balanceAfterHold = balanceAfterTopup - escrowAmt; // same as before
 
-                            log.info("Thanh toán đơn hàng thành công, xe ID: {} đã chuyển sang trạng thái ĐÃ BÁN.", payment.getReferenceId());
+                            recordPointTransaction(buyer, payment, PointTransactionType.TOP_UP_VNPAY,
+                                    escrowAmt, balanceAfterTopup, "Nạp điểm từ VNPay - đơn " + payment.getOrderId());
+                            recordPointTransaction(buyer, payment, PointTransactionType.ESCROW_HOLD,
+                                    -escrowAmt, balanceAfterHold, "Giữ điểm escrow - đơn " + payment.getOrderId());
+                            // buyer.point unchanged (net 0)
+
+                            payment.setConvertedPoints(escrowAmt);
+                            payment.setEscrowPoints(escrowAmt);
+                            payment.setVerifiedAtPurchase(post.getIsVerified());
+                            payment.setOrderStatus(OrderStatus.PAID_WAITING_DELIVERY);
+                            paymentRepo.save(payment);
+
+                            log.info("ORDER_PAYMENT success: escrowed {} points for payment {}", escrowAmt, payment.getOrderId());
                         } catch (Exception e) {
-                            log.error("Lỗi khi cập nhật trạng thái bán xe: ", e);
+                            log.error("Lỗi khi xử lý escrow đơn hàng: ", e);
                         }
                         break;
 

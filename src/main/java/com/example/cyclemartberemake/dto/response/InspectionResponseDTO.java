@@ -22,4 +22,6 @@ public class InspectionResponseDTO {
     private String resultNote;
     private LocalDateTime createdAt;
     private String checklistData;
+    private String paymentUrl;
+    private String paymentOrderId;
 }

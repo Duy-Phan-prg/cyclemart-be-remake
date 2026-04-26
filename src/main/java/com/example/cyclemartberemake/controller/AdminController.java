@@ -16,7 +16,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import com.example.cyclemartberemake.entity.Users;
 import com.example.cyclemartberemake.service.UserService;
 import java.util.Map;
 
@@ -117,20 +120,43 @@ public class AdminController {
     @PostMapping("/payments/{id}/refund")
     @Operation(summary = "Admin refund a payment")
     public ResponseEntity<?> adminRefundPayment(
-            @PathVariable Long id, 
+            @PathVariable Long id,
             @RequestParam String reason
     ) {
         try {
-            // 🔥 TODO: Add proper admin authentication
-            Long adminId = 1L; // Hardcoded for now
-            
-            PaymentResponse response = paymentService.refundPayment(id, reason, adminId);
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            Users admin = (Users) auth.getPrincipal();
+            PaymentResponse response = paymentService.refundPayment(id, reason, (long) admin.getId());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
                 "message", e.getMessage()
             ));
+        }
+    }
+
+    @PostMapping("/payments/{id}/release-escrow")
+    @Operation(summary = "Admin releases escrow points to seller")
+    public ResponseEntity<?> releaseEscrow(@PathVariable Long id) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            Users admin = (Users) auth.getPrincipal();
+            return ResponseEntity.ok(paymentService.releaseEscrow(id, (long) admin.getId()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/payments/{id}/refund-escrow")
+    @Operation(summary = "Admin refunds escrow points to buyer")
+    public ResponseEntity<?> refundEscrow(@PathVariable Long id) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            Users admin = (Users) auth.getPrincipal();
+            return ResponseEntity.ok(paymentService.refundEscrow(id, (long) admin.getId()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
     }
     

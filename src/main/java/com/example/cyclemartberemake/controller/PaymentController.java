@@ -1,6 +1,7 @@
 package com.example.cyclemartberemake.controller;
 
 import com.example.cyclemartberemake.dto.request.CreatePaymentRequest;
+import com.example.cyclemartberemake.dto.request.DeliveryUpdateRequest;
 import com.example.cyclemartberemake.dto.response.CreatePaymentResponse;
 import com.example.cyclemartberemake.dto.response.PaymentResponse;
 import com.example.cyclemartberemake.entity.Users;
@@ -93,6 +94,16 @@ public class PaymentController extends BaseController {
         return paymentService.getPaymentHistory(pageable);
     }
 
+    @GetMapping("/history/as-seller")
+    @Operation(summary = "Get order history where current user is the seller")
+    public Page<PaymentResponse> getPaymentHistoryAsSeller(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return paymentService.getPaymentHistoryAsSeller(pageable);
+    }
+
     @GetMapping("/history/status/{status}")
     @Operation(summary = "Get payment history by status")
     public Page<PaymentResponse> getPaymentHistoryByStatus(
@@ -175,6 +186,45 @@ public class PaymentController extends BaseController {
     @PutMapping("/{orderId}/order-status")
     public ResponseEntity<?> updateOrderStatus(@PathVariable String orderId, @RequestParam String status) {
         return ResponseEntity.ok(paymentService.updateOrderStatus(orderId, status));
+    }
+
+    @PostMapping("/{id}/delivery")
+    @Operation(summary = "Seller submits delivery evidence")
+    public ResponseEntity<?> submitDelivery(
+            @PathVariable Long id,
+            @Valid @RequestBody DeliveryUpdateRequest request
+    ) {
+        try {
+            Long sellerId = getCurrentUserId();
+            return ResponseEntity.ok(paymentService.submitDelivery(id, sellerId, request));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/confirm-received")
+    @Operation(summary = "Buyer confirms order received")
+    public ResponseEntity<?> confirmReceived(@PathVariable Long id) {
+        try {
+            Long buyerId = getCurrentUserId();
+            return ResponseEntity.ok(paymentService.confirmReceived(id, buyerId));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/cancel-request")
+    @Operation(summary = "Buyer requests cancellation before delivery")
+    public ResponseEntity<?> cancelRequest(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "Người mua yêu cầu hủy") String reason
+    ) {
+        try {
+            Long buyerId = getCurrentUserId();
+            return ResponseEntity.ok(paymentService.cancelRequest(id, buyerId, reason));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
     }
 
 

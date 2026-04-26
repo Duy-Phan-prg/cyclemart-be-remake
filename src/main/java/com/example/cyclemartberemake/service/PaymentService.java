@@ -1,6 +1,7 @@
 package com.example.cyclemartberemake.service;
 
 import com.example.cyclemartberemake.dto.request.CreatePaymentRequest;
+import com.example.cyclemartberemake.dto.request.DeliveryUpdateRequest;
 import com.example.cyclemartberemake.dto.response.CreatePaymentResponse;
 import com.example.cyclemartberemake.dto.response.PaymentResponse;
 import org.springframework.data.domain.Page;
@@ -18,7 +19,9 @@ public interface PaymentService {
     void handleVNPayIPN(Map<String, String> params) throws Exception;
 
     Page<PaymentResponse> getPaymentHistory(Pageable pageable);
-    
+
+    Page<PaymentResponse> getPaymentHistoryAsSeller(Pageable pageable);
+
     Page<PaymentResponse> getPaymentHistoryByStatus(String status, Pageable pageable);
 
     PaymentResponse getPaymentById(Long id);
@@ -33,4 +36,18 @@ public interface PaymentService {
     
     PaymentResponse cancelPayment(Long paymentId, String reason);
     PaymentResponse updateOrderStatus(String orderId, String newStatus);
+
+    CreatePaymentResponse createOrderPaymentForNegotiation(Long buyerId, Long bikePostId, Long amount, String description) throws Exception;
+
+    CreatePaymentResponse createInspectionPayment(Long sellerId, Long inspectionId, Double fee) throws Exception;
+
+    PaymentResponse submitDelivery(Long paymentId, Long sellerId, DeliveryUpdateRequest request);
+
+    PaymentResponse confirmReceived(Long paymentId, Long buyerId);
+
+    PaymentResponse cancelRequest(Long paymentId, Long buyerId, String reason);
+
+    PaymentResponse releaseEscrow(Long paymentId, Long adminId);
+
+    PaymentResponse refundEscrow(Long paymentId, Long adminId);
 }

@@ -14,4 +14,6 @@ public class NegotiationResponseDTO {
     private Double counterPrice;
     private NegotiationStatus status;
     private LocalDateTime createdAt;
+    private String paymentUrl;
+    private String paymentOrderId;
 }

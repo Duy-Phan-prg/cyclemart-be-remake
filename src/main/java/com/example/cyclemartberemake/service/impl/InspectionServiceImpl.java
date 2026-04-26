@@ -1,6 +1,7 @@
 package com.example.cyclemartberemake.service.impl;
 
 import com.example.cyclemartberemake.dto.request.InspectionRequestDTO;
+import com.example.cyclemartberemake.dto.response.CreatePaymentResponse;
 import com.example.cyclemartberemake.dto.response.InspectionResponseDTO;
 import com.example.cyclemartberemake.entity.*;
 import com.example.cyclemartberemake.repository.BikePostRepository;
@@ -8,6 +9,7 @@ import com.example.cyclemartberemake.repository.InspectionRepository;
 import com.example.cyclemartberemake.repository.UserRepository;
 import com.example.cyclemartberemake.repository.FeeInspectionSettingRepository;
 import com.example.cyclemartberemake.service.InspectionService;
+import com.example.cyclemartberemake.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +30,7 @@ public class InspectionServiceImpl implements InspectionService {
     private final BikePostRepository bikePostRepository;
     private final UserRepository userRepository;
     private final FeeInspectionSettingRepository feeInspectionSettingRepository;
+    private final PaymentService paymentService;
 
     private static final String FEE_KEY = "GLOBAL_INSPECTION_FEE";
 
@@ -47,13 +50,12 @@ public class InspectionServiceImpl implements InspectionService {
 
         boolean isPending = inspectionRepository.existsByBikePostIdAndStatusIn(
                 post.getId(),
-                Arrays.asList(InspectionStatus.PENDING, InspectionStatus.ASSIGNED, InspectionStatus.INSPECTING)
+                Arrays.asList(InspectionStatus.PENDING_PAYMENT, InspectionStatus.PENDING, InspectionStatus.ASSIGNED, InspectionStatus.INSPECTING)
         );
         if (isPending) {
             throw new RuntimeException("Xe này đang trong quá trình xử lý kiểm định rồi!");
         }
 
-        // Lấy mức phí chung hiện tại từ cài đặt hệ thống
         Double currentFee = getGlobalInspectionFee();
 
         Inspection inspection = Inspection.builder()
@@ -62,11 +64,23 @@ public class InspectionServiceImpl implements InspectionService {
                 .address(request.getAddress())
                 .scheduledDateTime(request.getScheduledDateTime())
                 .note(request.getNote())
-                .inspectionFee(currentFee) // Gán phí tại thời điểm tạo yêu cầu
+                .inspectionFee(currentFee)
+                .status(InspectionStatus.PENDING_PAYMENT)
                 .build();
 
         Inspection saved = inspectionRepository.save(inspection);
-        return mapToResponse(saved);
+
+        // Tạo link thanh toán phí kiểm định
+        InspectionResponseDTO response = mapToResponse(saved);
+        try {
+            CreatePaymentResponse paymentResponse = paymentService.createInspectionPayment(
+                    currentUser.getId(), saved.getId(), currentFee);
+            response.setPaymentUrl(paymentResponse.getPaymentUrl());
+            response.setPaymentOrderId(paymentResponse.getOrderId());
+        } catch (Exception e) {
+            // Không block nếu tạo link thanh toán lỗi, seller có thể tạo lại
+        }
+        return response;
     }
 
     @Override
@@ -107,6 +121,10 @@ public class InspectionServiceImpl implements InspectionService {
     public void assignInspector(Long inspectionId, Long inspectorId) {
         Inspection inspection = inspectionRepository.findById(inspectionId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu"));
+
+        if (inspection.getStatus() == InspectionStatus.PENDING_PAYMENT) {
+            throw new RuntimeException("Yêu cầu kiểm định này chưa được thanh toán phí. Không thể phân công Inspector.");
+        }
 
         Users inspector = userRepository.findById(inspectorId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Inspector"));

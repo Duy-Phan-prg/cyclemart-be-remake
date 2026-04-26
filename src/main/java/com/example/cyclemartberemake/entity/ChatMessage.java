@@ -35,6 +35,12 @@ public class ChatMessage {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
+    @Column(name = "is_read", nullable = false)
+    @Builder.Default
+    private Boolean isRead = false;
+
+    private LocalDateTime readAt;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 }

@@ -16,5 +16,8 @@ public class ChatRoomResponse {
     private Long sellerId;
     private String sellerName;
     private String lastMessage;
+    private Boolean lastMessageRead;
     private LocalDateTime lastMessageAt;
+    private Long unreadCount;
+    private Boolean hasUnreadMessages;
 }

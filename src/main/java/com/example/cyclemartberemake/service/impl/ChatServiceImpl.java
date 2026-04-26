@@ -4,6 +4,7 @@ import com.example.cyclemartberemake.dto.request.ChatMessageRequest;
 import com.example.cyclemartberemake.dto.request.ChatRoomRequest;
 import com.example.cyclemartberemake.dto.response.ChatMessageResponse;
 import com.example.cyclemartberemake.dto.response.ChatRoomResponse;
+import com.example.cyclemartberemake.dto.response.MarkRoomAsReadResponse;
 import com.example.cyclemartberemake.entity.BikePost;
 import com.example.cyclemartberemake.entity.ChatMessage;
 import com.example.cyclemartberemake.entity.ChatRoom;
@@ -13,14 +14,17 @@ import com.example.cyclemartberemake.repository.ChatMessageRepository;
 import com.example.cyclemartberemake.repository.ChatRoomRepository;
 import com.example.cyclemartberemake.repository.UserRepository;
 import com.example.cyclemartberemake.service.ChatService;
+import com.example.cyclemartberemake.service.UserNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +34,7 @@ public class ChatServiceImpl implements ChatService {
     private final ChatMessageRepository messageRepository;
     private final BikePostRepository bikePostRepository;
     private final UserRepository userRepository;
+    private final UserNotificationService userNotificationService;
 
     @Override
     @Transactional
@@ -49,24 +54,32 @@ public class ChatServiceImpl implements ChatService {
         Long firstId = Math.min(buyerId, sellerId);
         Long secondId = Math.max(buyerId, sellerId);
 
-        ChatRoom room = roomRepository.findByBikePostIdAndBuyerIdAndSellerId(post.getId(), firstId, secondId)
-                .orElseGet(() -> roomRepository.save(ChatRoom.builder()
-                        .bikePost(post)
-                        .buyerId(firstId)
-                        .sellerId(secondId)
-                        .build()));
+        Optional<ChatRoom> existingRoom = roomRepository.findByBikePostIdAndBuyerIdAndSellerId(post.getId(), firstId, secondId);
+        ChatRoom room;
+        if (existingRoom.isPresent()) {
+            room = existingRoom.get();
+        } else {
+            room = roomRepository.save(ChatRoom.builder()
+                    .bikePost(post)
+                    .buyerId(firstId)
+                    .sellerId(secondId)
+                    .build());
+            createAutoGreetingMessage(room, currentUserId);
+        }
 
-        return toRoomResponse(room);
+        return toRoomResponse(room, currentUserId);
     }
 
     @Override
     public ChatRoomResponse getRoom(Long currentUserId, Long roomId) {
-        return toRoomResponse(getRoomEntity(currentUserId, roomId));
+        return toRoomResponse(getRoomEntity(currentUserId, roomId), currentUserId);
     }
 
     @Override
+    @Transactional
     public Page<ChatMessageResponse> getMessages(Long currentUserId, Long roomId, Pageable pageable) {
         getRoomEntity(currentUserId, roomId);
+        messageRepository.markMessagesAsRead(roomId, currentUserId, LocalDateTime.now());
         return messageRepository.findByRoomIdOrderByCreatedAtAsc(roomId, pageable).map(this::toMessageResponse);
     }
 
@@ -76,6 +89,7 @@ public class ChatServiceImpl implements ChatService {
         ChatRoom room = getRoomEntity(currentUserId, request.getRoomId());
         Users sender = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+        Long receiverId = room.getBuyerId().equals(currentUserId) ? room.getSellerId() : room.getBuyerId();
 
         ChatMessage message = ChatMessage.builder()
                 .room(room)
@@ -83,7 +97,14 @@ public class ChatServiceImpl implements ChatService {
                 .content(request.getContent().trim())
                 .build();
 
-        return toMessageResponse(messageRepository.save(message));
+        ChatMessage savedMessage = messageRepository.save(message);
+        userNotificationService.createChatMessageNotification(
+                receiverId,
+                room.getId(),
+                sender.getFullName(),
+                savedMessage.getContent()
+        );
+        return toMessageResponse(savedMessage);
     }
 
     @Override
@@ -91,8 +112,19 @@ public class ChatServiceImpl implements ChatService {
         return roomRepository.findAll().stream()
                 .filter(room -> room.getBuyerId().equals(currentUserId) || room.getSellerId().equals(currentUserId))
                 .sorted(Comparator.comparing(ChatRoom::getUpdatedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
-                .map(this::toRoomResponse)
+                .map(room -> toRoomResponse(room, currentUserId))
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public MarkRoomAsReadResponse markRoomAsRead(Long currentUserId, Long roomId) {
+        getRoomEntity(currentUserId, roomId);
+        int markedCount = messageRepository.markMessagesAsRead(roomId, currentUserId, LocalDateTime.now());
+        return MarkRoomAsReadResponse.builder()
+                .roomId(roomId)
+                .markedCount(markedCount)
+                .build();
     }
 
     private ChatRoom getRoomEntity(Long currentUserId, Long roomId) {
@@ -104,15 +136,20 @@ public class ChatServiceImpl implements ChatService {
         return room;
     }
 
-    private ChatRoomResponse toRoomResponse(ChatRoom room) {
+    private ChatRoomResponse toRoomResponse(ChatRoom room, Long currentUserId) {
         BikePost post = room.getBikePost();
         Users buyer = room.getBuyerId() != null ? userRepository.findById(room.getBuyerId()).orElse(null) : null;
         Users seller = room.getSellerId() != null ? userRepository.findById(room.getSellerId()).orElse(null) : null;
 
-        ChatMessage lastMessage = messageRepository.findByRoomIdOrderByCreatedAtAsc(room.getId(), Pageable.unpaged())
+        List<ChatMessage> messages = messageRepository.findByRoomIdOrderByCreatedAtAsc(room.getId());
+        ChatMessage lastMessage = messages
                 .stream()
                 .reduce((first, second) -> second)
                 .orElse(null);
+        long unreadCount = messageRepository.countByRoomIdAndSenderIdNotAndIsReadFalse(room.getId(), currentUserId);
+        boolean lastMessageRead = lastMessage == null
+                || lastMessage.getSenderId().equals(currentUserId)
+                || Boolean.TRUE.equals(lastMessage.getIsRead());
 
         return ChatRoomResponse.builder()
                 .id(room.getId())
@@ -123,7 +160,10 @@ public class ChatServiceImpl implements ChatService {
                 .sellerId(room.getSellerId())
                 .sellerName(seller != null ? seller.getFullName() : null)
                 .lastMessage(lastMessage != null ? lastMessage.getContent() : null)
+                .lastMessageRead(lastMessageRead)
                 .lastMessageAt(lastMessage != null ? lastMessage.getCreatedAt() : room.getUpdatedAt())
+                .unreadCount(unreadCount)
+                .hasUnreadMessages(unreadCount > 0)
                 .build();
     }
 
@@ -135,7 +175,18 @@ public class ChatServiceImpl implements ChatService {
                 .senderId(message.getSenderId())
                 .senderName(sender != null ? sender.getFullName() : null)
                 .content(message.getContent())
+                .isRead(Boolean.TRUE.equals(message.getIsRead()))
+                .readAt(message.getReadAt())
                 .createdAt(message.getCreatedAt())
                 .build();
+    }
+
+    private void createAutoGreetingMessage(ChatRoom room, Long senderId) {
+        ChatMessage greetingMessage = ChatMessage.builder()
+                .room(room)
+                .senderId(senderId)
+                .content("Mình chào bạn ạ!")
+                .build();
+        messageRepository.save(greetingMessage);
     }
 }

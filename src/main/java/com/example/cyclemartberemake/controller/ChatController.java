@@ -4,6 +4,7 @@ import com.example.cyclemartberemake.dto.request.ChatMessageRequest;
 import com.example.cyclemartberemake.dto.request.ChatRoomRequest;
 import com.example.cyclemartberemake.dto.response.ChatMessageResponse;
 import com.example.cyclemartberemake.dto.response.ChatRoomResponse;
+import com.example.cyclemartberemake.dto.response.MarkRoomAsReadResponse;
 import com.example.cyclemartberemake.entity.Users;
 import com.example.cyclemartberemake.service.ChatService;
 import jakarta.validation.Valid;
@@ -48,6 +49,11 @@ public class ChatController {
     ) {
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(chatService.getMessages(getCurrentUserId(), roomId, pageable));
+    }
+
+    @PatchMapping("/rooms/{roomId}/read")
+    public ResponseEntity<MarkRoomAsReadResponse> markRoomAsRead(@PathVariable Long roomId) {
+        return ResponseEntity.ok(chatService.markRoomAsRead(getCurrentUserId(), roomId));
     }
 
     @PostMapping("/messages")

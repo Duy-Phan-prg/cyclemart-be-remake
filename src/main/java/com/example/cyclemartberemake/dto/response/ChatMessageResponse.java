@@ -13,5 +13,7 @@ public class ChatMessageResponse {
     private Long senderId;
     private String senderName;
     private String content;
+    private Boolean isRead;
+    private LocalDateTime readAt;
     private LocalDateTime createdAt;
 }

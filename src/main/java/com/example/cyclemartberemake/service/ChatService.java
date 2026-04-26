@@ -4,6 +4,7 @@ import com.example.cyclemartberemake.dto.request.ChatMessageRequest;
 import com.example.cyclemartberemake.dto.request.ChatRoomRequest;
 import com.example.cyclemartberemake.dto.response.ChatMessageResponse;
 import com.example.cyclemartberemake.dto.response.ChatRoomResponse;
+import com.example.cyclemartberemake.dto.response.MarkRoomAsReadResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -15,4 +16,5 @@ public interface ChatService {
     Page<ChatMessageResponse> getMessages(Long currentUserId, Long roomId, Pageable pageable);
     ChatMessageResponse sendMessage(Long currentUserId, ChatMessageRequest request);
     List<ChatRoomResponse> getMyRooms(Long currentUserId);
+    MarkRoomAsReadResponse markRoomAsRead(Long currentUserId, Long roomId);
 }

@@ -7,4 +7,6 @@ import java.util.List;
 public interface UserNotificationService {
     List<UserNotificationResponse> getMyNotifications(Long currentUserId);
     void createChatMessageNotification(Long receiverId, Long roomId, String senderName, String messageContent);
+    void markAsRead(Long currentUserId, Long notificationId);
+    int markAllAsRead(Long currentUserId);
 }

@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -38,6 +39,25 @@ public class UserNotificationServiceImpl implements UserNotificationService {
                 .isRead(false)
                 .build();
         userNotificationRepository.save(notification);
+    }
+
+    @Override
+    @Transactional
+    public void markAsRead(Long currentUserId, Long notificationId) {
+        UserNotification notification = userNotificationRepository.findByIdAndUserId(notificationId, currentUserId)
+                .orElseThrow(() -> new RuntimeException("Thông báo không tồn tại"));
+
+        if (!Boolean.TRUE.equals(notification.getIsRead())) {
+            notification.setIsRead(true);
+            notification.setReadAt(LocalDateTime.now());
+            userNotificationRepository.save(notification);
+        }
+    }
+
+    @Override
+    @Transactional
+    public int markAllAsRead(Long currentUserId) {
+        return userNotificationRepository.markAllAsRead(currentUserId, LocalDateTime.now());
     }
 
     private UserNotificationResponse toResponse(UserNotification notification) {

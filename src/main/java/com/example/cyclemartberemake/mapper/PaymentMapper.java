@@ -15,8 +15,8 @@ public interface PaymentMapper {
     @Mapping(source = "bikePost.id", target = "bikePostId")
     @Mapping(source = "bikePost.title", target = "bikeTitle")
     @Mapping(source = "bikePost.price", target = "bikePrice")
-    @Mapping(source = "bikePost.user.fullName", target = "sellerName")
-    @Mapping(source = "bikePost.user.phone", target = "sellerPhone")
+    @Mapping(source = "seller.fullName", target = "sellerName")
+    @Mapping(source = "seller.phone", target = "sellerPhone")
     PaymentResponse toResponse(Payment payment);
 
     List<PaymentResponse> toResponseList(List<Payment> payments);

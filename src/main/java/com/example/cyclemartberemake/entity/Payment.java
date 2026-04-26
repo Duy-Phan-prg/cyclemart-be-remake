@@ -23,7 +23,11 @@ public class Payment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     @NotNull(message = "User is required")
-    private Users user;
+    private Users user; // Buyer - người mua
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seller_id")
+    private Users seller; // Seller - người bán (lấy từ BikePost)
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bike_post_id")

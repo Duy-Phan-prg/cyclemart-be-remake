@@ -110,15 +110,22 @@ public class PaymentServiceImpl implements PaymentService {
         String description = request.getDescription() != null ?
                 request.getDescription().replaceAll("[^a-zA-Z0-9\\s_ÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂẾưăạảấầẩẫậắằẳẵặẹẻẽềềểếỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵỷỹ]", " ") : "Thanh toan CycleMart";
 
+        // Lấy thông tin seller từ bikePost (nếu có)
+        Users seller = null;
+        if (bikePost != null && bikePost.getUserId() != null) {
+            seller = userRepository.findById(bikePost.getUserId()).orElse(null);
+        }
+
         Payment payment = Payment.builder()
                 .user(userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found")))
+                .seller(seller) // Set seller
                 .bikePost(bikePost)
                 .orderId(orderId)
                 .amount(amount)
                 .description(description)
                 .status(PaymentStatus.PENDING)
                 .type(paymentType)
-                .orderStatus(paymentType == PaymentType.ORDER_PAYMENT ? OrderStatus.PENDING_PAYMENT : null) // Thêm dòng này
+                .orderStatus(paymentType == PaymentType.ORDER_PAYMENT ? OrderStatus.PENDING_PAYMENT : null)
                 .referenceId(request.getReferenceId())
                 .address(request.getAddress())
                 .build();

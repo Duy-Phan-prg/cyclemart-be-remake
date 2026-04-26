@@ -16,6 +16,7 @@ import java.util.List;
 public class UserNotificationServiceImpl implements UserNotificationService {
 
     private static final String CHAT_TYPE = "CHAT_MESSAGE";
+    private static final String CHAT_ROOM_TYPE = "CHAT_ROOM_CREATED";
 
     private final UserNotificationRepository userNotificationRepository;
 
@@ -35,6 +36,21 @@ public class UserNotificationServiceImpl implements UserNotificationService {
                 .type(CHAT_TYPE)
                 .title("Tin nhắn mới")
                 .message((senderName != null ? senderName : "Người dùng") + ": " + messageContent)
+                .actionUrl("/chat?roomId=" + roomId)
+                .isRead(false)
+                .build();
+        userNotificationRepository.save(notification);
+    }
+
+    @Override
+    @Transactional
+    public void createChatRoomNotification(Long receiverId, Long roomId, String creatorName, String bikePostTitle) {
+        String postTitle = bikePostTitle != null ? bikePostTitle : "bài đăng";
+        UserNotification notification = UserNotification.builder()
+                .userId(receiverId)
+                .type(CHAT_ROOM_TYPE)
+                .title("Phòng chat mới")
+                .message((creatorName != null ? creatorName : "Người dùng") + " đã tạo phòng chat mới cho " + postTitle)
                 .actionUrl("/chat?roomId=" + roomId)
                 .isRead(false)
                 .build();

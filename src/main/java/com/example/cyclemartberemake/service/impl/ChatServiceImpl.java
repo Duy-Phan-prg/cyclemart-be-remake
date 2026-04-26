@@ -56,23 +56,33 @@ public class ChatServiceImpl implements ChatService {
 
         Optional<ChatRoom> existingRoom = roomRepository.findByBikePostIdAndBuyerIdAndSellerId(post.getId(), firstId, secondId);
         ChatRoom room;
+        boolean newlyCreated = false;
         if (existingRoom.isPresent()) {
             room = existingRoom.get();
         } else {
+            newlyCreated = true;
             room = roomRepository.save(ChatRoom.builder()
                     .bikePost(post)
                     .buyerId(firstId)
                     .sellerId(secondId)
                     .build());
             createAutoGreetingMessage(room, currentUserId);
+            Long receiverId = room.getBuyerId().equals(currentUserId) ? room.getSellerId() : room.getBuyerId();
+            String creatorName = userRepository.findById(currentUserId).map(Users::getFullName).orElse("Người dùng");
+            userNotificationService.createChatRoomNotification(
+                    receiverId,
+                    room.getId(),
+                    creatorName,
+                    post.getTitle()
+            );
         }
 
-        return toRoomResponse(room, currentUserId);
+        return toRoomResponse(room, currentUserId, newlyCreated);
     }
 
     @Override
     public ChatRoomResponse getRoom(Long currentUserId, Long roomId) {
-        return toRoomResponse(getRoomEntity(currentUserId, roomId), currentUserId);
+        return toRoomResponse(getRoomEntity(currentUserId, roomId), currentUserId, false);
     }
 
     @Override
@@ -112,7 +122,7 @@ public class ChatServiceImpl implements ChatService {
         return roomRepository.findAll().stream()
                 .filter(room -> room.getBuyerId().equals(currentUserId) || room.getSellerId().equals(currentUserId))
                 .sorted(Comparator.comparing(ChatRoom::getUpdatedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
-                .map(room -> toRoomResponse(room, currentUserId))
+                .map(room -> toRoomResponse(room, currentUserId, false))
                 .toList();
     }
 
@@ -136,7 +146,7 @@ public class ChatServiceImpl implements ChatService {
         return room;
     }
 
-    private ChatRoomResponse toRoomResponse(ChatRoom room, Long currentUserId) {
+    private ChatRoomResponse toRoomResponse(ChatRoom room, Long currentUserId, boolean newlyCreated) {
         BikePost post = room.getBikePost();
         Users buyer = room.getBuyerId() != null ? userRepository.findById(room.getBuyerId()).orElse(null) : null;
         Users seller = room.getSellerId() != null ? userRepository.findById(room.getSellerId()).orElse(null) : null;
@@ -153,6 +163,7 @@ public class ChatServiceImpl implements ChatService {
 
         return ChatRoomResponse.builder()
                 .id(room.getId())
+                .newlyCreated(newlyCreated)
                 .bikePostId(post != null ? post.getId() : null)
                 .bikePostTitle(post != null ? post.getTitle() : null)
                 .buyerId(room.getBuyerId())

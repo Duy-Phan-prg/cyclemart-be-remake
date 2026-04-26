@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Builder
 public class ChatRoomResponse {
     private Long id;
+    private Boolean newlyCreated;
     private Long bikePostId;
     private String bikePostTitle;
     private Long buyerId;

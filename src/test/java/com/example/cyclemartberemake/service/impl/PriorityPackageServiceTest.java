@@ -135,8 +135,7 @@ public class PriorityPackageServiceTest {
 
         subscriptionService.subscribe(request);
 
-        List<PostPrioritySubscriptionResponse> subscriptions =
-            subscriptionService.getByPostId(testPost.getId());
+        List<PostPrioritySubscriptionResponse> subscriptions = subscriptionService.getByPostId(testPost.getId());
 
         assertFalse(subscriptions.isEmpty());
         assertEquals(testPost.getId(), subscriptions.get(0).getPostId());
@@ -163,8 +162,7 @@ public class PriorityPackageServiceTest {
 
         subscriptionService.unsubscribe(subscribed.getId());
 
-        List<PostPrioritySubscriptionResponse> subscriptions =
-            subscriptionService.getByPostId(testPost.getId());
+        List<PostPrioritySubscriptionResponse> subscriptions = subscriptionService.getByPostId(testPost.getId());
 
         assertTrue(subscriptions.isEmpty());
     }
@@ -182,8 +180,7 @@ public class PriorityPackageServiceTest {
         // Unsubscribe
         subscriptionService.unsubscribe(subscribed1.getId());
 
-        List<PostPrioritySubscriptionResponse> afterUnsubscribe =
-            subscriptionService.getByPostId(testPost.getId());
+        List<PostPrioritySubscriptionResponse> afterUnsubscribe = subscriptionService.getByPostId(testPost.getId());
         assertTrue(afterUnsubscribe.isEmpty());
 
         // Should be able to resubscribe the same package
@@ -191,8 +188,7 @@ public class PriorityPackageServiceTest {
         assertNotNull(subscribed2.getId());
         assertTrue(subscribed2.getIsActive());
 
-        List<PostPrioritySubscriptionResponse> afterResubscribe =
-            subscriptionService.getByPostId(testPost.getId());
+        List<PostPrioritySubscriptionResponse> afterResubscribe = subscriptionService.getByPostId(testPost.getId());
         assertFalse(afterResubscribe.isEmpty());
     }
 

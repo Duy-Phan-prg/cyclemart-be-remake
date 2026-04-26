@@ -85,6 +85,10 @@ public interface BikePostMapper {
     @Mapping(source = "images", target = "images", qualifiedByName = "mapImages")
 
     @Mapping(target = "activePriority", ignore = true)
+    @Mapping(target = "isInspected", ignore = true)
+    @Mapping(target = "paymentOrderId", ignore = true)
+    @Mapping(target = "orderStatus", ignore = true)
+    @Mapping(target = "deliveryAddress", ignore = true)
     @Mapping(source = "isRequestedInspection", target = "isRequestedInspection")
     BikePostResponse toResponse(BikePost bikePost);
 

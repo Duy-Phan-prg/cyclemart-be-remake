@@ -12,6 +12,8 @@ public interface NegotiationMapper {
 
     @Mapping(source = "bikePost.id", target = "bikePostId")
     @Mapping(source = "buyer.id", target = "buyerId")
+    @Mapping(target = "paymentUrl", ignore = true)
+    @Mapping(target = "paymentOrderId", ignore = true)
     NegotiationResponseDTO toResponse(Negotiation negotiation);
 
     List<NegotiationResponseDTO> toResponseList(List<Negotiation> negotiations);

@@ -14,6 +14,9 @@ public interface CategoryMapper {
 
     @Mapping(target = "parent", ignore = true)
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "icon", ignore = true)
+    @Mapping(target = "children", ignore = true)
+    @Mapping(target = "posts", ignore = true)
     Categories toEntity(CategoryRequestDTO request);
 
     @Mapping(source = "parent.id", target = "parentId")
@@ -24,5 +27,8 @@ public interface CategoryMapper {
 
     @Mapping(target = "parent", ignore = true)
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "icon", ignore = true)
+    @Mapping(target = "children", ignore = true)
+    @Mapping(target = "posts", ignore = true)
     void updateEntity(CategoryRequestDTO request, @MappingTarget Categories category);
 }

@@ -85,4 +85,8 @@ public class InspectionController {
         inspectionService.updateGlobalInspectionFee(fee);
         return ResponseEntity.ok("Đã cập nhật phí kiểm định hệ thống thành công.");
     }
+    @GetMapping("/post/{postId}/latest-passed")
+    public ResponseEntity<InspectionResponseDTO> getLatestPassedReport(@PathVariable Long postId) {
+        return ResponseEntity.ok(inspectionService.getLatestPassedReport(postId));
+    }
 }

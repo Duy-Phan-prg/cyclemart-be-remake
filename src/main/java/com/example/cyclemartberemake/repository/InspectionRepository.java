@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface InspectionRepository extends JpaRepository<Inspection, Long> {
@@ -17,4 +18,5 @@ public interface InspectionRepository extends JpaRepository<Inspection, Long> {
     boolean existsByBikePostIdAndStatusIn(Long postId, java.util.List<InspectionStatus> statuses);
     // Lấy tất cả lịch đã gán cho Inspector (trừ những cái đã hủy)
     List<Inspection> findByInspectorIdAndStatusIn(Long inspectorId, List<InspectionStatus> statuses);
+    Optional<Inspection> findFirstByBikePostIdAndStatusOrderByCreatedAtDesc(Long bikePostId, InspectionStatus status);
 }

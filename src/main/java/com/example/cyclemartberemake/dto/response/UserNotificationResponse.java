@@ -7,13 +7,13 @@ import java.time.LocalDateTime;
 
 @Data
 @Builder
-public class ChatMessageResponse {
+public class UserNotificationResponse {
     private Long id;
-    private Long roomId;
-    private Long senderId;
-    private String senderName;
-    private String content;
+    private String type;
+    private String title;
+    private String message;
+    private String actionUrl;
     private Boolean isRead;
-    private LocalDateTime readAt;
     private LocalDateTime createdAt;
+    private LocalDateTime readAt;
 }

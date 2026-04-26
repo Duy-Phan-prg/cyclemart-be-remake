@@ -120,7 +120,6 @@ public class BikePost {
     @Column(nullable = false)
     private Boolean isRequestedInspection = false;
 
-
     @Column(nullable = false)
     private Boolean isPriority = false;
 }

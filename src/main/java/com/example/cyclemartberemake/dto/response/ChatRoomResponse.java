@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Builder
 public class ChatRoomResponse {
     private Long id;
+    private Boolean newlyCreated;
     private Long bikePostId;
     private String bikePostTitle;
     private Long buyerId;
@@ -16,5 +17,8 @@ public class ChatRoomResponse {
     private Long sellerId;
     private String sellerName;
     private String lastMessage;
+    private Boolean lastMessageRead;
     private LocalDateTime lastMessageAt;
+    private Long unreadCount;
+    private Boolean hasUnreadMessages;
 }

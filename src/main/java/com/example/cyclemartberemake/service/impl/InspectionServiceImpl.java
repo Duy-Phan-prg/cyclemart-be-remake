@@ -190,19 +190,50 @@ public class InspectionServiceImpl implements InspectionService {
     private InspectionResponseDTO mapToResponse(Inspection entity) {
         return InspectionResponseDTO.builder()
                 .id(entity.getId())
-                .postId(entity.getBikePost().getId())
-                .postTitle(entity.getBikePost().getTitle())
-                .sellerName(entity.getSeller().getFullName())
-                .sellerPhone(entity.getSeller().getPhone())
+                .postId(entity.getBikePost() != null ? entity.getBikePost().getId() : null)
+                .postTitle(entity.getBikePost() != null ? entity.getBikePost().getTitle() : null)
+                .sellerName(entity.getSeller() != null ? entity.getSeller().getFullName() : null)
+                .sellerPhone(entity.getSeller() != null ? entity.getSeller().getPhone() : null)
+                .inspectorId(entity.getInspector() != null ? entity.getInspector().getId() : null)
                 .inspectorName(entity.getInspector() != null ? entity.getInspector().getFullName() : null)
-                .status(entity.getStatus().name())
+                .status(entity.getStatus() != null ? entity.getStatus().name() : null)
                 .address(entity.getAddress())
                 .scheduledDateTime(entity.getScheduledDateTime())
                 .inspectionFee(entity.getInspectionFee())
-                .note(entity.getNote())
+                .sellerNote(entity.getNote()) // Map từ 'note' của Entity sang 'sellerNote' của DTO
                 .resultNote(entity.getResultNote())
                 .checklistData(entity.getChecklistData())
                 .createdAt(entity.getCreatedAt())
                 .build();
     }
+    @Override
+    public InspectionResponseDTO getLatestPassedReport(Long postId) {
+        // Tìm biên bản có trạng thái PASSED của postId, sắp xếp mới nhất
+        Inspection inspection = inspectionRepository.findFirstByBikePostIdAndStatusOrderByCreatedAtDesc(postId, InspectionStatus.PASSED)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy biên bản kiểm định hợp lệ cho xe này"));
+
+        // Trả về DTO (Dùng đúng Builder mà chúng ta đã sửa hôm trước)
+        return InspectionResponseDTO.builder()
+                .id(inspection.getId())
+                .postId(inspection.getBikePost() != null ? inspection.getBikePost().getId() : null)
+                .postTitle(inspection.getBikePost() != null ? inspection.getBikePost().getTitle() : null)
+                .sellerName(inspection.getSeller() != null ? inspection.getSeller().getFullName() : null)
+                .sellerPhone(inspection.getSeller() != null ? inspection.getSeller().getPhone() : null)
+                .inspectorId(inspection.getInspector() != null ? inspection.getInspector().getId() : null)
+                .inspectorName(inspection.getInspector() != null ? inspection.getInspector().getFullName() : null)
+                .status(inspection.getStatus() != null ? inspection.getStatus().name() : null)
+                .address(inspection.getAddress())
+                .scheduledDateTime(inspection.getScheduledDateTime())
+                .inspectionFee(inspection.getInspectionFee() != null ? inspection.getInspectionFee().doubleValue() : null)
+                .sellerNote(inspection.getNote())
+                .resultNote(inspection.getResultNote())
+                .checklistData(inspection.getChecklistData())
+                .createdAt(inspection.getCreatedAt())
+                .build();
+    }
+    @Override
+    public Page<InspectionResponseDTO> getTasksByInspectorId(Long inspectorId, Pageable pageable) {
+        return inspectionRepository.findByInspectorId(inspectorId, pageable).map(this::mapToResponse);
+    }
+
 }

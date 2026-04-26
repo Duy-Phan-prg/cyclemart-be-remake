@@ -2,6 +2,7 @@ package com.example.cyclemartberemake.service.impl;
 
 import com.example.cyclemartberemake.dto.request.BikePostRequest;
 import com.example.cyclemartberemake.dto.response.BikePostResponse;
+import com.example.cyclemartberemake.dto.response.PostPrioritySubscriptionResponse;
 import com.example.cyclemartberemake.dto.response.PriorityPackageResponse;
 import com.example.cyclemartberemake.entity.*;
 import com.example.cyclemartberemake.entity.PostStatus;
@@ -39,6 +40,7 @@ public class BikePostServiceImpl implements BikePostService {
     private final BikePostMapper mapper;
     private final PostPrioritySubscriptionRepository priorityRepo;
     private final UserRepository userRepository;
+    private final InspectionRepository inspectionRepository;
 
     // Chỉ giữ lại NotificationService để báo cho User khi bài bị từ chối
     private final PaymentNotificationService notificationService;
@@ -284,6 +286,13 @@ public class BikePostServiceImpl implements BikePostService {
 
         response.setIsVerified(post.getIsVerified());
 
+        // Check if post has completed inspection
+        boolean hasCompletedInspection = inspectionRepository.existsByBikePostIdAndStatusIn(
+            post.getId(), 
+            List.of(InspectionStatus.PASSED)
+        );
+        response.setIsInspected(hasCompletedInspection);
+
         if (response.getUserId() == null && post.getUserId() != null) {
             response.setUserId(post.getUserId());
         }
@@ -302,7 +311,8 @@ public class BikePostServiceImpl implements BikePostService {
         setActivePriorityInfo(response, post.getId());
         if (post.getPostStatus() == PostStatus.SOLD) {
             paymentRepo.findSuccessfulPaymentForBike(post.getId()).ifPresent(payment -> {
-                response.setPaymentOrderId(payment.getOrderId()); // Sẽ trả ra ORDER_1777...
+                response.setPaymentOrderId(payment.getOrderId());
+                response.setDeliveryAddress(payment.getAddress());
                 if (payment.getOrderStatus() != null) {
                     response.setOrderStatus(payment.getOrderStatus().name());
                 } else {
@@ -327,16 +337,17 @@ public class BikePostServiceImpl implements BikePostService {
 
         if (highest != null) {
             response.setActivePriority(
-                    PriorityPackageResponse.builder()
-                            .id(highest.getPriorityPackage().getId())
-                            .name(highest.getPriorityPackage().getName())
-                            .description(highest.getPriorityPackage().getDescription())
-                            .price(highest.getPriorityPackage().getPrice())
-                            .durationDays(highest.getPriorityPackage().getDurationDays())
+                    PostPrioritySubscriptionResponse.builder()
+                            .id(highest.getId())
+                            .postId(highest.getPost().getId())
+                            .postTitle(highest.getPost().getTitle())
+                            .packageName(highest.getPriorityPackage().getName())
                             .priorityLevel(highest.getPriorityPackage().getPriorityLevel())
+                            .startDate(highest.getStartDate()) // Lấy ngày bắt đầu gói
+                            .endDate(highest.getEndDate())     // Lấy ngày kết thúc gói (HSD)
                             .isActive(highest.getIsActive())
-                            .createdAt(highest.getPriorityPackage().getCreatedAt())
-                            .updatedAt(highest.getPriorityPackage().getUpdatedAt())
+                            .createdAt(highest.getCreatedAt())
+                            .updatedAt(highest.getUpdatedAt())
                             .build()
             );
         }

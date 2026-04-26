@@ -4,7 +4,8 @@ import com.example.cyclemartberemake.dto.request.CreatePaymentRequest;
 import com.example.cyclemartberemake.dto.request.DeliveryUpdateRequest;
 import com.example.cyclemartberemake.dto.response.CreatePaymentResponse;
 import com.example.cyclemartberemake.dto.response.PaymentResponse;
-import com.example.cyclemartberemake.entity.Users;
+import com.example.cyclemartberemake.entity.Payment;
+import com.example.cyclemartberemake.repository.PaymentRepository;
 import com.example.cyclemartberemake.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,11 +17,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -30,6 +28,7 @@ import java.util.Map;
 public class PaymentController extends BaseController {
 
     private final PaymentService paymentService;
+    private final PaymentRepository paymentRepository; // Thêm repository để truy vấn loại thanh toán
 
     @PostMapping("/create")
     @Operation(summary = "Create Sepay payment")
@@ -42,22 +41,31 @@ public class PaymentController extends BaseController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                CreatePaymentResponse.builder()
-                    .success(false)
-                    .message(e.getMessage())
-                    .build()
+                    CreatePaymentResponse.builder()
+                            .success(false)
+                            .message(e.getMessage())
+                            .build()
             );
         }
     }
 
-    
     @GetMapping("/vnpay/return")
     @Operation(summary = "VNPay return URL callback")
     public ResponseEntity<?> handleVNPayReturn(@RequestParam Map<String, String> params) {
         System.out.println("=== VNPAY RETURN PARAMS: " + params);
         try {
             paymentService.handleVNPayReturn(params);
-            return ResponseEntity.ok(Map.of("success", true, "message", "Payment processed"));
+
+            // Lấy thông tin loại giao dịch trả về cho Frontend phân luồng
+            String orderId = params.get("vnp_TxnRef");
+            Payment payment = paymentRepository.findByOrderId(orderId).orElse(null);
+            String type = (payment != null && payment.getType() != null) ? payment.getType().name() : "OTHER";
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Payment processed",
+                    "type", type // Trả về type (VD: ORDER_PAYMENT, PRIORITY_PACKAGE)
+            ));
         } catch (Exception e) {
             System.out.println("=== VNPAY RETURN ERROR: " + e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
@@ -87,10 +95,10 @@ public class PaymentController extends BaseController {
             @RequestParam(defaultValue = "createdAt") String sort,
             @RequestParam(defaultValue = "desc") String direction
     ) {
-        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? 
-            Sort.Direction.ASC : Sort.Direction.DESC;
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ?
+                Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
-        
+
         return paymentService.getPaymentHistory(pageable);
     }
 
@@ -135,51 +143,43 @@ public class PaymentController extends BaseController {
     @PostMapping("/{id}/refund")
     @Operation(summary = "Refund a payment (admin only)")
     public ResponseEntity<?> refundPayment(
-            @PathVariable Long id, 
+            @PathVariable Long id,
             @RequestParam String reason
     ) {
         try {
-            Long adminId = getCurrentUserId(); // For now, use current user as admin
-            
+            Long adminId = getCurrentUserId();
             PaymentResponse response = paymentService.refundPayment(id, reason, adminId);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", e.getMessage()
-            ));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
     }
 
     @PostMapping("/{id}/cancel")
     @Operation(summary = "Cancel a pending payment (user can cancel their own payment)")
     public ResponseEntity<?> cancelPayment(
-            @PathVariable Long id, 
+            @PathVariable Long id,
             @RequestParam(defaultValue = "Hủy bởi người dùng") String reason
     ) {
         try {
             PaymentResponse response = paymentService.cancelPayment(id, reason);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "success", false,
-                "message", e.getMessage()
-            ));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
     }
-
 
     private String getClientIpAddress(HttpServletRequest request) {
         String xForwardedFor = request.getHeader("X-Forwarded-For");
         if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
             return xForwardedFor.split(",")[0].trim();
         }
-        
+
         String xRealIp = request.getHeader("X-Real-IP");
         if (xRealIp != null && !xRealIp.isEmpty()) {
             return xRealIp;
         }
-        
+
         return request.getRemoteAddr();
     }
 
@@ -228,4 +228,9 @@ public class PaymentController extends BaseController {
     }
 
 
+    @GetMapping("/order/{orderId}")
+    @Operation(summary = "Get payment detail by VNPay Order ID")
+    public ResponseEntity<PaymentResponse> getPaymentByOrderId(@PathVariable String orderId) {
+        return ResponseEntity.ok(paymentService.getPaymentByOrderId(orderId));
+    }
 }

@@ -11,6 +11,7 @@ import com.example.cyclemartberemake.repository.PaymentRepository;
 import com.example.cyclemartberemake.repository.PointTransactionRepository;
 import com.example.cyclemartberemake.repository.UserRepository;
 import com.example.cyclemartberemake.repository.PostPrioritySubscriptionRepository;
+import com.example.cyclemartberemake.repository.InspectionRepository;
 import com.example.cyclemartberemake.service.PaymentNotificationService;
 import com.example.cyclemartberemake.service.PaymentService;
 import com.example.cyclemartberemake.service.UserService;
@@ -45,7 +46,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentMapper paymentMapper;
     private final PaymentNotificationService notificationService;
     private final PostPrioritySubscriptionRepository subscriptionRepository;
-    private final com.example.cyclemartberemake.repository.InspectionRepository inspectionRepository;
+    private final InspectionRepository inspectionRepository;
     private final PointTransactionRepository pointTransactionRepository;
 
     @Value("${vnpay.tmnCode}")
@@ -86,6 +87,17 @@ public class PaymentServiceImpl implements PaymentService {
                 && paymentType != PaymentType.INSPECTION_FEE) {
             bikePost = bikePostRepository.findById(request.getBikePostId())
                     .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
+            
+            // Kiểm tra: Chỉ cho phép mua trực tiếp hoặc đặt cọc nếu post đã được kiểm định
+            if (paymentType == PaymentType.ORDER_PAYMENT || paymentType == PaymentType.ORDER_DEPOSIT) {
+                boolean hasCompletedInspection = inspectionRepository.existsByBikePostIdAndStatusIn(
+                    bikePost.getId(), 
+                    List.of(InspectionStatus.PASSED)
+                );
+                if (!hasCompletedInspection) {
+                    throw new RuntimeException("Bài đăng chưa được kiểm định. Vui lòng yêu cầu kiểm định trước khi mua hoặc đặt cọc.");
+                }
+            }
         }
 
         Long amount = request.getAmount();
@@ -101,16 +113,24 @@ public class PaymentServiceImpl implements PaymentService {
         String description = request.getDescription() != null ?
                 request.getDescription().replaceAll("[^a-zA-Z0-9\\s_ÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂẾưăạảấầẩẫậắằẳẵặẹẻẽềềểếỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵỷỹ]", " ") : "Thanh toan CycleMart";
 
+        // Lấy thông tin seller từ bikePost (nếu có)
+        Users seller = null;
+        if (bikePost != null && bikePost.getUserId() != null) {
+            seller = userRepository.findById(bikePost.getUserId()).orElse(null);
+        }
+
         Payment payment = Payment.builder()
                 .user(userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found")))
+                .seller(seller) // Set seller
                 .bikePost(bikePost)
                 .orderId(orderId)
                 .amount(amount)
                 .description(description)
                 .status(PaymentStatus.PENDING)
                 .type(paymentType)
-                .orderStatus(paymentType == PaymentType.ORDER_PAYMENT ? OrderStatus.PENDING_PAYMENT : null) // Thêm dòng này
+                .orderStatus(paymentType == PaymentType.ORDER_PAYMENT ? OrderStatus.PENDING_PAYMENT : null)
                 .referenceId(request.getReferenceId())
+                .address(request.getAddress())
                 .build();
 
         paymentRepo.save(payment);
@@ -138,8 +158,16 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public Page<PaymentResponse> getPaymentHistory(Pageable pageable) {
         Long userId = getCurrentUserId();
+        // Lấy tất cả giao dịch của user
         Page<Payment> payments = paymentRepo.findByUserIdOrderByCreatedAtDesc(userId, pageable);
-        return payments.map(paymentMapper::toResponse);
+
+        // Lọc: CHỈ giữ lại các giao dịch mua xe (ORDER_PAYMENT)
+        List<PaymentResponse> filteredList = payments.getContent().stream()
+                .filter(p -> p.getType() == PaymentType.ORDER_PAYMENT)
+                .map(paymentMapper::toResponse)
+                .toList();
+
+        return new org.springframework.data.domain.PageImpl<>(filteredList, pageable, payments.getTotalElements());
     }
 
     @Override
@@ -154,7 +182,14 @@ public class PaymentServiceImpl implements PaymentService {
         Long userId = getCurrentUserId();
         PaymentStatus paymentStatus = PaymentStatus.valueOf(status.toUpperCase());
         Page<Payment> payments = paymentRepo.findByUserIdAndStatusOrderByCreatedAtDesc(userId, paymentStatus, pageable);
-        return payments.map(paymentMapper::toResponse);
+
+        //  chỉ hiện giao dịch mua xe trong lịch sử đơn hàng
+        List<PaymentResponse> filteredList = payments.getContent().stream()
+                .filter(p -> p.getType() == PaymentType.ORDER_PAYMENT)
+                .map(paymentMapper::toResponse)
+                .toList();
+
+        return new org.springframework.data.domain.PageImpl<>(filteredList, pageable, payments.getTotalElements());
     }
 
     @Override
@@ -375,7 +410,13 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setDeliveryEvidenceUrls(request.getDeliveryEvidenceUrls());
         payment.setOrderStatus(OrderStatus.IN_DELIVERY);
         paymentRepo.save(payment);
+        return paymentMapper.toResponse(payment);
+    }
 
+    @Override
+    public PaymentResponse getPaymentByOrderId(String orderId) {
+        Payment payment = paymentRepo.findByOrderId(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch với mã: " + orderId));
         return paymentMapper.toResponse(payment);
     }
 

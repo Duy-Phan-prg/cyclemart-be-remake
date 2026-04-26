@@ -85,4 +85,18 @@ public class InspectionController {
         inspectionService.updateGlobalInspectionFee(fee);
         return ResponseEntity.ok("Đã cập nhật phí kiểm định hệ thống thành công.");
     }
+    @GetMapping("/post/{postId}/latest-passed")
+    public ResponseEntity<InspectionResponseDTO> getLatestPassedReport(@PathVariable Long postId) {
+        return ResponseEntity.ok(inspectionService.getLatestPassedReport(postId));
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN')")
+    @GetMapping("/admin/inspector/{inspectorId}/tasks")
+    public Page<InspectionResponseDTO> getInspectorTasksByAdmin(
+            @PathVariable Long inspectorId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size
+    ) {
+        return inspectionService.getTasksByInspectorId(inspectorId, PageRequest.of(page, size, Sort.by("scheduledDateTime").descending()));
+    }
 }

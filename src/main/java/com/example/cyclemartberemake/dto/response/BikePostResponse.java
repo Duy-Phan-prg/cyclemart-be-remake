@@ -51,8 +51,8 @@ public class BikePostResponse {
     private String sellerEmail;
 
     // ================= PRIORITY =================
-    @Schema(description = "Priority package info (if post has active priority)")
-    private PriorityPackageResponse activePriority;
+    @Schema(description = "Thông tin đăng ký gói ưu tiên của bài viết (có chứa endDate)")
+    private PostPrioritySubscriptionResponse activePriority;
 
     // ================= MODERATION =================
     @Schema(description = "Trạng thái duyệt bài", example = "PENDING / APPROVED / REJECTED")
@@ -74,10 +74,14 @@ public class BikePostResponse {
     @Schema(description = "Có yêu cầu kiểm định ngay lúc đăng bài không")
     private Boolean isRequestedInspection;
 
+    @Schema(description = "Đã hoàn thành kiểm định chưa (status = COMPLETED)")
+    private Boolean isInspected;
+
     // ================= ORDER SYNC =================
     @Schema(description = "Mã hóa đơn VNPay (nếu xe đã bán)")
     private String paymentOrderId;
 
     @Schema(description = "Trạng thái giao hàng (nếu xe đã bán)")
     private String orderStatus;
+    private String deliveryAddress;
 }

@@ -23,7 +23,11 @@ public class Payment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     @NotNull(message = "User is required")
-    private Users user;
+    private Users user; // Buyer - người mua
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seller_id")
+    private Users seller; // Seller - người bán (lấy từ BikePost)
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bike_post_id")
@@ -85,19 +89,20 @@ public class Payment {
     @Column(name = "order_status")
     private OrderStatus orderStatus;
 
-    // --- Escrow / Point fields ---
-    private Long convertedPoints;  // Số điểm quy đổi từ amount VNPay (1 VND = 1 point)
-    private Long escrowPoints;     // Điểm đang giữ escrow cho giao dịch này
+    private String address;
 
-    private Boolean verifiedAtPurchase; // Snapshot listing.isVerified tại thời điểm thanh toán
+    // --- Escrow / Point fields ---
+    private Long convertedPoints;
+    private Long escrowPoints;
+    private Boolean verifiedAtPurchase;
 
     // --- Delivery fields ---
-    private String deliveryMethod;          // HANDOFF hoặc EXTERNAL_SHIPPING
+    private String deliveryMethod;
     @Column(columnDefinition = "TEXT")
-    private String deliveryEvidenceUrls;    // Bằng chứng giao hàng
+    private String deliveryEvidenceUrls;
 
     // --- Timeline fields ---
-    private LocalDateTime deliveredAt;     // Khi buyer confirm received
-    private LocalDateTime releasedAt;      // Khi escrow được xử lý (release hoặc refund)
-    private LocalDateTime autoReleaseAt;   // Deadline tự động release (7 ngày sau deliveredAt)
+    private LocalDateTime deliveredAt;
+    private LocalDateTime releasedAt;
+    private LocalDateTime autoReleaseAt;
 }

@@ -10,37 +10,38 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "chat_messages")
+@Table(name = "user_notifications")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ChatMessage {
+public class UserNotification {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_id", nullable = false)
-    private ChatRoom room;
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 
-    @Column(name = "sender_id", nullable = false)
-    private Long senderId;
+    @Column(nullable = false)
+    private String type;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sender_id", insertable = false, updatable = false)
-    private Users sender;
+    @Column(nullable = false)
+    private String title;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
-    private String content;
+    @Column(columnDefinition = "TEXT")
+    private String message;
+
+    @Column(name = "action_url")
+    private String actionUrl;
 
     @Column(name = "is_read", nullable = false)
     @Builder.Default
     private Boolean isRead = false;
 
-    private LocalDateTime readAt;
-
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    private LocalDateTime readAt;
 }

@@ -25,4 +25,5 @@ public class CreatePaymentRequest {
 
     private String type;
     private Long referenceId;
+
 }

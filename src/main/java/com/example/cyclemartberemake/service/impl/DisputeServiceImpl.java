@@ -6,6 +6,7 @@ import com.example.cyclemartberemake.entity.*;
 import com.example.cyclemartberemake.repository.DisputeRepository;
 import com.example.cyclemartberemake.repository.PaymentRepository;
 import com.example.cyclemartberemake.repository.UserRepository;
+import com.example.cyclemartberemake.repository.BikePostRepository;
 import com.example.cyclemartberemake.service.DisputeService;
 import com.example.cyclemartberemake.service.PaymentService;
 import com.example.cyclemartberemake.service.RealtimeNotificationService;
@@ -24,6 +25,7 @@ public class DisputeServiceImpl implements DisputeService {
     private final DisputeRepository disputeRepository;
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
+    private final BikePostRepository bikePostRepository;
     private final PaymentService paymentService;
     private final RealtimeNotificationService realtimeNotificationService;
 
@@ -153,6 +155,12 @@ public class DisputeServiceImpl implements DisputeService {
         if (resolvedStatus == DisputeStatus.RESOLVED_REFUND_BUYER ||
                 resolvedStatus == DisputeStatus.RESOLVED_PARTIAL) {
             paymentService.refundEscrow(payment.getId(), adminId);
+
+            if (payment.getBikePost() != null) {
+                BikePost post = payment.getBikePost();
+                post.setPostStatus(PostStatus.APPROVED);
+                bikePostRepository.save(post);
+            }
         } else {
             paymentService.releaseEscrow(payment.getId(), adminId);
         }

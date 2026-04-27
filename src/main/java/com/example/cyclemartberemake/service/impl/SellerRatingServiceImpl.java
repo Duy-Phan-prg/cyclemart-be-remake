@@ -99,14 +99,14 @@ public class SellerRatingServiceImpl implements SellerRatingService {
             throw new RuntimeException("Người bán không tồn tại");
         }
 
-        Page<SellerRating> ratings = sellerRatingRepository.findBySellerId(sellerId, pageable);
+        Page<SellerRating> ratings = sellerRatingRepository.findBySeller_Id(sellerId, pageable);
         List<SellerRatingResponse> responses = sellerRatingMapper.toResponseList(ratings.getContent());
         return new PageImpl<>(responses, pageable, ratings.getTotalElements());
     }
 
     @Override
     public SellerRatingResponse getSellerRatingByBuyer(Long sellerId, Long buyerId) {
-        SellerRating rating = sellerRatingRepository.findTopBySellerIdAndBuyerIdOrderByCreatedAtDesc(sellerId, buyerId)
+        SellerRating rating = sellerRatingRepository.findTopBySeller_IdAndBuyer_IdOrderByCreatedAtDesc(sellerId, buyerId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đánh giá"));
         return sellerRatingMapper.toResponse(rating);
     }
@@ -129,19 +129,18 @@ public class SellerRatingServiceImpl implements SellerRatingService {
 
     @Override
     public Page<SellerRatingResponse> getMySellerRatings(Long buyerId, Pageable pageable) {
-        Page<SellerRating> ratings = sellerRatingRepository.findByBuyerId(buyerId, pageable);
+        Page<SellerRating> ratings = sellerRatingRepository.findByBuyer_Id(buyerId, pageable);
         List<SellerRatingResponse> responses = sellerRatingMapper.toResponseList(ratings.getContent());
         return new PageImpl<>(responses, pageable, ratings.getTotalElements());
     }
 
     @Override
     public SellerInfoResponse getSellerInfo(Long sellerId) {
-        // Kiểm tra xem seller có tồn tại không
         Users seller = userRepository.findById(sellerId)
                 .orElseThrow(() -> new RuntimeException("Người bán không tồn tại"));
 
         Double averageScore = sellerRatingRepository.getAverageScoreBySellerId(sellerId);
-        long totalRatings = sellerRatingRepository.countBySellerId(sellerId);
+        long totalRatings = sellerRatingRepository.countBySeller_Id(sellerId);
 
         return SellerInfoResponse.builder()
                 .sellerId(sellerId)
@@ -157,7 +156,7 @@ public class SellerRatingServiceImpl implements SellerRatingService {
      */
     private void updateSellerRatingInfo(Users seller) {
         Double averageScore = sellerRatingRepository.getAverageScoreBySellerId(seller.getId());
-        long totalRatings = sellerRatingRepository.countBySellerId(seller.getId());
+        long totalRatings = sellerRatingRepository.countBySeller_Id(seller.getId());
 
         seller.setSellerRating(averageScore != null ? Math.round(averageScore * 100.0) / 100.0 : 0.0);
         seller.setSellerReviewCount(totalRatings);

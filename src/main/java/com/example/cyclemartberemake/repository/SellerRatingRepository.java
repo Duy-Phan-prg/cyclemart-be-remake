@@ -13,33 +13,20 @@ import java.util.Optional;
 @Repository
 public interface SellerRatingRepository extends JpaRepository<SellerRating, Long> {
 
-    /**
-     * Lấy tất cả đánh giá của một seller
-     */
-    Page<SellerRating> findBySellerId(Long sellerId, Pageable pageable);
+    Page<SellerRating> findBySellerIdOrSeller_Id(Long sellerId, Long sellerId2, Pageable pageable);
+
+    Page<SellerRating> findBySeller_Id(Long sellerId, Pageable pageable);
 
     Optional<SellerRating> findByPaymentId(Long paymentId);
 
-    /**
-     * Kiểm tra xem buyer đã đánh giá seller chưa
-     */
     boolean existsByPaymentId(Long paymentId);
 
-    Optional<SellerRating> findTopBySellerIdAndBuyerIdOrderByCreatedAtDesc(Long sellerId, Long buyerId);
+    Optional<SellerRating> findTopBySeller_IdAndBuyer_IdOrderByCreatedAtDesc(Long sellerId, Long buyerId);
 
-    /**
-     * Lấy tất cả đánh giá do một buyer tạo
-     */
-    Page<SellerRating> findByBuyerId(Long buyerId, Pageable pageable);
+    Page<SellerRating> findByBuyer_Id(Long buyerId, Pageable pageable);
 
-    /**
-     * Đếm số lượng đánh giá của một seller
-     */
-    long countBySellerId(Long sellerId);
+    long countBySeller_Id(Long sellerId);
 
-    /**
-     * Tính điểm trung bình của một seller
-     */
-    @Query("SELECT AVG(sr.score) FROM SellerRating sr WHERE sr.sellerId = :sellerId")
+    @Query("SELECT AVG(sr.score) FROM SellerRating sr WHERE sr.seller.id = :sellerId")
     Double getAverageScoreBySellerId(@Param("sellerId") Long sellerId);
 }

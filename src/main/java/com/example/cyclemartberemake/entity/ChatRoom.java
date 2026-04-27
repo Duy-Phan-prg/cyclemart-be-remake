@@ -24,8 +24,11 @@ public class ChatRoom {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "bike_post_id", nullable = false)
-    private BikePost bikePost;
+    @JoinColumn(name = "bike_post_id")
+    private BikePost bikePost; // Không còn required - để tương thích với data cũ
+
+    @Column(name = "current_bike_post_id")
+    private Long currentBikePostId; // Xe đang được thảo luận gần nhất
 
     @Column(name = "buyer_id", nullable = false)
     private Long buyerId;

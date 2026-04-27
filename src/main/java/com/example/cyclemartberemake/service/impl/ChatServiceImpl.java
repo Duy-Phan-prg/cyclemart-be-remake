@@ -54,19 +54,33 @@ public class ChatServiceImpl implements ChatService {
         Long firstId = Math.min(buyerId, sellerId);
         Long secondId = Math.max(buyerId, sellerId);
 
-        Optional<ChatRoom> existingRoom = roomRepository.findByBikePostIdAndBuyerIdAndSellerId(post.getId(), firstId, secondId);
+        // Tìm room theo buyer-seller pair (không phụ thuộc bikePost)
+        Optional<ChatRoom> existingRoom = roomRepository.findByBuyerIdAndSellerId(firstId, secondId);
         ChatRoom room;
         boolean newlyCreated = false;
+        
         if (existingRoom.isPresent()) {
             room = existingRoom.get();
+            // Cập nhật currentBikePostId nếu đang xem xe khác
+            if (!post.getId().equals(room.getCurrentBikePostId())) {
+                room.setCurrentBikePostId(post.getId());
+                room.setBikePost(post); // Cập nhật reference
+                roomRepository.save(room);
+                
+                // Gửi tin nhắn context về xe đang xem
+                sendBikeContextMessage(room, currentUserId, post);
+            }
         } else {
             newlyCreated = true;
             room = roomRepository.save(ChatRoom.builder()
                     .bikePost(post)
+                    .currentBikePostId(post.getId())
                     .buyerId(firstId)
                     .sellerId(secondId)
                     .build());
             createAutoGreetingMessage(room, currentUserId);
+            sendBikeContextMessage(room, currentUserId, post);
+            
             Long receiverId = room.getBuyerId().equals(currentUserId) ? room.getSellerId() : room.getBuyerId();
             String creatorName = userRepository.findById(currentUserId).map(Users::getFullName).orElse("Người dùng");
             userNotificationService.createChatRoomNotification(
@@ -199,5 +213,15 @@ public class ChatServiceImpl implements ChatService {
                 .content("Mình chào bạn ạ!")
                 .build();
         messageRepository.save(greetingMessage);
+    }
+
+    private void sendBikeContextMessage(ChatRoom room, Long senderId, BikePost post) {
+        String contextMessage = String.format("🏍️ Đang trao đổi về: %s", post.getTitle());
+        ChatMessage bikeContextMessage = ChatMessage.builder()
+                .room(room)
+                .senderId(senderId)
+                .content(contextMessage)
+                .build();
+        messageRepository.save(bikeContextMessage);
     }
 }

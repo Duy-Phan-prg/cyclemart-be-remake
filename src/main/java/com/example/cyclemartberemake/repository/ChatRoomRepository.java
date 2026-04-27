@@ -9,5 +9,9 @@ import java.util.Optional;
 @Repository
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
     Optional<ChatRoom> findByBikePostIdAndBuyerIdAndSellerId(Long bikePostId, Long buyerId, Long sellerId);
+    
+    // Tìm room theo buyer và seller (không phụ thuộc bikePost)
+    Optional<ChatRoom> findByBuyerIdAndSellerId(Long buyerId, Long sellerId);
+    
     void deleteByBikePostId(Long bikePostId);
 }

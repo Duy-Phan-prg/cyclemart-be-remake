@@ -45,6 +45,11 @@ public class BikePostServiceImpl implements BikePostService {
     // Chỉ giữ lại NotificationService để báo cho User khi bài bị từ chối
     private final PaymentNotificationService notificationService;
     private final PaymentRepository paymentRepo;
+    private final ChatRoomRepository chatRoomRepository;
+    private final WishlistRepository wishlistRepository;
+    private final NegotiationRepository negotiationRepository;
+    private final ReportRepository reportRepository;
+    private final DisputeRepository disputeRepository;
 
     // ================= CREATE =================
     @Override
@@ -164,6 +169,7 @@ public class BikePostServiceImpl implements BikePostService {
 
     // ================= DELETE =================
     @Override
+    @Transactional
     public void delete(Long id) {
         BikePost post = postRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
@@ -172,6 +178,36 @@ public class BikePostServiceImpl implements BikePostService {
         if (!post.getUser().getId().equals(currentUserId)) {
             throw new RuntimeException("Bạn không có quyền xóa bài đăng này");
         }
+
+        // Block if active dispute exists (highest priority — most current state)
+        if (disputeRepository.countActiveDisputeByPostId(id) > 0) {
+            throw new RuntimeException("Bài đăng này đang có tranh chấp hoặc yêu cầu hoàn tiền chưa được giải quyết. Không thể xóa.");
+        }
+
+        // Block if buyer has successfully paid
+        boolean hasSoldPayment = paymentRepo.existsByBikePostIdAndTypeInAndStatus(
+                id, List.of(PaymentType.ORDER_PAYMENT, PaymentType.ORDER_DEPOSIT), PaymentStatus.SUCCESS);
+        if (hasSoldPayment) {
+            throw new RuntimeException("Bài đăng này đã có giao dịch mua thành công. Không thể xóa.");
+        }
+
+        // Block if inspector already dispatched or inspection completed
+        boolean inspectionLocked = inspectionRepository.existsByBikePostIdAndStatusIn(
+                id, List.of(InspectionStatus.ASSIGNED, InspectionStatus.INSPECTING,
+                            InspectionStatus.PASSED, InspectionStatus.FAILED));
+        if (inspectionLocked) {
+            throw new RuntimeException("Bài đăng này đã được kiểm định hoặc đang có Inspector phụ trách. Không thể xóa.");
+        }
+
+        // Nullify nullable FKs (keep financial/audit records)
+        paymentRepo.detachBikePost(id);
+        negotiationRepository.detachBikePost(id);
+        reportRepository.detachBikePost(id);
+
+        // Delete rows with non-nullable FKs
+        inspectionRepository.deleteByBikePostId(id);
+        chatRoomRepository.deleteByBikePostId(id);  // cascades to chat_messages
+        wishlistRepository.deleteByPostId(id);
 
         postRepo.delete(post);
     }

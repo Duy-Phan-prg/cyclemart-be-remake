@@ -50,4 +50,6 @@ public interface PaymentService {
     PaymentResponse releaseEscrow(Long paymentId, Long adminId);
 
     PaymentResponse refundEscrow(Long paymentId, Long adminId);
+
+    String generateFreshPaymentUrl(String orderId, Long amount) throws Exception;
 }

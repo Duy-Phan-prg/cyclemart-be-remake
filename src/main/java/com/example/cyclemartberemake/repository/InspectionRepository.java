@@ -19,4 +19,5 @@ public interface InspectionRepository extends JpaRepository<Inspection, Long> {
     // Lấy tất cả lịch đã gán cho Inspector (trừ những cái đã hủy)
     List<Inspection> findByInspectorIdAndStatusIn(Long inspectorId, List<InspectionStatus> statuses);
     Optional<Inspection> findFirstByBikePostIdAndStatusOrderByCreatedAtDesc(Long bikePostId, InspectionStatus status);
+    void deleteByBikePostId(Long bikePostId);
 }

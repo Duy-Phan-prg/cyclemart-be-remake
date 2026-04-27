@@ -6,6 +6,7 @@ import com.example.cyclemartberemake.entity.PaymentType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -38,4 +39,12 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     @Query("SELECT p FROM Payment p WHERE p.bikePost.user.id = :sellerId AND p.type = com.example.cyclemartberemake.entity.PaymentType.ORDER_PAYMENT ORDER BY p.createdAt DESC")
     Page<Payment> findBySellerIdOrderByCreatedAtDesc(@Param("sellerId") Long sellerId, Pageable pageable);
+
+    @Modifying
+    @Query("UPDATE Payment p SET p.bikePost = null WHERE p.bikePost.id = :postId")
+    void detachBikePost(@Param("postId") Long postId);
+
+    boolean existsByBikePostIdAndTypeInAndStatus(Long bikePostId, List<PaymentType> types, PaymentStatus status);
+
+    Optional<Payment> findFirstByReferenceIdAndTypeAndStatus(Long referenceId, PaymentType type, PaymentStatus status);
 }

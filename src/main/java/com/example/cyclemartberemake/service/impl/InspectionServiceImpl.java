@@ -6,6 +6,7 @@ import com.example.cyclemartberemake.dto.response.InspectionResponseDTO;
 import com.example.cyclemartberemake.entity.*;
 import com.example.cyclemartberemake.repository.BikePostRepository;
 import com.example.cyclemartberemake.repository.InspectionRepository;
+import com.example.cyclemartberemake.repository.PaymentRepository;
 import com.example.cyclemartberemake.repository.UserRepository;
 import com.example.cyclemartberemake.repository.FeeInspectionSettingRepository;
 import com.example.cyclemartberemake.service.InspectionService;
@@ -31,6 +32,7 @@ public class InspectionServiceImpl implements InspectionService {
     private final UserRepository userRepository;
     private final FeeInspectionSettingRepository feeInspectionSettingRepository;
     private final PaymentService paymentService;
+    private final PaymentRepository paymentRepository;
 
     private static final String FEE_KEY = "GLOBAL_INSPECTION_FEE";
 
@@ -156,8 +158,17 @@ public class InspectionServiceImpl implements InspectionService {
     @Override
     @Transactional
     public void updateResult(Long inspectionId, String statusStr, String resultNote, String checklistData) {
+        Users currentInspector = getCurrentUser();
         Inspection inspection = inspectionRepository.findById(inspectionId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu"));
+
+        if (inspection.getInspector() == null || !inspection.getInspector().getId().equals(currentInspector.getId())) {
+            throw new RuntimeException("Bạn không được phân công kiểm định yêu cầu này");
+        }
+
+        if (inspection.getStatus() != InspectionStatus.ASSIGNED && inspection.getStatus() != InspectionStatus.INSPECTING) {
+            throw new RuntimeException("Yêu cầu kiểm định không ở trạng thái có thể cập nhật kết quả");
+        }
 
         InspectionStatus newStatus = InspectionStatus.valueOf(statusStr.toUpperCase());
         inspection.setStatus(newStatus);
@@ -177,6 +188,35 @@ public class InspectionServiceImpl implements InspectionService {
         }
 
         inspectionRepository.save(inspection);
+    }
+
+    @Override
+    public InspectionResponseDTO resumePayment(Long inspectionId) {
+        Users currentUser = getCurrentUser();
+        Inspection inspection = inspectionRepository.findById(inspectionId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu kiểm định"));
+
+        if (!inspection.getSeller().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("Bạn không có quyền thao tác với yêu cầu này");
+        }
+        if (inspection.getStatus() != InspectionStatus.PENDING_PAYMENT) {
+            throw new RuntimeException("Yêu cầu này không cần thanh toán hoặc đã được thanh toán");
+        }
+
+        Payment pendingPayment = paymentRepository.findFirstByReferenceIdAndTypeAndStatus(
+                inspectionId, PaymentType.INSPECTION_FEE, PaymentStatus.PENDING)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch thanh toán cho yêu cầu này"));
+
+        try {
+            String freshUrl = paymentService.generateFreshPaymentUrl(
+                    pendingPayment.getOrderId(), pendingPayment.getAmount());
+            InspectionResponseDTO dto = mapToResponse(inspection);
+            dto.setPaymentOrderId(pendingPayment.getOrderId());
+            dto.setPaymentUrl(freshUrl);
+            return dto;
+        } catch (Exception e) {
+            throw new RuntimeException("Không thể tạo link thanh toán. Vui lòng thử lại.");
+        }
     }
 
     private Users getCurrentUser() {

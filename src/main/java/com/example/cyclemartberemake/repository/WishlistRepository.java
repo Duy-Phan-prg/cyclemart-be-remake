@@ -15,4 +15,5 @@ public interface WishlistRepository extends JpaRepository<WishlistItem, Long> {
     Optional<WishlistItem> findByUserIdAndPostId(Long userId, Long postId);
 
     Page<WishlistItem> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
+    void deleteByPostId(Long postId);
 }

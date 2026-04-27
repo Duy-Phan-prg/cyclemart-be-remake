@@ -3,7 +3,9 @@ package com.example.cyclemartberemake.repository;
 import com.example.cyclemartberemake.entity.Report;
 import com.example.cyclemartberemake.entity.ReportStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -25,4 +27,8 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     
     @Query("SELECT COUNT(r) FROM Report r WHERE r.status = 'RESOLVED'")
     long countResolvedReports();
+
+    @Modifying
+    @Query("UPDATE Report r SET r.reportedPost = null WHERE r.reportedPost.id = :postId")
+    void detachBikePost(@Param("postId") Long postId);
 }

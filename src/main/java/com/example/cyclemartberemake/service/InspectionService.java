@@ -21,4 +21,5 @@ public interface InspectionService {
     void updateGlobalInspectionFee(Double fee);
     InspectionResponseDTO getLatestPassedReport(Long postId);
     Page<InspectionResponseDTO> getTasksByInspectorId(Long inspectorId, Pageable pageable);
+    InspectionResponseDTO resumePayment(Long inspectionId);
 }

@@ -88,16 +88,6 @@ public class PaymentServiceImpl implements PaymentService {
             bikePost = bikePostRepository.findById(request.getBikePostId())
                     .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
             
-            // Kiểm tra: Chỉ cho phép mua trực tiếp hoặc đặt cọc nếu post đã được kiểm định
-            if (paymentType == PaymentType.ORDER_PAYMENT || paymentType == PaymentType.ORDER_DEPOSIT) {
-                boolean hasCompletedInspection = inspectionRepository.existsByBikePostIdAndStatusIn(
-                    bikePost.getId(), 
-                    List.of(InspectionStatus.PASSED)
-                );
-                if (!hasCompletedInspection) {
-                    throw new RuntimeException("Bài đăng chưa được kiểm định. Vui lòng yêu cầu kiểm định trước khi mua hoặc đặt cọc.");
-                }
-            }
         }
 
         Long amount = request.getAmount();
@@ -531,6 +521,11 @@ public class PaymentServiceImpl implements PaymentService {
 
         log.info("Refunded {} escrow points to buyer {} for payment {}", escrowAmt, buyer.getId(), payment.getOrderId());
         return paymentMapper.toResponse(payment);
+    }
+
+    @Override
+    public String generateFreshPaymentUrl(String orderId, Long amount) throws Exception {
+        return generateVNPayUrl(orderId, amount);
     }
 
     private void recordPointTransaction(Users user, Payment payment, PointTransactionType type,

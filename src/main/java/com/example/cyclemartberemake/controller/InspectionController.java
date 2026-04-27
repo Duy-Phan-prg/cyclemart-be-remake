@@ -57,6 +57,7 @@ public class InspectionController {
                 .getRequestsForInspector(PageRequest.of(page, size, Sort.by("scheduledDateTime").ascending()));
     }
 
+    @PreAuthorize("hasRole('INSPECTOR')")
     @PutMapping("/inspector/{id}/result")
     public ResponseEntity<?> updateResult(
             @PathVariable Long id,
@@ -87,6 +88,12 @@ public class InspectionController {
     public ResponseEntity<?> updateGlobalFee(@RequestParam Double fee) {
         inspectionService.updateGlobalInspectionFee(fee);
         return ResponseEntity.ok("Đã cập nhật phí kiểm định hệ thống thành công.");
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{id}/resume-payment")
+    public ResponseEntity<InspectionResponseDTO> resumePayment(@PathVariable Long id) {
+        return ResponseEntity.ok(inspectionService.resumePayment(id));
     }
 
     @GetMapping("/post/{postId}/latest-passed")

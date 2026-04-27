@@ -236,8 +236,15 @@ public class BikePostServiceImpl implements BikePostService {
     @Override
     public Page<BikePostResponse> search(String keyword, Double minPrice, Double maxPrice,
             String brand, String city, Integer categoryId, Pageable pageable) {
-        Page<BikePost> posts = postRepo.searchPostsWithPriority(keyword, minPrice, maxPrice, brand, city, categoryId,
-                pageable);
+        BikeBrand brandEnum = null;
+        if (brand != null && !brand.isBlank()) {
+            try { brandEnum = BikeBrand.valueOf(brand); } catch (IllegalArgumentException ignored) {}
+        }
+        City cityEnum = null;
+        if (city != null && !city.isBlank()) {
+            try { cityEnum = City.valueOf(city); } catch (IllegalArgumentException ignored) {}
+        }
+        Page<BikePost> posts = postRepo.searchPostsWithPriority(keyword, minPrice, maxPrice, brandEnum, cityEnum, categoryId, pageable);
         return posts.map(this::buildResponse);
     }
 

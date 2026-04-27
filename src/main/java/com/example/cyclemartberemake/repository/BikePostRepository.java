@@ -1,6 +1,8 @@
 package com.example.cyclemartberemake.repository;
 
+import com.example.cyclemartberemake.entity.BikeBrand;
 import com.example.cyclemartberemake.entity.BikePost;
+import com.example.cyclemartberemake.entity.City;
 import com.example.cyclemartberemake.entity.PostStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -53,8 +55,8 @@ public interface BikePostRepository extends JpaRepository<BikePost, Long> {
     Page<BikePost> searchPostsWithPriority(@Param("keyword") String keyword,
                                            @Param("minPrice") Double minPrice,
                                            @Param("maxPrice") Double maxPrice,
-                                           @Param("brand") String brand,
-                                           @Param("city") String city,
+                                           @Param("brand") BikeBrand brand,
+                                           @Param("city") City city,
                                            @Param("categoryId") Integer categoryId,
                                            Pageable pageable);
 }

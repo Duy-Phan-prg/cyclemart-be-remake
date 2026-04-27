@@ -225,6 +225,7 @@ public class BikePostController {
             case "brand" -> "brand";
             case "city" -> "city";
             case "year" -> "year";
+            case "viewcount", "view_count" -> "viewCount";
             default -> "createdAt"; // Default fallback
         };
     }

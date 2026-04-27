@@ -41,18 +41,17 @@ public class SellerRatingServiceImpl implements SellerRatingService {
             throw new RuntimeException("Bạn không phải người mua của đơn hàng này");
         }
 
-        if (payment.getType() != PaymentType.ORDER_PAYMENT) {
+        // Chỉ cho phép đánh giá từ giao dịch mua xe (online hoặc COD)
+        if (payment.getType() != PaymentType.ORDER_PAYMENT && payment.getType() != PaymentType.DIRECT_PAYMENT) {
             throw new RuntimeException("Chỉ có thể đánh giá từ đơn mua xe");
         }
 
+        // Chỉ cho phép đánh giá sau khi đã nhận hàng
         if (payment.getOrderStatus() != OrderStatus.DELIVERED && payment.getOrderStatus() != OrderStatus.COMPLETED) {
             throw new RuntimeException("Chỉ được đánh giá sau khi xác nhận đã nhận hàng");
         }
 
-        if (payment.getBikePost() == null) {
-            throw new RuntimeException("Đơn hàng không có thông tin bài đăng");
-        }
-
+        // Đây là đánh giá SELLER (dịch vụ), không phải sản phẩm — không cần bikePost
         if (payment.getSeller() == null || !payment.getSeller().getId().equals(request.getSellerId())) {
             throw new RuntimeException("Người bán không khớp với đơn hàng");
         }
@@ -78,7 +77,7 @@ public class SellerRatingServiceImpl implements SellerRatingService {
         SellerRating rating = SellerRating.builder()
                 .seller(seller)
                 .buyer(buyer)
-                .bikePost(payment.getBikePost())
+                .bikePost(payment.getBikePost()) // nullable — chỉ lưu làm context lịch sử
                 .payment(payment)
                 .score(request.getScore())
                 .comment(request.getComment())
@@ -88,6 +87,13 @@ public class SellerRatingServiceImpl implements SellerRatingService {
 
         // Cập nhật thông tin seller (average score và total reviews)
         updateSellerRatingInfo(seller);
+
+        // COD không có escrow nên không có releaseEscrow để set COMPLETED → set luôn sau khi rating
+        if (payment.getType() == PaymentType.DIRECT_PAYMENT) {
+            payment.setOrderStatus(OrderStatus.COMPLETED);
+            payment.setCompletedAt(java.time.LocalDateTime.now());
+            paymentRepository.save(payment);
+        }
 
         return sellerRatingMapper.toResponse(saved);
     }

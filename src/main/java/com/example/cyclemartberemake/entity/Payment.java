@@ -86,7 +86,7 @@ public class Payment {
     private Long referenceId; // Lưu ID của gói đăng ký hoặc ID của yêu cầu kiểm định
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "order_status")
+    @Column(name = "order_status", length = 50)
     private OrderStatus orderStatus;
 
     private String address;
@@ -108,4 +108,10 @@ public class Payment {
 
     @Column(columnDefinition = "TEXT")
     private String adminNote;
+
+    // --- COD / Seller confirmation fields ---
+    private LocalDateTime sellerConfirmationDeadline; // Deadline 24h seller phải phản hồi
+    @Column(columnDefinition = "TEXT")
+    private String sellerRejectionReason;             // Lý do từ chối (nếu có)
+    private Integer sellerRejectionCount;             // Số lần từ chối trong tháng (tracking)
 }

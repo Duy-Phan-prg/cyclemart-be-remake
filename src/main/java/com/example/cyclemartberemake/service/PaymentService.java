@@ -52,4 +52,16 @@ public interface PaymentService {
     PaymentResponse refundEscrow(Long paymentId, Long adminId, String adminNote);
 
     String generateFreshPaymentUrl(String orderId, Long amount) throws Exception;
+
+    // COD flow: tạo đơn DIRECT_PAYMENT không cần VNPay
+    PaymentResponse createDirectPayment(Long buyerId, Long bikePostId, String address, String description);
+
+    // Seller xác nhận đơn COD → chuyển sang PAID_WAITING_DELIVERY
+    PaymentResponse sellerConfirmOrder(Long paymentId, Long sellerId);
+
+    // Seller từ chối đơn COD → hủy đơn + ghi nhận lý do
+    PaymentResponse sellerRejectOrder(Long paymentId, Long sellerId, String reason);
+
+    // Scheduler: tự động hủy đơn COD quá 24h chưa seller phản hồi
+    void autoCancelExpiredSellerConfirmations();
 }

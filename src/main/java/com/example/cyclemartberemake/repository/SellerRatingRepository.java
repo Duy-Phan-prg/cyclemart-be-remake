@@ -8,7 +8,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
+
 
 @Repository
 public interface SellerRatingRepository extends JpaRepository<SellerRating, Long> {
@@ -29,4 +32,7 @@ public interface SellerRatingRepository extends JpaRepository<SellerRating, Long
 
     @Query("SELECT AVG(sr.score) FROM SellerRating sr WHERE sr.seller.id = :sellerId")
     Double getAverageScoreBySellerId(@Param("sellerId") Long sellerId);
+
+    @Query("SELECT sr.payment.id FROM SellerRating sr WHERE sr.payment.id IN :paymentIds")
+    Set<Long> findRatedPaymentIds(@Param("paymentIds") Collection<Long> paymentIds);
 }

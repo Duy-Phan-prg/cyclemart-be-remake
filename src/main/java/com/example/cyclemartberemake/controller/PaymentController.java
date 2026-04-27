@@ -222,4 +222,54 @@ public class PaymentController extends BaseController {
     public ResponseEntity<PaymentResponse> getPaymentByOrderId(@PathVariable String orderId) {
         return ResponseEntity.ok(paymentService.getPaymentByOrderId(orderId));
     }
+
+    @PostMapping("/direct")
+    @Operation(summary = "Tạo đơn mua xe COD (xe chưa kiểm định) - không qua VNPay")
+    public ResponseEntity<?> createDirectPayment(
+            @RequestParam Long bikePostId,
+            @RequestParam String address,
+            @RequestParam(required = false) String description) {
+        try {
+            Long buyerId = getCurrentUserId();
+            PaymentResponse response = paymentService.createDirectPayment(buyerId, bikePostId, address, description);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/seller-confirm")
+    @Operation(summary = "Seller xác nhận đơn COD → chuyển sang chờ giao hàng")
+    public ResponseEntity<?> sellerConfirmOrder(@PathVariable Long id) {
+        try {
+            Long sellerId = getCurrentUserId();
+            return ResponseEntity.ok(paymentService.sellerConfirmOrder(id, sellerId));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/seller-reject")
+    @Operation(summary = "Seller từ chối đơn COD → hủy đơn, ghi nhận lý do")
+    public ResponseEntity<?> sellerRejectOrder(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "Seller từ chối đơn hàng") String reason) {
+        try {
+            Long sellerId = getCurrentUserId();
+            return ResponseEntity.ok(paymentService.sellerRejectOrder(id, sellerId, reason));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/auto-cancel-cod")
+    @Operation(summary = "Tự động hủy đơn COD quá 24h seller không phản hồi (admin/scheduler)")
+    public ResponseEntity<String> autoCancelExpiredCod() {
+        try {
+            paymentService.autoCancelExpiredSellerConfirmations();
+            return ResponseEntity.ok("Auto-cancel COD completed");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+        }
+    }
 }

@@ -33,8 +33,8 @@ public class SellerRating {
     private Users buyer;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "bike_post_id", nullable = false)
-    private BikePost bikePost;
+    @JoinColumn(name = "bike_post_id", nullable = true)
+    private BikePost bikePost; // context tham khảo, không phải subject của rating
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_id", nullable = false)

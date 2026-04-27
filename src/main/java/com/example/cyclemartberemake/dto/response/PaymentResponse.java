@@ -57,4 +57,11 @@ public class PaymentResponse {
 
     private String address;
     private String adminNote;
+
+    // COD / Seller confirmation
+    private LocalDateTime sellerConfirmationDeadline;
+    private String sellerRejectionReason;
+
+    // Rating
+    private boolean hasRated; // buyer đã đánh giá đơn này chưa
 }

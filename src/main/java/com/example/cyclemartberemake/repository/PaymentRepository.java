@@ -37,7 +37,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query(value = "SELECT * FROM payments WHERE (reference_id = :bikeId OR bike_post_id = :bikeId) AND status = 'SUCCESS' ORDER BY created_at DESC LIMIT 1", nativeQuery = true)
     Optional<Payment> findSuccessfulPaymentForBike(@Param("bikeId") Long bikeId);
 
-    @Query("SELECT p FROM Payment p WHERE p.bikePost.user.id = :sellerId AND p.type = com.example.cyclemartberemake.entity.PaymentType.ORDER_PAYMENT ORDER BY p.createdAt DESC")
+    @Query("SELECT p FROM Payment p WHERE p.bikePost.user.id = :sellerId AND p.type IN (com.example.cyclemartberemake.entity.PaymentType.ORDER_PAYMENT, com.example.cyclemartberemake.entity.PaymentType.DIRECT_PAYMENT) ORDER BY p.createdAt DESC")
     Page<Payment> findBySellerIdOrderByCreatedAtDesc(@Param("sellerId") Long sellerId, Pageable pageable);
 
     @Modifying
@@ -47,4 +47,12 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     boolean existsByBikePostIdAndTypeInAndStatus(Long bikePostId, List<PaymentType> types, PaymentStatus status);
 
     Optional<Payment> findFirstByReferenceIdAndTypeAndStatus(Long referenceId, PaymentType type, PaymentStatus status);
+
+    // Tìm các đơn COD đã quá deadline 24h mà seller chưa phản hồi
+    @Query("SELECT p FROM Payment p WHERE p.orderStatus = com.example.cyclemartberemake.entity.OrderStatus.PENDING_SELLER_CONFIRMATION AND p.sellerConfirmationDeadline < :now")
+    List<Payment> findExpiredSellerConfirmations(@Param("now") LocalDateTime now);
+
+    // Đếm số lần seller từ chối trong tháng hiện tại
+    @Query("SELECT COUNT(p) FROM Payment p WHERE p.seller.id = :sellerId AND p.sellerRejectionReason IS NOT NULL AND p.updatedAt >= :startOfMonth")
+    long countSellerRejectionsThisMonth(@Param("sellerId") Long sellerId, @Param("startOfMonth") LocalDateTime startOfMonth);
 }

@@ -9,9 +9,9 @@ import org.springframework.data.domain.Pageable;
 public interface SellerRatingService {
 
     /**
-     * Tạo hoặc cập nhật đánh giá cho một seller
+     * Tạo đánh giá cho một seller theo đơn hàng
      */
-    SellerRatingResponse createOrUpdateSellerRating(Long buyerId, SellerRatingRequest request);
+    SellerRatingResponse createSellerRating(Long buyerId, SellerRatingRequest request);
 
     /**
      * Lấy tất cả đánh giá của một seller

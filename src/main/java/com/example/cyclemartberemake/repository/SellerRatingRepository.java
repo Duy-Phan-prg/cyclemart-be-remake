@@ -18,15 +18,14 @@ public interface SellerRatingRepository extends JpaRepository<SellerRating, Long
      */
     Page<SellerRating> findBySellerId(Long sellerId, Pageable pageable);
 
-    /**
-     * Lấy đánh giá của buyer cho một seller
-     */
-    Optional<SellerRating> findBySellerIdAndBuyerId(Long sellerId, Long buyerId);
+    Optional<SellerRating> findByPaymentId(Long paymentId);
 
     /**
      * Kiểm tra xem buyer đã đánh giá seller chưa
      */
-    boolean existsBySellerIdAndBuyerId(Long sellerId, Long buyerId);
+    boolean existsByPaymentId(Long paymentId);
+
+    Optional<SellerRating> findTopBySellerIdAndBuyerIdOrderByCreatedAtDesc(Long sellerId, Long buyerId);
 
     /**
      * Lấy tất cả đánh giá do một buyer tạo

@@ -2,9 +2,13 @@ package com.example.cyclemartberemake.service.impl;
 
 import com.example.cyclemartberemake.dto.request.SellerRatingRequest;
 import com.example.cyclemartberemake.dto.response.SellerRatingResponse;
+import com.example.cyclemartberemake.entity.OrderStatus;
+import com.example.cyclemartberemake.entity.Payment;
+import com.example.cyclemartberemake.entity.PaymentType;
 import com.example.cyclemartberemake.entity.SellerRating;
 import com.example.cyclemartberemake.entity.Users;
 import com.example.cyclemartberemake.mapper.SellerRatingMapper;
+import com.example.cyclemartberemake.repository.PaymentRepository;
 import com.example.cyclemartberemake.repository.SellerRatingRepository;
 import com.example.cyclemartberemake.repository.UserRepository;
 import com.example.cyclemartberemake.dto.response.SellerInfoResponse;
@@ -23,12 +27,36 @@ import java.util.List;
 public class SellerRatingServiceImpl implements SellerRatingService {
 
     private final SellerRatingRepository sellerRatingRepository;
+    private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
     private final SellerRatingMapper sellerRatingMapper;
 
     @Override
     @Transactional
-    public SellerRatingResponse createOrUpdateSellerRating(Long buyerId, SellerRatingRequest request) {
+    public SellerRatingResponse createSellerRating(Long buyerId, SellerRatingRequest request) {
+        Payment payment = paymentRepository.findById(request.getPaymentId())
+                .orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại"));
+
+        if (!payment.getUser().getId().equals(buyerId)) {
+            throw new RuntimeException("Bạn không phải người mua của đơn hàng này");
+        }
+
+        if (payment.getType() != PaymentType.ORDER_PAYMENT) {
+            throw new RuntimeException("Chỉ có thể đánh giá từ đơn mua xe");
+        }
+
+        if (payment.getOrderStatus() != OrderStatus.DELIVERED && payment.getOrderStatus() != OrderStatus.COMPLETED) {
+            throw new RuntimeException("Chỉ được đánh giá sau khi xác nhận đã nhận hàng");
+        }
+
+        if (payment.getBikePost() == null) {
+            throw new RuntimeException("Đơn hàng không có thông tin bài đăng");
+        }
+
+        if (payment.getSeller() == null || !payment.getSeller().getId().equals(request.getSellerId())) {
+            throw new RuntimeException("Người bán không khớp với đơn hàng");
+        }
+
         // Kiểm tra xem seller có tồn tại không
         Users seller = userRepository.findById(request.getSellerId())
                 .orElseThrow(() -> new RuntimeException("Người bán không tồn tại"));
@@ -42,25 +70,23 @@ public class SellerRatingServiceImpl implements SellerRatingService {
             throw new RuntimeException("Bạn không thể đánh giá chính mình");
         }
 
-        // Tìm hoặc tạo rating
-        SellerRating rating = sellerRatingRepository.findBySellerIdAndBuyerId(request.getSellerId(), buyerId)
-                .orElse(null);
-
-        if (rating == null) {
-            // Tạo rating mới
-            rating = SellerRating.builder()
-                    .seller(seller)
-                    .sellerId(request.getSellerId())
-                    .buyer(buyer)
-                    .buyerId(buyerId)
-                    .score(request.getScore())
-                    .comment(request.getComment())
-                    .build();
-        } else {
-            // Cập nhật rating cũ
-            rating.setScore(request.getScore());
-            rating.setComment(request.getComment());
+        // Mỗi đơn chỉ được đánh giá 1 lần, không cho sửa sau khi đã đánh giá
+        if (sellerRatingRepository.existsByPaymentId(request.getPaymentId())) {
+            throw new RuntimeException("Đơn hàng này đã được đánh giá, không thể chỉnh sửa");
         }
+
+        SellerRating rating = SellerRating.builder()
+                .seller(seller)
+                .sellerId(request.getSellerId())
+                .buyer(buyer)
+                .buyerId(buyerId)
+                .bikePost(payment.getBikePost())
+                .bikePostId(payment.getBikePost().getId())
+                .payment(payment)
+                .paymentId(payment.getId())
+                .score(request.getScore())
+                .comment(request.getComment())
+                .build();
 
         SellerRating saved = sellerRatingRepository.save(rating);
 
@@ -84,7 +110,7 @@ public class SellerRatingServiceImpl implements SellerRatingService {
 
     @Override
     public SellerRatingResponse getSellerRatingByBuyer(Long sellerId, Long buyerId) {
-        SellerRating rating = sellerRatingRepository.findBySellerIdAndBuyerId(sellerId, buyerId)
+        SellerRating rating = sellerRatingRepository.findTopBySellerIdAndBuyerIdOrderByCreatedAtDesc(sellerId, buyerId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đánh giá"));
         return sellerRatingMapper.toResponse(rating);
     }

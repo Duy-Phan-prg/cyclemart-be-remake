@@ -21,6 +21,9 @@ public class SellerRatingResponse {
     private Long buyerId;
     private String buyerName;
     private String buyerEmail;
+    private Long bikePostId;
+    private String bikePostTitle;
+    private Long paymentId;
     private Integer score;
     private String comment;
 

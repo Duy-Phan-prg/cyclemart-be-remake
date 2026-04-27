@@ -16,6 +16,9 @@ public interface SellerRatingMapper {
     @Mapping(source = "buyer.id", target = "buyerId")
     @Mapping(source = "buyer.fullName", target = "buyerName")
     @Mapping(source = "buyer.email", target = "buyerEmail")
+    @Mapping(source = "bikePost.id", target = "bikePostId")
+    @Mapping(source = "bikePost.title", target = "bikePostTitle")
+    @Mapping(source = "payment.id", target = "paymentId")
     SellerRatingResponse toResponse(SellerRating sellerRating);
 
     List<SellerRatingResponse> toResponseList(List<SellerRating> sellerRatings);

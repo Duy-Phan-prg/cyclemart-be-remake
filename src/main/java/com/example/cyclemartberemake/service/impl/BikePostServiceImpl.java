@@ -48,7 +48,6 @@ public class BikePostServiceImpl implements BikePostService {
     private final PaymentRepository paymentRepo;
     private final ChatRoomRepository chatRoomRepository;
     private final WishlistRepository wishlistRepository;
-    private final NegotiationRepository negotiationRepository;
     private final UserNotificationService userNotificationService;
     private final ReportRepository reportRepository;
     private final DisputeRepository disputeRepository;
@@ -71,8 +70,6 @@ public class BikePostServiceImpl implements BikePostService {
         System.out.println("City: " + req.getCity());
         System.out.println("District: " + req.getDistrict());
         System.out.println("CategoryId: " + req.getCategoryId());
-        System.out.println("AllowNegotiation: " + req.getAllowNegotiation());
-
         BikePost post = mapper.toEntityManual(req);
 
         // Debug: Log mapped entity
@@ -152,7 +149,6 @@ public class BikePostServiceImpl implements BikePostService {
         post.setGroupset(req.getGroupset());
         post.setMileage(req.getMileage());
         post.setCategory(category);
-        post.setAllowNegotiation(req.getAllowNegotiation());
 
         post.setPostStatus(PostStatus.PENDING);
         post.setApprovedBy(null);
@@ -203,7 +199,6 @@ public class BikePostServiceImpl implements BikePostService {
 
         // Nullify nullable FKs (keep financial/audit records)
         paymentRepo.detachBikePost(id);
-        negotiationRepository.detachBikePost(id);
         reportRepository.detachBikePost(id);
 
         // Delete rows with non-nullable FKs

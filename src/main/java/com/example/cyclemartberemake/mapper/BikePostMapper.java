@@ -51,7 +51,6 @@ public interface BikePostMapper {
         post.setBrakeType(request.getBrakeType());
         post.setGroupset(request.getGroupset());
         post.setMileage(request.getMileage());
-        post.setAllowNegotiation(request.getAllowNegotiation() != null ? request.getAllowNegotiation() : false);
 
         // Set default values for ignored fields
         post.setViewCount(0);
@@ -101,7 +100,7 @@ public interface BikePostMapper {
             BikeBrand brand, String model, Integer year,
             FrameMaterial frameMaterial, FrameSize frameSize,
             BrakeType brakeType, Groupset groupset, Integer mileage,
-            Integer categoryId, Boolean allowNegotiation) {
+            Integer categoryId) {
 
         BikePostRequest request = new BikePostRequest();
         request.setTitle(title);
@@ -119,7 +118,6 @@ public interface BikePostMapper {
         request.setGroupset(groupset);
         request.setMileage(mileage);
         request.setCategoryId(categoryId);
-        request.setAllowNegotiation(allowNegotiation);
         return request;
     }
 

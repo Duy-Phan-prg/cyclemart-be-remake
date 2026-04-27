@@ -50,8 +50,6 @@ public class BikePostController {
 
             @RequestParam("categoryId") Integer categoryId,
 
-            @RequestParam(value = "allowNegotiation", required = false, defaultValue = "false") Boolean allowNegotiation,
-
             @RequestPart(value = "images", required = false) List<MultipartFile> images
     ) {
 
@@ -72,8 +70,7 @@ public class BikePostController {
         BikePostRequest req = mapper.createRequest(
                 title, description, price, status, city, district,
                 brand, model, year, frameMaterial, frameSize,
-                brakeType, groupset, mileage, categoryId,
-                allowNegotiation
+                brakeType, groupset, mileage, categoryId
         );
 
         return service.create(req, images != null ? images : List.of());
@@ -130,8 +127,6 @@ public class BikePostController {
 
             @RequestParam("categoryId") Integer categoryId,
 
-            @RequestParam(value = "allowNegotiation", required = false, defaultValue = "false") Boolean allowNegotiation,
-
             @RequestPart(value = "images", required = false) List<MultipartFile> images
     ) {
 
@@ -142,8 +137,7 @@ public class BikePostController {
         BikePostRequest req = mapper.createRequest(
                 title, description, price, status, city, district,
                 brand, model, year, frameMaterial, frameSize,
-                brakeType, groupset, mileage, categoryId,
-                allowNegotiation
+                brakeType, groupset, mileage, categoryId
         );
 
         return service.update(id, req, images);

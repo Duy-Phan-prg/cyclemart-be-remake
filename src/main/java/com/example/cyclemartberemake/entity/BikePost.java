@@ -64,9 +64,6 @@ public class BikePost {
     @JoinColumn(name = "user_id", insertable = false, updatable = false)
     private Users user;
 
-    @Column(nullable = false)
-    private Boolean allowNegotiation = false;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PostStatus postStatus;
@@ -110,8 +107,6 @@ public class BikePost {
             isRequestedInspection = false;
         if (postStatus == null)
             postStatus = PostStatus.PENDING;
-        if (allowNegotiation == null)
-            allowNegotiation = false;
         if (isVerified == null)
             isVerified = false;
     }

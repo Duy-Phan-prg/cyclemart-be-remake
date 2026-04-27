@@ -54,7 +54,6 @@ public class PriorityPackageServiceTest {
                 .title("Test Bike")
                 .description("Test Description")
                 .price(10000000.0)
-                .allowNegotiation(false)
                 .build();
         testPost = bikePostRepository.save(testPost);
 

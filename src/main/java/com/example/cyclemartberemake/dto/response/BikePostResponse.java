@@ -39,9 +39,6 @@ public class BikePostResponse {
     // ================= CATEGORY =================
     private String categoryName;
 
-    // ================= BUSINESS =================
-    private Boolean allowNegotiation;
-
     // ================= MEDIA =================
     private List<String> images;
 

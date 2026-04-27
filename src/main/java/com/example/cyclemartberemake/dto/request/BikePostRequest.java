@@ -76,6 +76,4 @@ public class BikePostRequest {
     @Schema(description = "ID danh mục xe", example = "1")
     private Integer categoryId;
 
-    private Boolean allowNegotiation;
-
 }

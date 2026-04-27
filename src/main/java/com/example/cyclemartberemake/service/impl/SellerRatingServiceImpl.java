@@ -77,13 +77,9 @@ public class SellerRatingServiceImpl implements SellerRatingService {
 
         SellerRating rating = SellerRating.builder()
                 .seller(seller)
-                .sellerId(request.getSellerId())
                 .buyer(buyer)
-                .buyerId(buyerId)
                 .bikePost(payment.getBikePost())
-                .bikePostId(payment.getBikePost().getId())
                 .payment(payment)
-                .paymentId(payment.getId())
                 .score(request.getScore())
                 .comment(request.getComment())
                 .build();
@@ -121,16 +117,13 @@ public class SellerRatingServiceImpl implements SellerRatingService {
         SellerRating rating = sellerRatingRepository.findById(ratingId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đánh giá"));
 
-        // Kiểm tra quyền: chỉ buyer hoặc admin mới có thể xóa
-        if (!rating.getBuyerId().equals(buyerId)) {
+        if (!rating.getBuyer().getId().equals(buyerId)) {
             throw new RuntimeException("Bạn không có quyền xóa đánh giá này");
         }
 
         sellerRatingRepository.delete(rating);
 
-        // Cập nhật thông tin seller
-        Users seller = userRepository.findById(rating.getSellerId())
-                .orElseThrow(() -> new RuntimeException("Người bán không tồn tại"));
+        Users seller = rating.getSeller();
         updateSellerRatingInfo(seller);
     }
 

@@ -15,6 +15,7 @@ import com.example.cyclemartberemake.repository.InspectionRepository;
 import com.example.cyclemartberemake.service.PaymentNotificationService;
 import com.example.cyclemartberemake.service.PaymentService;
 import com.example.cyclemartberemake.service.UserService;
+import com.example.cyclemartberemake.service.RealtimeNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,6 +49,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PostPrioritySubscriptionRepository subscriptionRepository;
     private final InspectionRepository inspectionRepository;
     private final PointTransactionRepository pointTransactionRepository;
+    private final RealtimeNotificationService realtimeNotificationService;
 
     @Value("${vnpay.tmnCode}")
     private String vnpayTmnCode;
@@ -239,7 +241,10 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setOrderStatus(status);
             paymentRepo.save(payment);
 
-            // Tùy chọn: Gửi thông báo khi đổi trạng thái
+            Long buyerId = payment.getUser() != null ? payment.getUser().getId() : null;
+            Long sellerId = payment.getBikePost() != null && payment.getBikePost().getUser() != null ? payment.getBikePost().getUser().getId() : null;
+            realtimeNotificationService.notifyOrderStatusChange(buyerId, sellerId, payment.getId(), status.name());
+
             return paymentMapper.toResponse(payment);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Trạng thái đơn hàng không hợp lệ");
@@ -400,6 +405,10 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setDeliveryEvidenceUrls(request.getDeliveryEvidenceUrls());
         payment.setOrderStatus(OrderStatus.IN_DELIVERY);
         paymentRepo.save(payment);
+
+        Long buyerId = payment.getUser() != null ? payment.getUser().getId() : null;
+        realtimeNotificationService.notifyOrderStatusChange(buyerId, sellerId, paymentId, OrderStatus.IN_DELIVERY.name());
+
         return paymentMapper.toResponse(payment);
     }
 
@@ -429,6 +438,9 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setDeliveredAt(now);
         payment.setAutoReleaseAt(now.plusDays(7));
         paymentRepo.save(payment);
+
+        Long sellerId = payment.getBikePost() != null && payment.getBikePost().getUser() != null ? payment.getBikePost().getUser().getId() : null;
+        realtimeNotificationService.notifyOrderStatusChange(buyerId, sellerId, paymentId, OrderStatus.DELIVERED.name());
 
         return paymentMapper.toResponse(payment);
     }
@@ -539,6 +551,8 @@ public class PaymentServiceImpl implements PaymentService {
                 .note(note)
                 .build();
         pointTransactionRepository.save(tx);
+
+        realtimeNotificationService.notifyPointsChange(user.getId(), delta, balanceAfter, note);
     }
 
     private Long getCurrentUserId() {

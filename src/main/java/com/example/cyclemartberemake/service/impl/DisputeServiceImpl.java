@@ -8,6 +8,7 @@ import com.example.cyclemartberemake.repository.PaymentRepository;
 import com.example.cyclemartberemake.repository.UserRepository;
 import com.example.cyclemartberemake.service.DisputeService;
 import com.example.cyclemartberemake.service.PaymentService;
+import com.example.cyclemartberemake.service.RealtimeNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +25,7 @@ public class DisputeServiceImpl implements DisputeService {
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
     private final PaymentService paymentService;
+    private final RealtimeNotificationService realtimeNotificationService;
 
     @Override
     @Transactional
@@ -82,6 +84,10 @@ public class DisputeServiceImpl implements DisputeService {
         paymentRepository.save(payment);
 
         Dispute saved = disputeRepository.save(dispute);
+
+        realtimeNotificationService.notifyDisputeStatusChange(buyerId, seller.getId(), saved.getId(), DisputeStatus.OPENED.name());
+        realtimeNotificationService.notifyOrderStatusChange(buyerId, seller.getId(), payment.getId(), OrderStatus.DISPUTE_SYSTEM.name());
+
         return toResponse(saved);
     }
 
@@ -94,10 +100,12 @@ public class DisputeServiceImpl implements DisputeService {
         dispute.setStatus(DisputeStatus.SELLER_APPROVED);
         disputeRepository.save(dispute);
 
-        // Cập nhật order status để admin xử lý hoàn tiền
         Payment payment = dispute.getPayment();
         payment.setOrderStatus(OrderStatus.RETURN_REQUESTED);
         paymentRepository.save(payment);
+
+        realtimeNotificationService.notifyDisputeStatusChange(dispute.getBuyer().getId(), sellerId, disputeId, DisputeStatus.SELLER_APPROVED.name());
+        realtimeNotificationService.notifyOrderStatusChange(dispute.getBuyer().getId(), sellerId, payment.getId(), OrderStatus.RETURN_REQUESTED.name());
 
         return toResponse(dispute);
     }
@@ -111,9 +119,10 @@ public class DisputeServiceImpl implements DisputeService {
         dispute.setStatus(DisputeStatus.SELLER_REJECTED);
         disputeRepository.save(dispute);
 
-        // Seller từ chối → chuyển sang ADMIN_REVIEW tự động
         dispute.setStatus(DisputeStatus.ADMIN_REVIEW);
         disputeRepository.save(dispute);
+
+        realtimeNotificationService.notifyDisputeStatusChange(dispute.getBuyer().getId(), sellerId, disputeId, DisputeStatus.ADMIN_REVIEW.name());
 
         return toResponse(dispute);
     }
@@ -140,7 +149,6 @@ public class DisputeServiceImpl implements DisputeService {
         dispute.setResolvedAt(LocalDateTime.now());
         disputeRepository.save(dispute);
 
-        // Transfer escrow points according to resolution
         Payment payment = dispute.getPayment();
         if (resolvedStatus == DisputeStatus.RESOLVED_REFUND_BUYER ||
                 resolvedStatus == DisputeStatus.RESOLVED_PARTIAL) {
@@ -148,6 +156,8 @@ public class DisputeServiceImpl implements DisputeService {
         } else {
             paymentService.releaseEscrow(payment.getId(), adminId);
         }
+
+        realtimeNotificationService.notifyDisputeStatusChange(dispute.getBuyer().getId(), dispute.getSeller().getId(), disputeId, resolvedStatus.name());
 
         return toResponse(dispute);
     }

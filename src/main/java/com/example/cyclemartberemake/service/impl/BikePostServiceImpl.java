@@ -12,6 +12,7 @@ import com.example.cyclemartberemake.repository.*;
 import com.example.cyclemartberemake.service.BikePostService;
 import com.example.cyclemartberemake.service.CloudinaryService;
 import com.example.cyclemartberemake.service.PaymentNotificationService;
+import com.example.cyclemartberemake.service.UserNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -48,6 +49,7 @@ public class BikePostServiceImpl implements BikePostService {
     private final ChatRoomRepository chatRoomRepository;
     private final WishlistRepository wishlistRepository;
     private final NegotiationRepository negotiationRepository;
+    private final UserNotificationService userNotificationService;
     private final ReportRepository reportRepository;
     private final DisputeRepository disputeRepository;
 
@@ -252,6 +254,14 @@ public class BikePostServiceImpl implements BikePostService {
         post.setRejectionReason(null);
 
         postRepo.save(post);
+
+        try {
+            notificationService.sendRealTimeNotification(post.getUser().getId(),
+                    "Bài đăng '" + post.getTitle() + "' đã được duyệt",
+                    "POST_APPROVED");
+        } catch (Exception e) {
+            // Ignore notification errors
+        }
     }
 
     @Override

@@ -28,29 +28,17 @@ public class SellerRating {
     @JoinColumn(name = "seller_id", nullable = false)
     private Users seller;
 
-    @Column(name = "seller_id", insertable = false, updatable = false)
-    private Long sellerId;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id", nullable = false)
     private Users buyer;
-
-    @Column(name = "buyer_id", insertable = false, updatable = false)
-    private Long buyerId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bike_post_id", nullable = false)
     private BikePost bikePost;
 
-    @Column(name = "bike_post_id", insertable = false, updatable = false)
-    private Long bikePostId;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_id", nullable = false)
     private Payment payment;
-
-    @Column(name = "payment_id", insertable = false, updatable = false)
-    private Long paymentId;
 
     @Column(nullable = false)
     private Integer score; // 1-5 stars

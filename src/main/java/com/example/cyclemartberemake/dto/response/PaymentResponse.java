@@ -55,6 +55,6 @@ public class PaymentResponse {
     private LocalDateTime createdAt;
     private LocalDateTime completedAt;
 
-    // Địa chỉ người mua đã nhập
     private String address;
+    private String adminNote;
 }

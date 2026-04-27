@@ -468,7 +468,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public PaymentResponse releaseEscrow(Long paymentId, Long adminId) {
+    public PaymentResponse releaseEscrow(Long paymentId, Long adminId, String adminNote) {
         Payment payment = paymentRepo.findById(paymentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch"));
 
@@ -497,7 +497,15 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setReleasedAt(LocalDateTime.now());
         payment.setOrderStatus(OrderStatus.COMPLETED);
         payment.setCompletedAt(LocalDateTime.now());
+        payment.setAdminNote(adminNote);
         paymentRepo.save(payment);
+
+        log.info("Released escrow with adminNote: {}", adminNote);
+
+        if (adminNote != null && !adminNote.isEmpty()) {
+            notificationService.sendRealTimeNotification(seller.getId(),
+                "Admin đã giải phóng escrow: " + adminNote, "ESCROW_RELEASED");
+        }
 
         log.info("Released {} escrow points to seller {} for payment {}", escrowAmt, seller.getId(), payment.getOrderId());
         return paymentMapper.toResponse(payment);
@@ -505,7 +513,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public PaymentResponse refundEscrow(Long paymentId, Long adminId) {
+    public PaymentResponse refundEscrow(Long paymentId, Long adminId, String adminNote) {
         Payment payment = paymentRepo.findById(paymentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch"));
 
@@ -529,7 +537,15 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setEscrowPoints(0L);
         payment.setReleasedAt(LocalDateTime.now());
         payment.setOrderStatus(OrderStatus.CANCELLED);
+        payment.setAdminNote(adminNote);
         paymentRepo.save(payment);
+
+        log.info("Refunded escrow with adminNote: {}", adminNote);
+
+        if (adminNote != null && !adminNote.isEmpty()) {
+            notificationService.sendRealTimeNotification(buyer.getId(),
+                "Admin đã hoàn tiền: " + adminNote, "ESCROW_REFUNDED");
+        }
 
         log.info("Refunded {} escrow points to buyer {} for payment {}", escrowAmt, buyer.getId(), payment.getOrderId());
         return paymentMapper.toResponse(payment);

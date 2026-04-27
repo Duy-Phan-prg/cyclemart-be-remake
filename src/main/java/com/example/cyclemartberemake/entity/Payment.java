@@ -105,4 +105,7 @@ public class Payment {
     private LocalDateTime deliveredAt;
     private LocalDateTime releasedAt;
     private LocalDateTime autoReleaseAt;
+
+    @Column(columnDefinition = "TEXT")
+    private String adminNote;
 }

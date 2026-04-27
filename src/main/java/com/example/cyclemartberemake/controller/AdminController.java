@@ -126,11 +126,14 @@ public class AdminController {
 
     @PostMapping("/payments/{id}/release-escrow")
     @Operation(summary = "Admin releases escrow points to seller")
-    public ResponseEntity<?> releaseEscrow(@PathVariable Long id) {
+    public ResponseEntity<?> releaseEscrow(@PathVariable Long id, @RequestParam String note) {
         try {
+            if (note == null || note.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Vui lòng nhập ghi chú"));
+            }
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             Users admin = (Users) auth.getPrincipal();
-            return ResponseEntity.ok(paymentService.releaseEscrow(id, (long) admin.getId()));
+            return ResponseEntity.ok(paymentService.releaseEscrow(id, (long) admin.getId(), note));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
@@ -138,11 +141,14 @@ public class AdminController {
 
     @PostMapping("/payments/{id}/refund-escrow")
     @Operation(summary = "Admin refunds escrow points to buyer")
-    public ResponseEntity<?> refundEscrow(@PathVariable Long id) {
+    public ResponseEntity<?> refundEscrow(@PathVariable Long id, @RequestParam String note) {
         try {
+            if (note == null || note.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Vui lòng nhập ghi chú"));
+            }
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             Users admin = (Users) auth.getPrincipal();
-            return ResponseEntity.ok(paymentService.refundEscrow(id, (long) admin.getId()));
+            return ResponseEntity.ok(paymentService.refundEscrow(id, (long) admin.getId(), note));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }

@@ -154,7 +154,7 @@ public class DisputeServiceImpl implements DisputeService {
         Payment payment = dispute.getPayment();
         if (resolvedStatus == DisputeStatus.RESOLVED_REFUND_BUYER ||
                 resolvedStatus == DisputeStatus.RESOLVED_PARTIAL) {
-            paymentService.refundEscrow(payment.getId(), adminId);
+            paymentService.refundEscrow(payment.getId(), adminId, resolutionNote);
 
             if (payment.getBikePost() != null) {
                 BikePost post = payment.getBikePost();
@@ -162,7 +162,7 @@ public class DisputeServiceImpl implements DisputeService {
                 bikePostRepository.save(post);
             }
         } else {
-            paymentService.releaseEscrow(payment.getId(), adminId);
+            paymentService.releaseEscrow(payment.getId(), adminId, resolutionNote);
         }
 
         realtimeNotificationService.notifyDisputeStatusChange(dispute.getBuyer().getId(), dispute.getSeller().getId(), disputeId, resolvedStatus.name());

@@ -47,9 +47,9 @@ public interface PaymentService {
 
     PaymentResponse cancelRequest(Long paymentId, Long buyerId, String reason);
 
-    PaymentResponse releaseEscrow(Long paymentId, Long adminId);
+    PaymentResponse releaseEscrow(Long paymentId, Long adminId, String adminNote);
 
-    PaymentResponse refundEscrow(Long paymentId, Long adminId);
+    PaymentResponse refundEscrow(Long paymentId, Long adminId, String adminNote);
 
     String generateFreshPaymentUrl(String orderId, Long amount) throws Exception;
 }

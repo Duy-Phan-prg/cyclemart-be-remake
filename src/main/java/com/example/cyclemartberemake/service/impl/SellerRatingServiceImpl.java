@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -74,7 +75,17 @@ public class SellerRatingServiceImpl implements SellerRatingService {
             throw new RuntimeException("Đơn hàng này đã được đánh giá, không thể chỉnh sửa");
         }
 
-        SellerRating rating = SellerRating.builder()
+        // Kiểm tra xem buyer đã từng đánh giá seller này chưa (từ đơn hàng cũ)
+        Optional<SellerRating> existingRating = sellerRatingRepository.findTopBySeller_IdAndBuyer_IdOrderByCreatedAtDesc(request.getSellerId(), buyerId);
+
+        SellerRating rating;
+        if (existingRating.isPresent()) {
+            // Nếu đã có đánh giá cũ, xóa đánh giá cũ và flush để commit ngay
+            sellerRatingRepository.delete(existingRating.get());
+            sellerRatingRepository.flush();
+        }
+
+        rating = SellerRating.builder()
                 .seller(seller)
                 .buyer(buyer)
                 .bikePost(payment.getBikePost()) // nullable — chỉ lưu làm context lịch sử

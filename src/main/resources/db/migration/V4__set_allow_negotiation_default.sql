@@ -1,0 +1,1 @@
+ALTER TABLE bike_posts MODIFY COLUMN allow_negotiation BOOLEAN DEFAULT FALSE;

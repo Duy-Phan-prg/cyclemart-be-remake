@@ -29,14 +29,14 @@ public class SellerRatingController {
     private final SellerRatingService sellerRatingService;
 
     /**
-     * Tạo hoặc cập nhật đánh giá cho một seller
+     * Tạo đánh giá cho một seller theo đơn hàng
      */
     @PostMapping
-    @Operation(summary = "Create or update seller rating")
-    public ResponseEntity<?> createOrUpdateSellerRating(@Valid @RequestBody SellerRatingRequest request) {
+    @Operation(summary = "Create seller rating")
+    public ResponseEntity<?> createSellerRating(@Valid @RequestBody SellerRatingRequest request) {
         try {
             Long buyerId = getCurrentUserId();
-            SellerRatingResponse response = sellerRatingService.createOrUpdateSellerRating(buyerId, request);
+            SellerRatingResponse response = sellerRatingService.createSellerRating(buyerId, request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)

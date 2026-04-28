@@ -22,6 +22,10 @@ public interface UserService {
 
     UserInfoResponseDTO getUserById(Long id);
 
+    UserInfoResponseDTO banUser(Long id, String reason);
+
+    UserInfoResponseDTO unbanUser(Long id);
+
     void updateProfile(Long userId, UpdateProfileRequest request);
 
     void changePassword(Long userId, ChangePasswordRequest request);

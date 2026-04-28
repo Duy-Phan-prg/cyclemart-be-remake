@@ -49,6 +49,20 @@ public class AdminController {
         return ResponseEntity.ok(userService.getAllUsers(pageable));
     }
 
+    @PutMapping("/users/{id}/ban")
+    @Operation(summary = "Ban a user account")
+    public ResponseEntity<UserInfoResponseDTO> banUser(
+            @PathVariable Long id,
+            @RequestParam(required = false) String reason) {
+        return ResponseEntity.ok(userService.banUser(id, reason));
+    }
+
+    @PutMapping("/users/{id}/unban")
+    @Operation(summary = "Unban a user account")
+    public ResponseEntity<UserInfoResponseDTO> unbanUser(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.unbanUser(id));
+    }
+
     // ================= BIKE POST MANAGEMENT =================
 
     @GetMapping("/posts")

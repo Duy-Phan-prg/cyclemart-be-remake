@@ -194,6 +194,36 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    public UserInfoResponseDTO banUser(Long id, String reason) {
+        Users user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+
+        if (user.getRole() == Role.ADMIN) {
+            throw new RuntimeException("Không thể khóa tài khoản quản trị viên");
+        }
+
+        user.setStatus(UserStatus.BANNED);
+        user.setBanReason(reason != null && !reason.trim().isEmpty() ? reason.trim() : "Bị khóa bởi quản trị viên");
+        user.setBannedAt(LocalDateTime.now());
+
+        return userMapper.toResponse(userRepository.save(user));
+    }
+
+    @Override
+    @Transactional
+    public UserInfoResponseDTO unbanUser(Long id) {
+        Users user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+
+        user.setStatus(UserStatus.ACTIVE);
+        user.setBanReason(null);
+        user.setBannedAt(null);
+
+        return userMapper.toResponse(userRepository.save(user));
+    }
+
+    @Override
+    @Transactional
     public void activateUserByEmail(String email) {
         Users user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User không tồn tại"));

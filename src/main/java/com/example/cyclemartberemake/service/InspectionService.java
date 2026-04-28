@@ -14,6 +14,7 @@ public interface InspectionService {
     Page<InspectionResponseDTO> getRequestsForInspector(Pageable pageable); // Cho Inspector
 
     void assignInspector(Long inspectionId, Long inspectorId);
+    void reschedule(Long inspectionId, java.time.LocalDateTime newTime);
     void updateResult(Long inspectionId, String status, String resultNote, String checklistData);
 
     // Cập nhật mới: Quản lý mức phí kiểm định chung cho toàn bộ hệ thống

@@ -2,8 +2,6 @@ package com.example.cyclemartberemake.controller;
 
 import com.example.cyclemartberemake.dto.request.InspectionRequestDTO;
 import com.example.cyclemartberemake.dto.response.InspectionResponseDTO;
-import com.example.cyclemartberemake.entity.Inspection;
-import com.example.cyclemartberemake.repository.InspectionRepository;
 import com.example.cyclemartberemake.service.InspectionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,7 +19,6 @@ import java.time.LocalDateTime;
 public class InspectionController {
 
     private final InspectionService inspectionService;
-    private final InspectionRepository inspectionRepository;
 
     @PreAuthorize("isAuthenticated()")
     @PostMapping
@@ -71,9 +68,7 @@ public class InspectionController {
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/admin/{id}/reschedule")
     public void reschedule(@PathVariable Long id, @RequestParam LocalDateTime newTime) {
-        Inspection ins = inspectionRepository.findById(id).orElseThrow();
-        ins.setScheduledDateTime(newTime);
-        inspectionRepository.save(ins);
+        inspectionService.reschedule(id, newTime);
     }
 
     // Lấy phí chung (Công khai cho Seller xem trước)

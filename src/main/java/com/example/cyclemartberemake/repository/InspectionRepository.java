@@ -16,6 +16,7 @@ public interface InspectionRepository extends JpaRepository<Inspection, Long> {
     Page<Inspection> findByInspectorId(Long inspectorId, Pageable pageable);
     Page<Inspection> findByStatus(InspectionStatus status, Pageable pageable);
     boolean existsByBikePostIdAndStatusIn(Long postId, java.util.List<InspectionStatus> statuses);
+    Optional<Inspection> findFirstByBikePostIdAndSellerIdAndStatusOrderByCreatedAtDesc(Long postId, Long sellerId, InspectionStatus status);
     // Lấy tất cả lịch đã gán cho Inspector (trừ những cái đã hủy)
     List<Inspection> findByInspectorIdAndStatusIn(Long inspectorId, List<InspectionStatus> statuses);
     Optional<Inspection> findFirstByBikePostIdAndStatusOrderByCreatedAtDesc(Long bikePostId, InspectionStatus status);

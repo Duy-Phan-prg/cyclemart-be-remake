@@ -17,6 +17,7 @@ import com.example.cyclemartberemake.service.PaymentNotificationService;
 import com.example.cyclemartberemake.service.PaymentService;
 import com.example.cyclemartberemake.service.UserService;
 import com.example.cyclemartberemake.service.RealtimeNotificationService;
+import com.example.cyclemartberemake.service.UserNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,6 +55,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PointTransactionRepository pointTransactionRepository;
     private final RealtimeNotificationService realtimeNotificationService;
     private final SellerRatingRepository sellerRatingRepository;
+    private final UserNotificationService userNotificationService;
 
     @Value("${vnpay.tmnCode}")
     private String vnpayTmnCode;
@@ -840,7 +842,7 @@ public class PaymentServiceImpl implements PaymentService {
         if (orderId == null) return;
 
         Payment payment = paymentRepo.findByOrderId(orderId).orElse(null);
-        if (payment == null || payment.getStatus() == PaymentStatus.SUCCESS) return;
+        if (payment == null || payment.getStatus() != PaymentStatus.PENDING) return;
 
         payment.setResponseCode(responseCode);
         if (transactionNo != null && !transactionNo.isEmpty()) {
@@ -897,6 +899,9 @@ public class PaymentServiceImpl implements PaymentService {
                             bikePostRepository.save(post);
 
                             log.info("Thanh toán phí kiểm định thành công, inspection ID: {} → PENDING", payment.getReferenceId());
+                            createInspectionNotification(payment,
+                                    "Thanh toán kiểm định thành công",
+                                    "Yêu cầu kiểm định của bạn đã được thanh toán và đang chờ admin phân công inspector.");
                         } catch (Exception e) {
                             log.error("Lỗi khi kích hoạt kiểm định: ", e);
                         }
@@ -958,6 +963,12 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setCompletedAt(LocalDateTime.now());
             paymentRepo.save(payment);
 
+            if (payment.getType() == PaymentType.INSPECTION_FEE) {
+                createInspectionNotification(payment,
+                        "Thanh toán kiểm định thất bại",
+                        "Thanh toán phí kiểm định chưa thành công. Bạn có thể vào Dịch vụ Kiểm định để thanh toán lại.");
+            }
+
             try {
                 notificationService.sendPaymentFailedEmail(payment);
                 notificationService.sendRealTimeNotification(payment.getUser().getId(),
@@ -966,6 +977,21 @@ public class PaymentServiceImpl implements PaymentService {
 
 
 
+        }
+    }
+
+    private void createInspectionNotification(Payment payment, String title, String message) {
+        try {
+            if (payment.getUser() == null) return;
+            userNotificationService.createNotification(
+                    payment.getUser().getId(),
+                    payment.getStatus() == PaymentStatus.SUCCESS ? "INSPECTION_PAYMENT_SUCCESS" : "INSPECTION_PAYMENT_FAILED",
+                    title,
+                    message,
+                    "/my-listings?tab=INSPECTIONS"
+            );
+        } catch (Exception e) {
+            log.error("Không thể tạo thông báo kiểm định cho payment {}", payment.getOrderId(), e);
         }
     }
 }

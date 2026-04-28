@@ -11,6 +11,7 @@ import com.example.cyclemartberemake.repository.UserRepository;
 import com.example.cyclemartberemake.repository.FeeInspectionSettingRepository;
 import com.example.cyclemartberemake.service.InspectionService;
 import com.example.cyclemartberemake.service.PaymentService;
+import com.example.cyclemartberemake.service.UserNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 
@@ -33,8 +35,11 @@ public class InspectionServiceImpl implements InspectionService {
     private final FeeInspectionSettingRepository feeInspectionSettingRepository;
     private final PaymentService paymentService;
     private final PaymentRepository paymentRepository;
+    private final UserNotificationService userNotificationService;
 
     private static final String FEE_KEY = "GLOBAL_INSPECTION_FEE";
+    private static final String INSPECTION_ACTION_URL = "/my-listings?tab=INSPECTIONS";
+    private static final DateTimeFormatter NOTIFICATION_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
 
     @Override
     @Transactional
@@ -50,9 +55,17 @@ public class InspectionServiceImpl implements InspectionService {
             throw new RuntimeException("Bạn không có quyền yêu cầu kiểm định cho xe này");
         }
 
+        Inspection pendingPaymentInspection = inspectionRepository
+                .findFirstByBikePostIdAndSellerIdAndStatusOrderByCreatedAtDesc(
+                        post.getId(), currentUser.getId(), InspectionStatus.PENDING_PAYMENT)
+                .orElse(null);
+        if (pendingPaymentInspection != null) {
+            return resumePayment(pendingPaymentInspection.getId());
+        }
+
         boolean isPending = inspectionRepository.existsByBikePostIdAndStatusIn(
                 post.getId(),
-                Arrays.asList(InspectionStatus.PENDING_PAYMENT, InspectionStatus.PENDING, InspectionStatus.ASSIGNED, InspectionStatus.INSPECTING)
+                Arrays.asList(InspectionStatus.PENDING, InspectionStatus.ASSIGNED, InspectionStatus.INSPECTING)
         );
         if (isPending) {
             throw new RuntimeException("Xe này đang trong quá trình xử lý kiểm định rồi!");
@@ -71,6 +84,10 @@ public class InspectionServiceImpl implements InspectionService {
                 .build();
 
         Inspection saved = inspectionRepository.save(inspection);
+        notifySeller(saved,
+                "INSPECTION_REQUEST_CREATED",
+                "Đã tạo yêu cầu kiểm định",
+                "Yêu cầu kiểm định cho xe \"" + post.getTitle() + "\" đã được tạo. Vui lòng hoàn tất thanh toán để admin phân công inspector.");
 
         // Tạo link thanh toán phí kiểm định
         InspectionResponseDTO response = mapToResponse(saved);
@@ -152,7 +169,25 @@ public class InspectionServiceImpl implements InspectionService {
 
         inspection.setInspector(inspector);
         inspection.setStatus(InspectionStatus.ASSIGNED);
-        inspectionRepository.save(inspection);
+        Inspection saved = inspectionRepository.save(inspection);
+        notifySeller(saved,
+                "INSPECTION_ASSIGNED",
+                "Đã phân công inspector",
+                "Yêu cầu kiểm định xe \"" + saved.getBikePost().getTitle() + "\" đã được phân công cho " + inspector.getFullName() + ".");
+    }
+
+    @Override
+    @Transactional
+    public void reschedule(Long inspectionId, LocalDateTime newTime) {
+        Inspection inspection = inspectionRepository.findById(inspectionId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu"));
+
+        inspection.setScheduledDateTime(newTime);
+        Inspection saved = inspectionRepository.save(inspection);
+        notifySeller(saved,
+                "INSPECTION_RESCHEDULED",
+                "Lịch kiểm định đã được cập nhật",
+                "Lịch kiểm định xe \"" + saved.getBikePost().getTitle() + "\" đã được đổi sang " + newTime.format(NOTIFICATION_TIME_FORMAT) + ".");
     }
 
     @Override
@@ -187,7 +222,17 @@ public class InspectionServiceImpl implements InspectionService {
             bikePostRepository.save(post);
         }
 
-        inspectionRepository.save(inspection);
+        Inspection saved = inspectionRepository.save(inspection);
+        String title = newStatus == InspectionStatus.PASSED
+                ? "Xe đã đạt kiểm định"
+                : newStatus == InspectionStatus.FAILED
+                ? "Xe chưa đạt kiểm định"
+                : "Kết quả kiểm định đã được cập nhật";
+        String message = "Kết quả kiểm định xe \"" + saved.getBikePost().getTitle() + "\": " + statusDisplay(newStatus) + ".";
+        if (resultNote != null && !resultNote.trim().isEmpty()) {
+            message += " Ghi chú: " + resultNote.trim();
+        }
+        notifySeller(saved, "INSPECTION_RESULT_" + newStatus.name(), title, message);
     }
 
     @Override
@@ -203,11 +248,20 @@ public class InspectionServiceImpl implements InspectionService {
             throw new RuntimeException("Yêu cầu này không cần thanh toán hoặc đã được thanh toán");
         }
 
-        Payment pendingPayment = paymentRepository.findFirstByReferenceIdAndTypeAndStatus(
-                inspectionId, PaymentType.INSPECTION_FEE, PaymentStatus.PENDING)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy giao dịch thanh toán cho yêu cầu này"));
-
         try {
+            Payment pendingPayment = paymentRepository.findFirstByReferenceIdAndTypeAndStatus(
+                    inspectionId, PaymentType.INSPECTION_FEE, PaymentStatus.PENDING)
+                    .orElse(null);
+
+            if (pendingPayment == null) {
+                CreatePaymentResponse paymentResponse = paymentService.createInspectionPayment(
+                        currentUser.getId(), inspection.getId(), inspection.getInspectionFee());
+                InspectionResponseDTO dto = mapToResponse(inspection);
+                dto.setPaymentOrderId(paymentResponse.getOrderId());
+                dto.setPaymentUrl(paymentResponse.getPaymentUrl());
+                return dto;
+            }
+
             String freshUrl = paymentService.generateFreshPaymentUrl(
                     pendingPayment.getOrderId(), pendingPayment.getAmount());
             InspectionResponseDTO dto = mapToResponse(inspection);
@@ -225,6 +279,32 @@ public class InspectionServiceImpl implements InspectionService {
             return (Users) auth.getPrincipal();
         }
         throw new RuntimeException("Chưa đăng nhập");
+    }
+
+    private void notifySeller(Inspection inspection, String type, String title, String message) {
+        try {
+            if (inspection.getSeller() == null) return;
+            userNotificationService.createNotification(
+                    inspection.getSeller().getId(),
+                    type,
+                    title,
+                    message,
+                    INSPECTION_ACTION_URL
+            );
+        } catch (Exception ignored) {
+        }
+    }
+
+    private String statusDisplay(InspectionStatus status) {
+        return switch (status) {
+            case PENDING_PAYMENT -> "Chờ thanh toán";
+            case PENDING -> "Chờ phân công";
+            case ASSIGNED -> "Đã phân công";
+            case INSPECTING -> "Đang kiểm định";
+            case PASSED -> "Đạt kiểm định";
+            case FAILED -> "Không đạt kiểm định";
+            case CANCELED -> "Đã hủy";
+        };
     }
 
     private InspectionResponseDTO mapToResponse(Inspection entity) {

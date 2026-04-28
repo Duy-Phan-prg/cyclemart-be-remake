@@ -36,6 +36,21 @@ public class UserNotificationServiceImpl implements UserNotificationService {
 
     @Override
     @Transactional
+    public void createNotification(Long userId, String type, String title, String message, String actionUrl) {
+        UserNotification notification = UserNotification.builder()
+                .userId(userId)
+                .type(type)
+                .title(title)
+                .message(message)
+                .actionUrl(actionUrl)
+                .isRead(false)
+                .build();
+        UserNotification saved = userNotificationRepository.save(notification);
+        pushNotificationCreated(userId, saved);
+    }
+
+    @Override
+    @Transactional
     public void createChatMessageNotification(Long receiverId, Long roomId, String senderName, String messageContent) {
         UserNotification notification = UserNotification.builder()
                 .userId(receiverId)

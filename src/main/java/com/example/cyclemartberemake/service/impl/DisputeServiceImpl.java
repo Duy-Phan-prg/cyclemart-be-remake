@@ -22,6 +22,8 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class DisputeServiceImpl implements DisputeService {
 
+    private static final int DISPUTE_BAN_LEVEL = 5;
+
     private final DisputeRepository disputeRepository;
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
@@ -149,6 +151,19 @@ public class DisputeServiceImpl implements DisputeService {
         dispute.setResolutionNote(resolutionNote);
         dispute.setResolvedBy(admin);
         dispute.setResolvedAt(LocalDateTime.now());
+
+        if (resolvedStatus == DisputeStatus.RESOLVED_REFUND_BUYER) {
+            dispute.setBuyerFault(false);
+            applyDisputeViolation(dispute.getSeller(), "Thua tranh chấp #" + dispute.getId() + ": " + safeNote(resolutionNote));
+        } else if (resolvedStatus == DisputeStatus.RESOLVED_RELEASE_SELLER) {
+            dispute.setBuyerFault(true);
+            applyDisputeViolation(dispute.getBuyer(), "Thua tranh chấp #" + dispute.getId() + ": " + safeNote(resolutionNote));
+        } else {
+            dispute.setBuyerFault(null);
+            applyDisputeViolation(dispute.getBuyer(), "Tranh chấp #" + dispute.getId() + " xử lý một phần: " + safeNote(resolutionNote));
+            applyDisputeViolation(dispute.getSeller(), "Tranh chấp #" + dispute.getId() + " xử lý một phần: " + safeNote(resolutionNote));
+        }
+
         disputeRepository.save(dispute);
 
         Payment payment = dispute.getPayment();
@@ -200,6 +215,23 @@ public class DisputeServiceImpl implements DisputeService {
         }
     }
 
+    private void applyDisputeViolation(Users user, String reason) {
+        int nextLevel = (user.getDisputeViolationLevel() == null ? 0 : user.getDisputeViolationLevel()) + 1;
+        user.setDisputeViolationLevel(nextLevel);
+
+        if (nextLevel >= DISPUTE_BAN_LEVEL) {
+            user.setStatus(UserStatus.BANNED);
+            user.setBanReason("Tự động khóa do đạt cấp vi phạm tranh chấp " + nextLevel + ". " + reason);
+            user.setBannedAt(LocalDateTime.now());
+        }
+
+        userRepository.save(user);
+    }
+
+    private String safeNote(String note) {
+        return note == null || note.trim().isEmpty() ? "Không có ghi chú" : note.trim();
+    }
+
     private DisputeResponse toResponse(Dispute d) {
         return DisputeResponse.builder()
                 .id(d.getId())
@@ -207,8 +239,10 @@ public class DisputeServiceImpl implements DisputeService {
                 .paymentOrderId(d.getPayment().getOrderId())
                 .buyerId(d.getBuyer().getId())
                 .buyerName(d.getBuyer().getFullName())
+                .buyerViolationLevel(d.getBuyer().getDisputeViolationLevel())
                 .sellerId(d.getSeller().getId())
                 .sellerName(d.getSeller().getFullName())
+                .sellerViolationLevel(d.getSeller().getDisputeViolationLevel())
                 .reason(d.getReason())
                 .evidenceUrls(d.getEvidenceUrls())
                 .status(d.getStatus().name())

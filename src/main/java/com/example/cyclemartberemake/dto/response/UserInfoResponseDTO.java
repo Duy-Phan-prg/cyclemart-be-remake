@@ -17,4 +17,5 @@ public class UserInfoResponseDTO {
     private String status;
     private String statusDisplay;
     private Integer point;
+    private Integer disputeViolationLevel;
 }

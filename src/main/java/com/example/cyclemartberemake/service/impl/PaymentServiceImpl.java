@@ -101,6 +101,13 @@ public class PaymentServiceImpl implements PaymentService {
             bikePost = bikePostRepository.findById(request.getBikePostId())
                     .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
 
+            if (bikePost.getPostStatus() != PostStatus.APPROVED) {
+                throw new RuntimeException("Bài đăng không còn khả dụng để thanh toán");
+            }
+            if (bikePost.getUserId() != null && bikePost.getUserId().equals(userId)) {
+                throw new RuntimeException("Bạn không thể mua bài đăng của chính mình");
+            }
+
             // Xe chưa kiểm định chỉ được mua COD, không qua VNPay
             if (paymentType == PaymentType.ORDER_PAYMENT && !Boolean.TRUE.equals(bikePost.getIsVerified())) {
                 throw new RuntimeException("Xe chưa được kiểm định chỉ hỗ trợ thanh toán tiền mặt (COD). Vui lòng dùng tính năng đặt hàng COD.");
@@ -346,6 +353,13 @@ public class PaymentServiceImpl implements PaymentService {
         BikePost bikePost = bikePostRepository.findById(bikePostId)
                 .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
 
+        if (bikePost.getPostStatus() != PostStatus.APPROVED) {
+            throw new RuntimeException("Bài đăng không còn khả dụng để thanh toán");
+        }
+        if (bikePost.getUserId() != null && bikePost.getUserId().equals(buyerId)) {
+            throw new RuntimeException("Bạn không thể mua bài đăng của chính mình");
+        }
+
         String orderId = "ORDER_" + System.currentTimeMillis();
         String desc = description != null ? description : "Thanh toan don hang " + orderId;
 
@@ -586,6 +600,13 @@ public class PaymentServiceImpl implements PaymentService {
                 .orElseThrow(() -> new RuntimeException("Người mua không tồn tại"));
         BikePost bikePost = bikePostRepository.findById(bikePostId)
                 .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
+
+        if (bikePost.getPostStatus() != PostStatus.APPROVED) {
+            throw new RuntimeException("Bài đăng không còn khả dụng để đặt hàng");
+        }
+        if (bikePost.getUserId() != null && bikePost.getUserId().equals(buyerId)) {
+            throw new RuntimeException("Bạn không thể mua bài đăng của chính mình");
+        }
 
         if (bikePost.getIsVerified()) {
             throw new RuntimeException("Xe đã kiểm định phải thanh toán online (escrow)");

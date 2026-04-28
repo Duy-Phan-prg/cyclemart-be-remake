@@ -38,6 +38,9 @@ public class Users {
 
     private LocalDateTime bannedAt;
 
+    @Column(nullable = false)
+    private Integer disputeViolationLevel = 0;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 
@@ -50,6 +53,9 @@ public class Users {
     public void prePersist() {
         if (this.point == null) {
             this.point = 0;
+        }
+        if (this.disputeViolationLevel == null) {
+            this.disputeViolationLevel = 0;
         }
     }
 

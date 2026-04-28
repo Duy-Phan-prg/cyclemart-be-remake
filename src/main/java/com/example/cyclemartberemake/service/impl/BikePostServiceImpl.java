@@ -115,6 +115,15 @@ public class BikePostServiceImpl implements BikePostService {
         BikePost post = postRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
 
+        Users currentUser = getOptionalCurrentUser();
+        boolean canViewNonPublic = currentUser != null && (
+                currentUser.getRole() == Role.ADMIN ||
+                        (post.getUser() != null && post.getUser().getId().equals(currentUser.getId()))
+        );
+        if (post.getPostStatus() != PostStatus.APPROVED && !canViewNonPublic) {
+            throw new RuntimeException("Bài đăng không tồn tại hoặc không còn khả dụng");
+        }
+
         post.setViewCount((post.getViewCount() == null ? 0 : post.getViewCount()) + 1);
         post = postRepo.save(post);
         return buildResponse(post);
@@ -400,6 +409,18 @@ public class BikePostServiceImpl implements BikePostService {
                             .updatedAt(highest.getUpdatedAt())
                             .build());
         }
+    }
+
+    private Users getOptionalCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal() == null) {
+            return null;
+        }
+        Object principal = auth.getPrincipal();
+        if (principal instanceof Users user) {
+            return user;
+        }
+        return null;
     }
 
     private Long getCurrentUserId() {

@@ -13,8 +13,10 @@ public class DisputeResponse {
     private String paymentOrderId;
     private Long buyerId;
     private String buyerName;
+    private Integer buyerViolationLevel;
     private Long sellerId;
     private String sellerName;
+    private Integer sellerViolationLevel;
     private String reason;
     private String evidenceUrls;
     private String status;

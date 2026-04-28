@@ -25,6 +25,7 @@ public interface UserMapper {
     @Mapping(target = "sellerRating", ignore = true)
     @Mapping(target = "sellerReviewCount", ignore = true)
     @Mapping(target = "point", ignore = true)
+    @Mapping(target = "disputeViolationLevel", ignore = true)
     @Mapping(target = "posts", ignore = true)
     Users toEntity(UserRegisterRequestDTO dto);
 

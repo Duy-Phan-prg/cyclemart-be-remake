@@ -8,6 +8,7 @@ import com.example.cyclemartberemake.dto.response.MarkRoomAsReadResponse;
 import com.example.cyclemartberemake.entity.BikePost;
 import com.example.cyclemartberemake.entity.ChatMessage;
 import com.example.cyclemartberemake.entity.ChatRoom;
+import com.example.cyclemartberemake.entity.PostStatus;
 import com.example.cyclemartberemake.entity.Users;
 import com.example.cyclemartberemake.repository.BikePostRepository;
 import com.example.cyclemartberemake.repository.ChatMessageRepository;
@@ -41,6 +42,10 @@ public class ChatServiceImpl implements ChatService {
     public ChatRoomResponse createOrGetRoom(Long currentUserId, ChatRoomRequest request) {
         BikePost post = bikePostRepository.findById(request.getBikePostId())
                 .orElseThrow(() -> new RuntimeException("Bài đăng không tồn tại"));
+
+        if (post.getPostStatus() != PostStatus.APPROVED) {
+            throw new RuntimeException("Bài đăng không còn khả dụng để nhắn tin");
+        }
 
         if (post.getUserId() == null) {
             throw new RuntimeException("Bài đăng chưa có người bán");

@@ -105,7 +105,9 @@ public class BikePostServiceImpl implements BikePostService {
     // ================= GET ALL =================
     @Override
     public Page<BikePostResponse> getAll(Pageable pageable) {
-        Page<BikePost> posts = postRepo.findApprovedPostsWithPriority(PostStatus.APPROVED, pageable);
+        Page<BikePost> posts = isDefaultNewestSort(pageable)
+                ? postRepo.findApprovedPostsWithPriority(PostStatus.APPROVED, pageable)
+                : postRepo.findByPostStatus(PostStatus.APPROVED, pageable);
         return posts.map(this::buildResponse);
     }
 
@@ -248,7 +250,7 @@ public class BikePostServiceImpl implements BikePostService {
         if (city != null && !city.isBlank()) {
             try { cityEnum = City.valueOf(city); } catch (IllegalArgumentException ignored) {}
         }
-        Page<BikePost> posts = postRepo.searchPostsWithPriority(keyword, minPrice, maxPrice, brandEnum, cityEnum, categoryId, pageable);
+        Page<BikePost> posts = postRepo.searchApprovedPosts(keyword, minPrice, maxPrice, brandEnum, cityEnum, categoryId, pageable);
         return posts.map(this::buildResponse);
     }
 
@@ -421,6 +423,16 @@ public class BikePostServiceImpl implements BikePostService {
             return user;
         }
         return null;
+    }
+
+    private boolean isDefaultNewestSort(Pageable pageable) {
+        if (pageable == null || pageable.getSort().isUnsorted()) {
+            return true;
+        }
+        return pageable.getSort().stream()
+                .findFirst()
+                .map(order -> "createdAt".equals(order.getProperty()) && order.isDescending())
+                .orElse(true);
     }
 
     private Long getCurrentUserId() {

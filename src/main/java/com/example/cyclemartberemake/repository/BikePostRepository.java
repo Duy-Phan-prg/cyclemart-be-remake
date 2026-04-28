@@ -59,4 +59,20 @@ public interface BikePostRepository extends JpaRepository<BikePost, Long> {
                                            @Param("city") City city,
                                            @Param("categoryId") Integer categoryId,
                                            Pageable pageable);
+
+    @Query("SELECT bp FROM BikePost bp " +
+            "WHERE (:keyword IS NULL OR LOWER(bp.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(bp.description) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+            "(:minPrice IS NULL OR bp.price >= :minPrice) AND " +
+            "(:maxPrice IS NULL OR bp.price <= :maxPrice) AND " +
+            "(:brand IS NULL OR bp.brand = :brand) AND " +
+            "(:city IS NULL OR bp.city = :city) AND " +
+            "(:categoryId IS NULL OR bp.category.id = :categoryId) AND " +
+            "bp.postStatus = 'APPROVED'")
+    Page<BikePost> searchApprovedPosts(@Param("keyword") String keyword,
+                                       @Param("minPrice") Double minPrice,
+                                       @Param("maxPrice") Double maxPrice,
+                                       @Param("brand") BikeBrand brand,
+                                       @Param("city") City city,
+                                       @Param("categoryId") Integer categoryId,
+                                       Pageable pageable);
 }

@@ -62,6 +62,7 @@ public interface BikePostMapper {
     }
 
     @Mapping(source = "category.name", target = "categoryName")
+    @Mapping(source = "category.id", target = "categoryId")
     @Mapping(source = "userId", target = "userId")
     @Mapping(source = "user.fullName", target = "sellerName")
     @Mapping(source = "user.email", target = "sellerEmail")

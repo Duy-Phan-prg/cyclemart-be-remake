@@ -37,6 +37,7 @@ public class BikePostResponse {
     private Integer mileage;
 
     // ================= CATEGORY =================
+    private Integer categoryId;
     private String categoryName;
 
     // ================= MEDIA =================

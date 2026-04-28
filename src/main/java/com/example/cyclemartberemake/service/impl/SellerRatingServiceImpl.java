@@ -99,11 +99,25 @@ public class SellerRatingServiceImpl implements SellerRatingService {
         // Cập nhật thông tin seller (average score và total reviews)
         updateSellerRatingInfo(seller);
 
-        // COD không có escrow nên không có releaseEscrow để set COMPLETED → set luôn sau khi rating
+        // Xử lý hoàn tất đơn hàng và giải phóng escrow
         if (payment.getType() == PaymentType.DIRECT_PAYMENT) {
+            // COD không có escrow, set COMPLETED trực tiếp
             payment.setOrderStatus(OrderStatus.COMPLETED);
             payment.setCompletedAt(java.time.LocalDateTime.now());
             paymentRepository.save(payment);
+        } else if (payment.getType() == PaymentType.ORDER_PAYMENT) {
+            // Online payment: giải phóng escrow cho seller
+            Long escrowAmt = payment.getEscrowPoints();
+            if (escrowAmt != null && escrowAmt > 0 && payment.getReleasedAt() == null) {
+                seller.setPoint(seller.getPoint() + escrowAmt.intValue());
+                userRepository.save(seller);
+
+                payment.setEscrowPoints(0L);
+                payment.setReleasedAt(java.time.LocalDateTime.now());
+                payment.setOrderStatus(OrderStatus.COMPLETED);
+                payment.setCompletedAt(java.time.LocalDateTime.now());
+                paymentRepository.save(payment);
+            }
         }
 
         return sellerRatingMapper.toResponse(saved);

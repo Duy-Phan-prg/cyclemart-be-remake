@@ -1,33 +1,76 @@
 HELP.md
+
+# ===============================
+# ENVIRONMENT VARIABLES / SECRETS
+# ===============================
+.env
+.env.*
+!.env.example
+
+
+# ===============================
+# MAVEN
+# ===============================
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-### STS ###
+
+# ===============================
+# STS / ECLIPSE
+# ===============================
 .apt_generated
 .classpath
 .factorypath
 .project
-.settings
+.settings/
 .springBeans
 .sts4-cache
 
-### IntelliJ IDEA ###
-.idea
+
+# ===============================
+# INTELLIJ IDEA
+# ===============================
+.idea/
 *.iws
 *.iml
 *.ipr
 
-### NetBeans ###
+
+# ===============================
+# NETBEANS
+# ===============================
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
+
+
+# ===============================
+# GRADLE
+# ===============================
 build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### VS Code ###
+
+# ===============================
+# VS CODE
+# ===============================
 .vscode/
+
+
+# ===============================
+# LOGS
+# ===============================
+*.log
+logs/
+
+
+# ===============================
+# OS FILES
+# ===============================
+.DS_Store
+Thumbs.db
